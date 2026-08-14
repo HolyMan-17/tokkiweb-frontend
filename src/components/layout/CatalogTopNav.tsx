@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import './CatalogTopNav.css';
+import hoppingBunny from '../../assets/hopping_bunny.gif';
 
 export function CatalogTopNav() {
   const { items } = useCart();
@@ -10,7 +11,7 @@ export function CatalogTopNav() {
     <nav className="top-nav">
       <div className="nav-inner">
         <Link to="/" className="nav-logo">
-          <span className="logo-bunny">🐰</span>
+          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" /></span>
           <span className="logo-text">Tokki</span>
           <span className="logo-store">Shop</span>
         </Link>

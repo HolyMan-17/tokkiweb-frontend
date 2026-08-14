@@ -32,6 +32,13 @@
   line-height: 1;
 }
 
+.logo-bunny img {
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: contain;
+  display: block;
+}
+
 .logo-text {
   font-family: var(--font-display);
   font-size: 1.4rem;

@@ -10,8 +10,13 @@
   top: 0;
   z-index: 100;
   background: var(--color-surface);
-  border-bottom: 2px solid var(--color-border);
-  box-shadow: var(--shadow-nav);
+}
+
+/* Override the shared Header.css .top-nav border/shadow — the catalog nav
+   sits directly above the pink hero and should blend into it seamlessly. */
+nav.top-nav {
+  border-bottom: none;
+  box-shadow: none;
 }
 
 .nav-inner {
@@ -35,6 +40,13 @@
 .logo-bunny {
   font-size: 1.5rem;
   line-height: 1;
+}
+
+.logo-bunny img {
+  width: 2.6rem;
+  height: 2.6rem;
+  object-fit: contain;
+  display: block;
 }
 
 .logo-text {

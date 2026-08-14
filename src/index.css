@@ -64,8 +64,8 @@
   --color-danger-bg:   #fef0f0;
 
   /* Typography (local fonts via @fontsource) */
-  --font-display: 'Baloo 2', 'Fredoka', sans-serif;
-  --font-body:    'Quicksand', sans-serif;
+  --font-display: 'DynaPuff', 'Baloo 2', 'Fredoka', sans-serif;
+  --font-body:    'Sour Gummy', 'Quicksand', sans-serif;
 
   --text-xs:   0.75rem;    /* 12px */
   --text-sm:   0.8125rem;  /* 13px */

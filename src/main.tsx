@@ -3,14 +3,15 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 
-// Local fonts (design system: Baloo 2 display + Quicksand body)
-import '@fontsource/baloo-2/600.css';
-import '@fontsource/baloo-2/700.css';
-import '@fontsource/baloo-2/800.css';
-import '@fontsource/quicksand/400.css';
-import '@fontsource/quicksand/500.css';
-import '@fontsource/quicksand/600.css';
-import '@fontsource/quicksand/700.css';
+// Local fonts (design system: DynaPuff display + Sour Gummy body)
+import '@fontsource/dynapuff/400.css';
+import '@fontsource/dynapuff/500.css';
+import '@fontsource/dynapuff/600.css';
+import '@fontsource/dynapuff/700.css';
+import '@fontsource/sour-gummy/400.css';
+import '@fontsource/sour-gummy/500.css';
+import '@fontsource/sour-gummy/600.css';
+import '@fontsource/sour-gummy/700.css';
 
 import './index.css';
 

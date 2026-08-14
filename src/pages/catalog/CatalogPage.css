@@ -21,8 +21,127 @@
   /* p1 → p3: gentle sweep fully within the palette */
   background: linear-gradient(140deg, var(--p2) 0%, var(--p3) 100%);
   text-align: center;
-  padding: 32px 24px 28px;
+  padding: 24px 24px 24px;
   overflow: hidden;
+  isolation: isolate;
+}
+
+/* Lively animated background layer — sits behind all hero content */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Slowly-shifting aurora wash (three soft blooms drifting across) */
+.hero-aurora {
+  position: absolute;
+  width: 70vmax;
+  height: 70vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  mix-blend-mode: soft-light;
+  animation: aurora-drift 18s ease-in-out infinite;
+}
+
+.hero-aurora--one {
+  top: -30%;
+  left: -15%;
+  background: radial-gradient(circle, var(--p1) 0%, rgba(253, 228, 242, 0) 65%);
+}
+
+.hero-aurora--two {
+  bottom: -35%;
+  right: -20%;
+  background: radial-gradient(circle, var(--color-surface) 0%, rgba(255, 255, 255, 0) 65%);
+  animation-duration: 22s;
+  animation-delay: -6s;
+}
+
+.hero-aurora--three {
+  top: 10%;
+  right: -10%;
+  width: 55vmax;
+  height: 55vmax;
+  background: radial-gradient(circle, var(--p4) 0%, rgba(238, 161, 205, 0) 60%);
+  opacity: 0.4;
+  animation-duration: 26s;
+  animation-delay: -11s;
+}
+
+@keyframes aurora-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33%      { transform: translate3d(6%, -8%, 0) scale(1.12); }
+  66%      { transform: translate3d(-7%, 6%, 0) scale(0.94); }
+}
+
+/* Soft floating blobs (pink tint, gentle bob + sway) */
+.hero-blob {
+  position: absolute;
+  border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
+  background: var(--color-surface);
+  opacity: 0.16;
+  filter: blur(2px);
+  animation: blob-bob 12s ease-in-out infinite;
+}
+
+.hero-blob--one   { width: 150px; height: 150px; top: -40px;  left: -30px; }
+.hero-blob--two   { width: 110px; height: 110px; bottom: -30px; right: -20px; animation-delay: -4s; animation-duration: 14s; }
+.hero-blob--three { width: 70px;  height: 70px;  top: 55%;   left: 88%;  animation-delay: -8s; animation-duration: 10s; }
+
+@keyframes blob-bob {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  25%      { transform: translate(12px, -14px) rotate(8deg); }
+  50%      { transform: translate(-6px, 10px) rotate(-5deg); }
+  75%      { transform: translate(8px, 4px) rotate(6deg); }
+}
+
+/* Rising bubbles with per-item drift */
+.hero-bubble {
+  position: absolute;
+  bottom: -18px;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.35) 55%, rgba(255, 255, 255, 0));
+  border: 1.5px solid rgba(230, 139, 190, 0.35);
+  box-shadow: inset 0 -4px 8px rgba(230, 139, 190, 0.18);
+  opacity: 0;
+  animation: bubble-rise var(--dur, 12s) linear infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.hero-bubble:nth-child(even) { width: 16px; height: 16px; }
+.hero-bubble:nth-child(3n)   { width: 34px; height: 34px; }
+
+@keyframes bubble-rise {
+  0%   { transform: translateY(0) translateX(0) scale(0.6); opacity: 0; }
+  8%   { opacity: 0.55; }
+  50%  { transform: translateY(-28vh) translateX(14px) scale(1); opacity: 0.4; }
+  92%  { opacity: 0.2; }
+  100% { transform: translateY(-55vh) translateX(-10px) scale(0.7); opacity: 0; }
+}
+
+/* Twinkling sparkle glyphs */
+.hero-sparkle {
+  position: absolute;
+  font-size: 1.1rem;
+  color: var(--color-primary);
+  opacity: 0;
+  animation: sparkle-twinkle 4s ease-in-out infinite;
+  animation-delay: var(--delay, 0s);
+}
+
+.hero-sparkle:nth-child(odd) { font-size: 0.85rem; }
+
+@keyframes sparkle-twinkle {
+  0%, 100% { transform: scale(0.4) rotate(0deg); opacity: 0; }
+  30%      { transform: scale(1.2) rotate(40deg); opacity: 0.8; }
+  55%      { transform: scale(0.8) rotate(20deg); opacity: 0.35; }
+  75%      { transform: scale(1.1) rotate(-15deg); opacity: 0.6; }
 }
 
 .hero-deco {
@@ -30,10 +149,29 @@
   font-size: 2.5rem;
   opacity: 0.28;
   animation: float 4s ease-in-out infinite;
+  z-index: 1;
 }
 
-.hero-deco--left  { top: 12px;    left: 16px;  animation-delay: 0s; }
-.hero-deco--right { bottom: 12px; right: 16px; animation-delay: 2s; }
+/* Cherry blossom sits flush in the top-left corner */
+.hero-deco--left  { top: 0;   left: 0; animation: none; opacity: 1; }
+.hero-deco--right { top: 0; right: 0; animation: none; opacity: 1; }
+
+.hero-cherry {
+  width: 8rem;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  transform: scaleX(-1);
+}
+
+/* Bottom-right branch tree — natural orientation */
+.hero-branch {
+  width: 7rem;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  transform: scaleX(-1);
+}
 
 @keyframes float {
   0%, 100% { transform: translateY(0)   rotate(-5deg); }
@@ -48,6 +186,22 @@
   text-transform: uppercase;
   color: var(--color-text-sub);
   margin-bottom: 6px;
+}
+
+.hero-logo {
+  width: min(150px, 40vw);
+  height: auto;
+  object-fit: contain;
+  margin: 0 auto var(--space-sm);
+  display: block;
+  filter: drop-shadow(0 8px 20px rgba(230, 139, 190, 0.35));
+  animation: logo-drop 0.7s var(--ease-spring) both;
+}
+
+@keyframes logo-drop {
+  0%   { opacity: 0; transform: translateY(-18px) scale(0.9) rotate(-3deg); }
+  60%  { transform: translateY(3px) scale(1.03) rotate(0.5deg); }
+  100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
 }
 
 .hero-title {
@@ -111,6 +265,13 @@
 }
 
 .category-emoji { font-size: 1.2rem; }
+
+.category-sparkle {
+  width: 4rem;
+  height: 4rem;
+  object-fit: contain;
+  display: block;
+}
 
 .category-header-actions {
   display: flex;
@@ -241,14 +402,22 @@
 
   /* Bigger, airier hero */
   .catalog-hero {
-    padding: 64px 40px 56px;
+    padding: 40px 40px 40px;
   }
 
   .hero-deco { font-size: 3.25rem; }
 
+  .hero-cherry { width: 16rem; }
+  .hero-branch { width: 16rem; }
+
   .hero-eyebrow {
     font-size: 0.85rem;
     margin-bottom: 10px;
+  }
+
+  .hero-logo {
+    width: min(210px, 28vw);
+    margin-bottom: var(--space-sm);
   }
 
   .hero-title {
@@ -291,5 +460,11 @@
 
 @media (prefers-reduced-motion: reduce) {
   .hero-deco, .cart-badge,
+  .hero-logo,
+  .hero-cherry, .hero-branch,
+  .hero-aurora, .hero-blob, .hero-bubble, .hero-sparkle,
   .carousel-btn, .social-circle { animation: none !important; transition: none !important; }
+
+  .hero-bubble { opacity: 0.5; }
+  .hero-sparkle { opacity: 0.5; }
 }

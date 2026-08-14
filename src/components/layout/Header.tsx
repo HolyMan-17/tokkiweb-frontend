@@ -1,6 +1,7 @@
 import { Link, NavLink } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import './Header.css';
+import hoppingBunny from '../../assets/hopping_bunny.gif';
 
 interface HeaderProps {
   variant?: 'customer' | 'admin';
@@ -64,7 +65,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
           className="nav-logo"
           aria-label="Tokki"
         >
-          <span className="logo-bunny">🐰</span>
+          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" /></span>
           <span className="logo-text">{variant === 'admin' ? 'Tokki Admin' : 'Tokki'}</span>
           <span className="logo-store">{variant === 'admin' ? 'Admin' : 'Store'}</span>
         </Link>

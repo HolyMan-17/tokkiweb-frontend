@@ -11,10 +11,16 @@ importers:
       '@fontsource/baloo-2':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource/dynapuff':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource/fredoka':
         specifier: ^5.3.0
         version: 5.3.0
       '@fontsource/quicksand':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/sour-gummy':
         specifier: ^5.3.0
         version: 5.3.0
       motion:
@@ -187,11 +193,17 @@ packages:
   '@fontsource/baloo-2@5.3.0':
     resolution: {integrity: sha512-CBuxZ27jvMmD5+KaaPkMWv/yjdRNppVAd5/002yAyvyQyLNL3aZCbkx6gbAT/bjxPd1A0VMdDQjfcELI8chccQ==}
 
+  '@fontsource/dynapuff@5.3.0':
+    resolution: {integrity: sha512-6QPd4M/F46ADrRAA3pu3Dob4iXgmac0YhNunK/1Sl+7wa2xOy7+espZ1gzC49kaozenrdBpqiSr7dYZScHzrKg==}
+
   '@fontsource/fredoka@5.3.0':
     resolution: {integrity: sha512-s2IhjQ50wDnKkkaKmjhtL0rxQg6ITsVusiipM3m7zUwVZZbbCKsscNDkngwp28xVzfIt7neWrkgU1qKqyTycQg==}
 
   '@fontsource/quicksand@5.3.0':
     resolution: {integrity: sha512-epmMUyXI39f88bZSCyKlHTZqUWg4O7DqrTXOKqsqbVKMLshX9RtIYCUIw+G2nOfEwdIHIjYbeWdwHRcEzRXBRQ==}
+
+  '@fontsource/sour-gummy@5.3.0':
+    resolution: {integrity: sha512-+TawtD4XwjNqSeI1LVUTEadfzubiDfS7weAQ1z0zFgpdJAPmN4KhckGkUfy+KvmjbDiep4YOipUieF3r/Pw2JA==}
 
   '@humanfs/core@0.19.2':
     resolution: {integrity: sha512-UhXNm+CFMWcbChXywFwkmhqjs3PRCmcSa/hfBgLIb7oQ5HNb1wS0icWsGtSAUNgefHeI+eBrA8I1fxmbHsGdvA==}
@@ -1155,9 +1167,13 @@ snapshots:
 
   '@fontsource/baloo-2@5.3.0': {}
 
+  '@fontsource/dynapuff@5.3.0': {}
+
   '@fontsource/fredoka@5.3.0': {}
 
   '@fontsource/quicksand@5.3.0': {}
+
+  '@fontsource/sour-gummy@5.3.0': {}
 
   '@humanfs/core@0.19.2':
     dependencies:

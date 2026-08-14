@@ -1,6 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
+import sparklesImg from '../../assets/sparkles.png';
+import tokkiLogo from '../../assets/tokki_logo.png';
+import cherryBlossom from '../../assets/cherry_blossom.gif';
+import branchCherry from '../../assets/branch_cherry.gif';
 import { MOCK_PRODUCTS } from '../../mock/data';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
@@ -31,7 +35,7 @@ const CATEGORY_EMOJIS: Record<string, string> = {
 
 function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   title: string;
-  emoji: string;
+  emoji: React.ReactNode;
   products: Product[];
   seeMoreTo?: string;
 }) {
@@ -206,9 +210,32 @@ export default function CatalogPage() {
       <div className="catalog-page">
         {/* ── Hero ── */}
         <header className="catalog-hero">
-          <div className="hero-deco hero-deco--left">🌸</div>
-          <div className="hero-deco hero-deco--right">⭐</div>
-          <p className="hero-eyebrow">Tokki Shop 🐰</p>
+          <div className="hero-bg" aria-hidden="true">
+            <span className="hero-aurora hero-aurora--one" />
+            <span className="hero-aurora hero-aurora--two" />
+            <span className="hero-aurora hero-aurora--three" />
+            <span className="hero-blob hero-blob--one" />
+            <span className="hero-blob hero-blob--two" />
+            <span className="hero-blob hero-blob--three" />
+            <span className="hero-bubble" style={{ left: '8%',  '--delay': '0s',  '--dur': '11s' } as React.CSSProperties} />
+            <span className="hero-bubble" style={{ left: '22%', '--delay': '3s',  '--dur': '13s' } as React.CSSProperties} />
+            <span className="hero-bubble" style={{ left: '41%', '--delay': '6s',  '--dur': '10s' } as React.CSSProperties} />
+            <span className="hero-bubble" style={{ left: '63%', '--delay': '1.5s','--dur': '14s' } as React.CSSProperties} />
+            <span className="hero-bubble" style={{ left: '79%', '--delay': '8s',  '--dur': '12s' } as React.CSSProperties} />
+            <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
+            <span className="hero-sparkle" style={{ top: '18%', left: '10%', '--delay': '0s' } as React.CSSProperties}>✦</span>
+            <span className="hero-sparkle" style={{ top: '62%', left: '26%', '--delay': '1.4s' } as React.CSSProperties}>✧</span>
+            <span className="hero-sparkle" style={{ top: '30%', left: '70%', '--delay': '2.6s' } as React.CSSProperties}>✦</span>
+            <span className="hero-sparkle" style={{ top: '70%', left: '85%', '--delay': '0.8s' } as React.CSSProperties}>✧</span>
+            <span className="hero-sparkle" style={{ top: '12%', left: '55%', '--delay': '3.6s' } as React.CSSProperties}>✦</span>
+          </div>
+          <div className="hero-deco hero-deco--left">
+            <img src={cherryBlossom} alt="" className="hero-cherry" />
+          </div>
+          <div className="hero-deco hero-deco--right">
+            <img src={branchCherry} alt="" className="hero-branch" />
+          </div>
+          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
           <p className="hero-sub">Maquillaje • Skincare • Accesorios • Ropa • Dulces Asiáticos & Más</p>
         </header>
@@ -217,7 +244,7 @@ export default function CatalogPage() {
         <div className="carousels-wrapper">
           <CategoryCarousel
             title="Todos"
-            emoji="✨"
+            emoji={<img src={sparklesImg} alt="" className="category-sparkle" />}
             products={MOCK_PRODUCTS}
           />
 
