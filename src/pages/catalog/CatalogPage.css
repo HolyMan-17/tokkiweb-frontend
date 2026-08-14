@@ -6,12 +6,13 @@
    ════════════════════════════════════════════════════════════════════════════ */
 
 /* ── Page wrapper ───────────────────────────────────────────────────────────── */
+/* Full-bleed: the catalog page uses 100% of the viewport at every resolution.
+   Individual inner sections (hero, headers, socials) are width-capped for
+   readability, but the carousel tracks always span the full page width so
+   cards are never clipped by a narrower container. */
 .catalog-page {
   width: 100%;
-  max-width: 1200px;
-  margin: 0 auto;
   padding-bottom: 64px;
-  overflow-x: clip;
 }
 
 /* ── Hero ───────────────────────────────────────────────────────────────────── */
@@ -93,6 +94,10 @@
   padding: 0 16px;
   /* Identical across every section so title rows sit at the same height */
   min-height: 44px;
+  /* Cap header width for readability on ultra-wide screens */
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .category-title {
@@ -159,13 +164,18 @@
   color: #fff;
 }
 
+.carousel-btn.disabled {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* ── Carousel track ─────────────────────────────────────────────────────────── */
 .carousel-track {
   display: flex;
   gap: 12px;
   overflow-x: auto;
+  /* Track spans the full viewport, no max-width cap */
   width: 100%;
-  max-width: 100%;
   padding: 8px 16px 12px;
   scroll-snap-type: x mandatory;
   /* Snap points align to the padded edge, not the raw track edge */
@@ -228,9 +238,6 @@
 
 /* ── Tablet / Desktop (≥768px) ──────────────────────────────────────────────── */
 @media (min-width: 768px) {
-  .catalog-page {
-    overflow-x: visible;
-  }
 
   /* Bigger, airier hero */
   .catalog-hero {

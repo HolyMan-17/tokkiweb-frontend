@@ -18,11 +18,13 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   Maquillaje: '💄',
+  Skincare: '🧴',
   Accesorios: '💎',
   Pulseras: '📿',
-  Pines: '📌',
   'Lentes de Contacto': '👁️',
+  Pines: '📌',
   Ropa: '👗',
+  'Dulces Asiáticos': '🍡',
 };
 
 // ── Carousel ──────────────────────────────────────────────────────────────────
@@ -206,9 +208,9 @@ export default function CatalogPage() {
         <header className="catalog-hero">
           <div className="hero-deco hero-deco--left">🌸</div>
           <div className="hero-deco hero-deco--right">⭐</div>
-          <p className="hero-eyebrow">Asian Store Tokki 🐰</p>
-          <h1 className="hero-title">Tu mundo kawaii favorito</h1>
-          <p className="hero-sub">Accesorios • Maquillaje • Lentes</p>
+          <p className="hero-eyebrow">Tokki Shop 🐰</p>
+          <h1 className="hero-title">Tu tienda asiatica favorita</h1>
+          <p className="hero-sub">Maquillaje • Skincare • Accesorios • Ropa • Dulces Asiáticos & Más</p>
         </header>
 
         {/* ── Carousels: Todos (all products) + one per category ── */}

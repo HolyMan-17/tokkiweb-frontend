@@ -12,7 +12,7 @@ export function CatalogTopNav() {
         <Link to="/" className="nav-logo">
           <span className="logo-bunny">🐰</span>
           <span className="logo-text">Tokki</span>
-          <span className="logo-store">Store</span>
+          <span className="logo-store">Shop</span>
         </Link>
 
         <div className="nav-actions">

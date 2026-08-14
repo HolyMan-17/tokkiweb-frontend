@@ -1,9 +1,13 @@
 // ─── Categories (name → emoji) ────────────────────────────
 export const CATEGORIES: { name: string; emoji: string }[] = [
-  { name: 'Maquillaje', emoji: '💄' },
-  { name: 'Accesorios', emoji: '💎' },
-  { name: 'Lentes de Contacto', emoji: '👁️' },
-  { name: 'Pines', emoji: '📌' },
+  { name: 'Maquillaje',          emoji: '💄' },
+  { name: 'Skincare',            emoji: '🧴' },
+  { name: 'Accesorios',          emoji: '💎' },
+  { name: 'Pulseras',            emoji: '📿' },
+  { name: 'Lentes de Contacto',  emoji: '👁️' },
+  { name: 'Pines',               emoji: '📌' },
+  { name: 'Ropa',                emoji: '👗' },
+  { name: 'Dulces Asiáticos',    emoji: '🍡' },
 ];
 
 export function slugify(text: string): string {
