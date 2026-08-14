@@ -223,11 +223,6 @@ export default function CatalogPage() {
             <span className="hero-bubble" style={{ left: '63%', '--delay': '1.5s','--dur': '14s' } as React.CSSProperties} />
             <span className="hero-bubble" style={{ left: '79%', '--delay': '8s',  '--dur': '12s' } as React.CSSProperties} />
             <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
-            <span className="hero-sparkle" style={{ top: '18%', left: '10%', '--delay': '0s' } as React.CSSProperties}>✦</span>
-            <span className="hero-sparkle" style={{ top: '62%', left: '26%', '--delay': '1.4s' } as React.CSSProperties}>✧</span>
-            <span className="hero-sparkle" style={{ top: '30%', left: '70%', '--delay': '2.6s' } as React.CSSProperties}>✦</span>
-            <span className="hero-sparkle" style={{ top: '70%', left: '85%', '--delay': '0.8s' } as React.CSSProperties}>✧</span>
-            <span className="hero-sparkle" style={{ top: '12%', left: '55%', '--delay': '3.6s' } as React.CSSProperties}>✦</span>
           </div>
           <div className="hero-deco hero-deco--left">
             <img src={cherryBlossom} alt="" className="hero-cherry" />

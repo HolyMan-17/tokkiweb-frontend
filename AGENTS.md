@@ -28,9 +28,11 @@ The page background is `--color-bg: #fff0f7`. Cards and surfaces are white (`#ff
 
 | Role           | Font        | Weights  | Usage                             |
 |----------------|-------------|----------|-----------------------------------|
-| Display / H1–H4 | **Baloo 2** | 600–800  | Headings, buttons, prices, labels |
-| Body / UI text  | **Quicksand** | 400–700  | Paragraphs, form inputs, descriptions |
+| Display / H1–H4 | **DynaPuff** | 400–700  | Headings, buttons, prices, labels |
+| Body / UI text  | **Sour Gummy** | 400–700  | Paragraphs, form inputs, descriptions |
 | Brand wordmark  | **Fredoka** | —        | Reserved for logo accents only    |
+
+Fallback stacks (declared in `src/index.css`): `--font-display: 'DynaPuff', 'Baloo 2', 'Fredoka'` and `--font-body: 'Sour Gummy', 'Quicksand'`. Baloo 2 / Quicksand / Fredoka remain as fallbacks only.
 
 Fonts load locally via `@fontsource/*` packages (imported in `src/main.tsx`), NOT from Google Fonts CDN. Never use Inter, Roboto, Arial, or system fonts.
 
@@ -165,7 +167,7 @@ To add a new category: add it to `CATEGORIES` in constants, add products with th
 ### Don't
 
 - Don't use Tailwind, CSS modules, or styled-components
-- Don't add new font families — stick to Baloo 2 / Quicksand / Fredoka
+- Don't add new font families — stick to DynaPuff / Sour Gummy (Baloo 2 / Quicksand / Fredoka are fallbacks only)
 - Don't use grey shadows — always tint with `rgba(230,139,190,...)`
 - Don't hardcode `max-width` on full-bleed pages (catalog, category) that clips carousel content
 - Don't use `overflow-x: clip` on containers that hold scrollable carousels

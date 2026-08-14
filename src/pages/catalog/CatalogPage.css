@@ -125,25 +125,6 @@
   100% { transform: translateY(-55vh) translateX(-10px) scale(0.7); opacity: 0; }
 }
 
-/* Twinkling sparkle glyphs */
-.hero-sparkle {
-  position: absolute;
-  font-size: 1.1rem;
-  color: var(--color-primary);
-  opacity: 0;
-  animation: sparkle-twinkle 4s ease-in-out infinite;
-  animation-delay: var(--delay, 0s);
-}
-
-.hero-sparkle:nth-child(odd) { font-size: 0.85rem; }
-
-@keyframes sparkle-twinkle {
-  0%, 100% { transform: scale(0.4) rotate(0deg); opacity: 0; }
-  30%      { transform: scale(1.2) rotate(40deg); opacity: 0.8; }
-  55%      { transform: scale(0.8) rotate(20deg); opacity: 0.35; }
-  75%      { transform: scale(1.1) rotate(-15deg); opacity: 0.6; }
-}
-
 .hero-deco {
   position: absolute;
   font-size: 2.5rem;
@@ -267,8 +248,8 @@
 .category-emoji { font-size: 1.2rem; }
 
 .category-sparkle {
-  width: 4rem;
-  height: 4rem;
+  width: 1.5rem;
+  height: 1.5rem;
   object-fit: contain;
   display: block;
 }
@@ -462,9 +443,8 @@
   .hero-deco, .cart-badge,
   .hero-logo,
   .hero-cherry, .hero-branch,
-  .hero-aurora, .hero-blob, .hero-bubble, .hero-sparkle,
+  .hero-aurora, .hero-blob, .hero-bubble,
   .carousel-btn, .social-circle { animation: none !important; transition: none !important; }
 
   .hero-bubble { opacity: 0.5; }
-  .hero-sparkle { opacity: 0.5; }
 }
