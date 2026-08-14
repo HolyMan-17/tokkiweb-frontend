@@ -17,15 +17,35 @@ export default function CheckoutPage() {
     paymentMethod: PAYMENT_METHODS[0].value,
   });
 
+  const sanitizeName = (value: string) =>
+    value
+      .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .slice(0, 60);
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const sanitized =
+      name === 'name' || name === 'lastName'
+        ? sanitizeName(value)
+        : name === 'phone'
+          ? value.replace(/\D/g, '').slice(0, 15)
+          : value;
+    setFormData(prev => ({ ...prev, [name]: sanitized }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.lastName || !formData.phone) {
       alert('Por favor completa todos los campos requeridos.');
+      return;
+    }
+    if (!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.name) || !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.lastName)) {
+      alert('Ingresa un nombre válido.');
+      return;
+    }
+    if (formData.phone.replace(/\D/g, '').length < 7) {
+      alert('Ingresa un teléfono válido (mínimo 7 dígitos).');
       return;
     }
     // Simulate API call and redirect
@@ -72,6 +92,8 @@ export default function CheckoutPage() {
               value={formData.name}
               onChange={handleInputChange}
               placeholder="Ej. María"
+              maxLength={60}
+              autoComplete="given-name"
               required
             />
           </div>
@@ -86,6 +108,8 @@ export default function CheckoutPage() {
               value={formData.lastName}
               onChange={handleInputChange}
               placeholder="Ej. Pérez"
+              maxLength={60}
+              autoComplete="family-name"
               required
             />
           </div>
@@ -98,6 +122,7 @@ export default function CheckoutPage() {
                 className="form-select phone-select" 
                 value={formData.countryCode}
                 onChange={handleInputChange}
+                autoComplete="country-code"
               >
                 {COUNTRY_CODES.map(c => (
                   <option key={c.code} value={c.code}>{c.short} ({c.code})</option>
@@ -110,6 +135,9 @@ export default function CheckoutPage() {
                 value={formData.phone}
                 onChange={handleInputChange}
                 placeholder="414 1234567"
+                inputMode="tel"
+                maxLength={15}
+                autoComplete="tel-national"
                 required
               />
             </div>

@@ -88,16 +88,42 @@
 .phone-input-group {
   display: flex;
   gap: var(--space-sm);
+  width: 100%;
+  max-width: 100%;
+  flex-wrap: nowrap;
 }
 
 .phone-select {
-  width: 112px;
+  width: 118px;
+  max-width: 118px;
+  min-width: 0;
   flex-shrink: 0;
+  /* Smaller text + less chevron padding so the country code
+     ("VE (+58)") fits without clipping. */
+  font-size: 0.8rem;
+  padding-right: 32px;
+  padding-left: 12px;
+  text-align: left;
+}
+
+.phone-select option {
+  font-size: var(--text-base);
 }
 
 .phone-number {
   flex: 1;
   min-width: 0;
+}
+
+/* Ultra-narrow phones: let the phone group wrap so nothing overflows */
+@media (max-width: 359.98px) {
+  .phone-input-group {
+    flex-wrap: wrap;
+  }
+
+  .phone-number {
+    flex-basis: 100%;
+  }
 }
 
 /* ─── Radio cards ───────────────────────────────────────── */
@@ -219,6 +245,8 @@
 
 /* ─── Submit pill ───────────────────────────────────────── */
 .checkout-form > .btn {
+  position: relative;
+  z-index: 1;
   transition:
     transform 0.2s var(--ease-spring),
     box-shadow 0.2s ease;
@@ -259,15 +287,36 @@
 
   .checkout-form .form-section:nth-child(4) {
     grid-column: 2;
-    grid-row: 1 / span 2;
-    position: sticky;
-    top: calc(var(--nav-height) + var(--space-lg));
+    grid-row: 1 / span 3;
+    align-self: start;
+    max-height: calc(100vh - var(--nav-height) - var(--space-lg) - var(--space-lg) - 76px);
+    overflow-y: auto;
+    scrollbar-width: thin;
+  }
+
+  .checkout-form .form-section:nth-child(4)::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  .checkout-form .form-section:nth-child(4)::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .checkout-form .form-section:nth-child(4)::-webkit-scrollbar-thumb {
+    background: var(--p3);
+    border-radius: var(--radius-full);
+  }
+
+  .checkout-form .form-section:nth-child(4)::-webkit-scrollbar-thumb:hover {
+    background: var(--p4);
   }
 
   .checkout-form > .btn {
     grid-column: 2;
     grid-row: 3;
-    align-self: start;
+    align-self: end;
+    position: relative;
+    z-index: 1;
   }
 }
 
