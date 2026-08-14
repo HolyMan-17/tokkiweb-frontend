@@ -1,0 +1,72 @@
+/* ════════════════════════════════════════════════════════════════════════════
+   Category page — reuses the catalog nav look; product cards in a grid.
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.category-page {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 16px 64px;
+}
+
+.category-page-header {
+  padding: 8px 0 16px;
+}
+
+.back-link {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-bottom: 10px;
+  transition: transform 0.18s ease;
+}
+
+.back-link:hover {
+  transform: translateX(-3px);
+}
+
+.category-page-title {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--color-text);
+  line-height: 1.15;
+}
+
+.category-page-count {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-text-sub);
+  margin-top: 4px;
+}
+
+/* ── Grid of product cards ─────────────────────────────────────────────────── */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.category-empty {
+  text-align: center;
+  padding: 64px 16px;
+}
+
+/* ── Desktop (≥768px): wider grid ───────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .category-page {
+    max-width: 1200px;
+    padding: 24px 32px 64px;
+  }
+
+  .category-page-title { font-size: 2.1rem; }
+
+  .category-grid {
+    grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+    gap: 20px;
+  }
+}

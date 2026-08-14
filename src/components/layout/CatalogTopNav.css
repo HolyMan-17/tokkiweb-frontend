@@ -1,0 +1,116 @@
+/* ── Catalog TopNav — shared by catalog & category pages ─────────────────────── */
+
+:root {
+  /* Taller nav for the sticker-style top bar */
+  --nav-height: 60px;
+}
+
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--color-border);
+  box-shadow: var(--shadow-nav);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 16px;
+  height: var(--nav-height);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.logo-bunny {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+}
+
+.logo-store {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-mute);
+  align-self: flex-end;
+  margin-bottom: 3px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-cart {
+  position: relative;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--p1);
+  border: 2px solid var(--color-border);
+  transition: background 0.18s, border-color 0.18s;
+  text-decoration: none;
+}
+
+.nav-cart:hover {
+  background: var(--p2);
+  border-color: var(--p3);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.62rem;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid white;
+  animation: badge-pop 0.3s cubic-bezier(.36,.07,.19,.97);
+}
+
+@keyframes badge-pop {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+@media (min-width: 768px) {
+  .nav-inner {
+    max-width: 1200px;
+    padding: 0 32px;
+  }
+}

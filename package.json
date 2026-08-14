@@ -10,8 +10,13 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fontsource/baloo-2": "^5.3.0",
+    "@fontsource/fredoka": "^5.3.0",
+    "@fontsource/quicksand": "^5.3.0",
+    "motion": "^13.1.0",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

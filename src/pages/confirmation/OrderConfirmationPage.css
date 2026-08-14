@@ -1,0 +1,245 @@
+/* ════════════════════════════════════════════════════════════
+   Tokki Shop · Order Confirmation
+   Kawaii celebratory card — mobile-first
+   ════════════════════════════════════════════════════════════ */
+
+.confirmation-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-2xl);
+  padding-bottom: var(--space-xl);
+  background: var(--color-surface);
+  border: 2.5px solid var(--pink-200);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px rgba(230, 139, 190, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+/* spacing via flex gap — neutralize utility margins inside the card */
+.confirmation-page .mt-lg,
+.confirmation-page .mt-md,
+.confirmation-page .mt-xl,
+.confirmation-page .mb-lg,
+.confirmation-page .mb-md {
+  margin: 0;
+}
+
+/* floating corner deco */
+.confirmation-page::before,
+.confirmation-page::after {
+  position: absolute;
+  font-size: 2.2rem;
+  opacity: 0.3;
+  pointer-events: none;
+  animation: confetti-float 5s ease-in-out infinite;
+}
+
+.confirmation-page::before {
+  content: '🎀';
+  top: 18px;
+  left: 22px;
+}
+
+.confirmation-page::after {
+  content: '🐰';
+  bottom: 18px;
+  right: 22px;
+  animation-delay: 2.5s;
+}
+
+@keyframes confetti-float {
+  0%, 100% { transform: translateY(0) rotate(-8deg); }
+  50%      { transform: translateY(-10px) rotate(8deg); }
+}
+
+/* ─── Success icon ──────────────────────────────────────── */
+.success-icon-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+}
+
+.success-icon-container::before,
+.success-icon-container::after {
+  position: absolute;
+  top: 8px;
+  font-size: 1.5rem;
+  pointer-events: none;
+  animation: confetti-float 4s ease-in-out infinite;
+}
+
+.success-icon-container::before {
+  content: '🎉';
+  left: -54px;
+}
+
+.success-icon-container::after {
+  content: '✨';
+  right: -54px;
+  animation-delay: 2s;
+}
+
+.success-icon {
+  width: 88px;
+  height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary);
+  border: 3px solid var(--pink-400);
+  border-radius: var(--radius-full);
+  box-shadow:
+    0 0 0 12px var(--color-primary-light),
+    0 8px 24px rgba(230, 139, 190, 0.35);
+  animation: icon-pop 0.6s var(--ease-spring) both;
+}
+
+@keyframes icon-pop {
+  0%   { transform: scale(0); }
+  60%  { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
+/* ─── Headline + order id ───────────────────────────────── */
+.confirmation-page .page-title {
+  font-size: var(--text-2xl);
+}
+
+.order-id {
+  display: inline-block;
+  font-family: var(--font-display);
+  font-size: var(--text-md);
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+  border: 2px solid var(--pink-200);
+  border-radius: var(--radius-full);
+  padding: 6px 18px;
+}
+
+.status-badge-container {
+  display: flex;
+  justify-content: center;
+}
+
+.status-badge-container .badge {
+  font-size: var(--text-sm);
+  padding: 7px 18px;
+  border: 2px solid currentColor;
+}
+
+.confirmation-message {
+  max-width: 340px;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.65;
+}
+
+/* ─── Summary card ──────────────────────────────────────── */
+.order-summary-card {
+  width: 100%;
+  max-width: 420px;
+  padding: var(--space-lg);
+  background: var(--color-surface);
+  border: 2.5px solid var(--pink-200);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 4px 16px rgba(230, 139, 190, 0.16);
+  text-align: left;
+}
+
+.order-summary-card .section-title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin-bottom: var(--space-md);
+  padding-bottom: var(--space-sm);
+  border-bottom: 2px dashed var(--pink-200);
+}
+
+.summary-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.order-summary-card .summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-md);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.order-summary-card .summary-row span:first-child {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.order-summary-card .summary-row span:last-child {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.summary-total-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-md);
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  border-top: 2px dashed var(--pink-200);
+  padding-top: var(--space-md);
+  margin-top: var(--space-md);
+}
+
+.summary-total-row .text-primary {
+  font-size: var(--text-xl);
+}
+
+/* ─── Back-to-store pill ────────────────────────────────── */
+.confirmation-page > .btn {
+  width: 100%;
+  max-width: 320px;
+  transition:
+    transform 0.2s var(--ease-spring),
+    box-shadow 0.2s ease;
+}
+
+.confirmation-page > .btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(230, 139, 190, 0.4);
+}
+
+.confirmation-page > .btn:active {
+  transform: scale(0.97);
+}
+
+/* ─── Desktop ───────────────────────────────────────────── */
+@media (min-width: 768px) {
+  .confirmation-page {
+    max-width: 560px;
+    padding-top: var(--space-2xl);
+  }
+}
+
+/* ─── Reduced motion ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .confirmation-page::before,
+  .confirmation-page::after,
+  .success-icon-container::before,
+  .success-icon-container::after,
+  .success-icon,
+  .confirmation-page > .btn {
+    animation: none !important;
+    transition: none !important;
+  }
+}

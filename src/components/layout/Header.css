@@ -1,0 +1,215 @@
+/* ── Header — matches the catalog TopNav aesthetic ─────────────────────────── */
+
+.top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: var(--color-surface);
+  border-bottom: 2px solid var(--pink-200);
+  box-shadow: var(--shadow-nav, 0 2px 12px rgba(230, 139, 190, 0.12));
+}
+
+.nav-inner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 0 var(--page-padding);
+  height: var(--nav-height);
+}
+
+.nav-logo {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+}
+
+.logo-bunny {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.logo-text {
+  font-family: var(--font-display);
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--color-primary);
+  letter-spacing: -0.5px;
+  line-height: 1;
+}
+
+.logo-store {
+  font-family: var(--font-display);
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--color-text-muted);
+  align-self: flex-end;
+  margin-bottom: 3px;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+/* Desktop nav links — pill style like the catalog filter pills */
+.nav-links {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 0 auto;
+}
+
+.nav-link {
+  padding: 7px 16px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--pink-200);
+  background: var(--color-surface);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  white-space: nowrap;
+  text-decoration: none;
+  transition: all 0.18s ease;
+}
+
+.nav-link:hover {
+  border-color: var(--pink-300);
+  color: var(--color-text);
+  background: var(--pink-100);
+}
+
+.nav-link.active {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(230, 139, 190, 0.40);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Admin gear button — same round style as the cart; mobile-only (desktop has the Admin pill) */
+.nav-icon-btn {
+  color: var(--color-text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2px solid var(--pink-200);
+  transition: all 0.18s;
+  text-decoration: none;
+}
+
+.nav-icon-btn:hover {
+  background: var(--pink-100);
+  border-color: var(--pink-300);
+  color: var(--color-text);
+}
+
+/* Admin logout button — soft red tint so it reads as "exit" */
+.nav-logout {
+  color: #c0567a;
+}
+
+.nav-logout:hover {
+  background: #fdeef4;
+  border-color: #e8a9c2;
+  color: #a03d61;
+}
+
+.nav-cart {
+  position: relative;
+  color: var(--color-text);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pink-100);
+  border: 2px solid var(--pink-200);
+  transition: background 0.18s, border-color 0.18s;
+  text-decoration: none;
+}
+
+.nav-cart:hover {
+  background: var(--pink-200);
+  border-color: var(--pink-300);
+}
+
+.cart-badge {
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  background: var(--color-primary);
+  color: #fff;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.62rem;
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border: 2px solid var(--color-surface);
+  animation: badge-pop 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+@keyframes badge-pop {
+  0%   { transform: scale(0); }
+  70%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+
+/* Admin header: keep the pills visible on mobile too — there's no bottom nav anymore */
+.top-nav-admin .nav-links {
+  display: flex;
+}
+
+.top-nav-admin .nav-inner {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 767px) {
+  .top-nav-admin .nav-inner {
+    gap: 8px;
+  }
+
+  .top-nav-admin .logo-store {
+    display: none;
+  }
+
+  .top-nav-admin .nav-link {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .nav-links {
+    display: flex;
+  }
+
+  /* In the app Header, the gear is redundant once the Admin pill shows on desktop.
+     Scoped to <header> so the catalog's standalone <nav> gear stays visible. */
+  header.top-nav .nav-admin {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cart-badge, .nav-link {
+    animation: none !important;
+    transition: none !important;
+  }
+}

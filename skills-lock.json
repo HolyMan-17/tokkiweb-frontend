@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "skills": {
+    "frontend-design": {
+      "source": "smithery.ai",
+      "sourceUrl": "https://smithery.ai/skills/jmmarotta/frontend-design",
+      "sourceType": "well-known",
+      "computedHash": "fc38d3f0fc301fab0a91d4f834897489be0ec5cf74f715b2677f2176e90a5f9c",
+      "wellKnownDigest": "sha256:7a29113dabba0cf8ed6e2ff9cbc6b74105a9404ac87fca3d10088c998bebd051"
+    }
+  }
+}
