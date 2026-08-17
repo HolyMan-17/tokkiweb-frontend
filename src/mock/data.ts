@@ -134,7 +134,7 @@ export const MOCK_PRODUCTS: Product[] = [
     category: 'Accesorios',
   },
 
-  // ── Pulseras ────────────────────────────────────────────
+  // ── Accesorios (was Pulseras) ──────────────────────────
   {
     product_id: 15,
     product_name: 'Brazalete Dorada',
@@ -142,7 +142,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Brazalete con dijes variados, baño de oro de 18k. Ajustable a todas las muñecas.',
     qty_available: 22,
     in_stock: true,
-    category: 'Pulseras',
+    category: 'Accesorios',
   },
   {
     product_id: 16,
@@ -151,7 +151,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Pulsera elástica con cuentas de cristal en tonos pastel. Estilo Y2K kawaii.',
     qty_available: 55,
     in_stock: true,
-    category: 'Pulseras',
+    category: 'Accesorios',
   },
   {
     product_id: 17,
@@ -160,7 +160,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Pulsera de hilo rojo trenzado con dije de luna. Símbolo de protección y buena suerte.',
     qty_available: 70,
     in_stock: true,
-    category: 'Pulseras',
+    category: 'Accesorios',
   },
   {
     product_id: 18,
@@ -169,7 +169,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Set de 2 pulseras magnéticas para mejores amigas. Una para ti, otra para tu bestie. Se unen con imán de corazón.',
     qty_available: 28,
     in_stock: true,
-    category: 'Pulseras',
+    category: 'Accesorios',
   },
 
   // ── Lentes de Contacto ──────────────────────────────────
@@ -218,7 +218,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Pin metálico con diseño de ranita kawaii. Perfecto para mochilas, chaquetas y más.',
     qty_available: 60,
     in_stock: true,
-    category: 'Pines',
+    category: 'Pines & Chapas',
   },
   {
     product_id: 24,
@@ -227,7 +227,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Pin metálico con diseño de gatito kawaii. Añade ternura a cualquier outfit.',
     qty_available: 55,
     in_stock: true,
-    category: 'Pines',
+    category: 'Pines & Chapas',
   },
   {
     product_id: 25,
@@ -236,7 +236,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Pin exclusivo de la marca Tokki con el conejo logo. Edición limitada, esmalte suave.',
     qty_available: 20,
     in_stock: true,
-    category: 'Pines',
+    category: 'Pines & Chapas',
   },
   {
     product_id: 26,
@@ -245,7 +245,7 @@ export const MOCK_PRODUCTS: Product[] = [
     product_description: 'Set de 3 pines: onigiri, ramen y mochi. Esmalte duro con cierre de mariposa.',
     qty_available: 30,
     in_stock: true,
-    category: 'Pines',
+    category: 'Pines & Chapas',
   },
 
   // ── Ropa ────────────────────────────────────────────────

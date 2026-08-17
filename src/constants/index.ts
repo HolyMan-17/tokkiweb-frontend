@@ -3,9 +3,8 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Maquillaje',          emoji: '💄' },
   { name: 'Skincare',            emoji: '🧴' },
   { name: 'Accesorios',          emoji: '💎' },
-  { name: 'Pulseras',            emoji: '📿' },
   { name: 'Lentes de Contacto',  emoji: '👁️' },
-  { name: 'Pines',               emoji: '📌' },
+  { name: 'Pines & Chapas',      emoji: '📌' },
   { name: 'Ropa',                emoji: '👗' },
   { name: 'Dulces Asiáticos',    emoji: '🍡' },
 ];

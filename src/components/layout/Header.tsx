@@ -1,4 +1,4 @@
-import { Link, NavLink } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import './Header.css';
 import hoppingBunny from '../../assets/hopping_bunny.gif';
@@ -41,21 +41,31 @@ const LOGOUT_SVG = (
   </svg>
 );
 
+const ORDERS_SVG = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+    <polyline points="14 2 14 8 20 8" />
+    <line x1="16" y1="13" x2="8" y2="13" />
+    <line x1="16" y1="17" x2="8" y2="17" />
+    <polyline points="10 9 9 9 8 9" />
+  </svg>
+);
+
+const PRODUCTS_SVG = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+    <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
+    <line x1="12" y1="22.08" x2="12" y2="12" />
+  </svg>
+);
+
 export function Header({ variant = 'customer' }: HeaderProps) {
   const { items } = useCart();
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
-
-  const links =
-    variant === 'admin'
-      ? [
-          { to: '/admin/orders', label: 'Pedidos' },
-          { to: '/admin/products', label: 'Productos' },
-        ]
-      : [
-          { to: '/', label: 'Inicio' },
-          { to: '/cart', label: 'Carrito' },
-          { to: '/admin/orders', label: 'Admin' },
-        ];
+  const location = useLocation();
+  const isCartPage = location.pathname === '/cart';
 
   return (
     <header className={`top-nav ${variant === 'admin' ? 'top-nav-admin' : ''}`}>
@@ -66,36 +76,34 @@ export function Header({ variant = 'customer' }: HeaderProps) {
           aria-label="Tokki"
         >
           <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" /></span>
-          <span className="logo-text">{variant === 'admin' ? 'Tokki Admin' : 'Tokki'}</span>
+          <span className="logo-text">{variant === 'admin' ? 'Tokki Shop' : 'Tokki'}</span>
           <span className="logo-store">{variant === 'admin' ? 'Admin' : 'Store'}</span>
         </Link>
 
-        <nav className="nav-links" aria-label="Navegación principal">
-          {links.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
-            >
-              {link.label}
-            </NavLink>
-          ))}
-        </nav>
-
         <div className="nav-actions">
-          {variant === 'customer' && (
+          {variant === 'customer' ? (
             <>
-              <Link to="/admin/orders" className="nav-icon-btn nav-admin" aria-label="Panel de administración">
+              <Link to="/" className="nav-icon-btn" aria-label="Inicio" title="Inicio">
+                {HOME_SVG}
+              </Link>
+              {!isCartPage && (
+                <Link to="/cart" className="nav-cart" aria-label="Carrito">
+                  {CART_SVG}
+                  {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
+                </Link>
+              )}
+              <Link to="/admin/orders" className="nav-icon-btn" aria-label="Panel de administración" title="Panel de administración">
                 {GEAR_SVG}
               </Link>
-              <Link to="/cart" className="nav-cart" aria-label="Carrito">
-                {CART_SVG}
-                {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
-              </Link>
             </>
-          )}
-          {variant === 'admin' && (
+          ) : (
             <>
+              <Link to="/admin/orders" className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
+                {ORDERS_SVG}
+              </Link>
+              <Link to="/admin/products" className="nav-icon-btn" aria-label="Productos" title="Productos">
+                {PRODUCTS_SVG}
+              </Link>
               <Link to="/" className="nav-icon-btn" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {HOME_SVG}
               </Link>

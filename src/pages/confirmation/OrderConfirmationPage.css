@@ -71,6 +71,8 @@
   font-size: 1.5rem;
   pointer-events: none;
   animation: confetti-float 4s ease-in-out infinite;
+  background-repeat: no-repeat;
+  background-size: contain;
 }
 
 .success-icon-container::before {
@@ -79,8 +81,11 @@
 }
 
 .success-icon-container::after {
-  content: '✨';
+  content: '';
   right: -54px;
+  background-image: url('../../assets/sparkles.gif');
+  width: 1.5rem;
+  height: 1.5rem;
   animation-delay: 2s;
 }
 

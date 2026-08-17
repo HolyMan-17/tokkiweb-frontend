@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
-import sparklesImg from '../../assets/sparkles.png';
-import tokkiLogo from '../../assets/tokki_logo.png';
+import sparklesImg from '../../assets/sparkles.gif';
+import lipstickGif from '../../assets/lipstick.gif';
+import cosmeticImg from '../../assets/cosmetic.avif';
+import ringImg from '../../assets/ring.png';
+import lentesImg from '../../assets/lentes_contacto.webp';
+import dressImg from '../../assets/dress.png';
+import pinImg from '../../assets/pin.png';
+import treatGif from '../../assets/treat.gif';
+import tokkiLogo from '../../assets/tokki_logo.avif';
 import cherryBlossom from '../../assets/cherry_blossom.gif';
 import branchCherry from '../../assets/branch_cherry.gif';
 import { MOCK_PRODUCTS } from '../../mock/data';
@@ -20,15 +27,14 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
   }, {});
 }
 
-const CATEGORY_EMOJIS: Record<string, string> = {
-  Maquillaje: '💄',
-  Skincare: '🧴',
-  Accesorios: '💎',
-  Pulseras: '📿',
-  'Lentes de Contacto': '👁️',
-  Pines: '📌',
-  Ropa: '👗',
-  'Dulces Asiáticos': '🍡',
+const CATEGORY_EMOJIS: Record<string, React.ReactNode> = {
+  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" />,
+  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" />,
+  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" />,
+  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" />,
+  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" />,
+  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" />,
+  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" />,
 };
 
 // ── Carousel ──────────────────────────────────────────────────────────────────

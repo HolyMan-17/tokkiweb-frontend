@@ -33,6 +33,13 @@
     cart-bounce 2.6s ease-in-out 0.4s infinite;
 }
 
+.empty-icon img {
+  width: min(150px, 50vw);
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
 @keyframes cart-bounce {
   0%, 100% { transform: translateY(0) rotate(-3deg); }
   50%      { transform: translateY(-9px) rotate(3deg); }
