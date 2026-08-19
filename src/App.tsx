@@ -3,6 +3,7 @@ import { CartProvider } from './context/CartContext';
 import Layout from './components/layout/Layout';
 
 // Admin Pages
+import AdminDashboardPage from './pages/admin/dashboard/AdminDashboardPage';
 import OrdersDashboardPage from './pages/admin/orders/OrdersDashboardPage';
 import AdminOrderDetailPage from './pages/admin/orders/OrderDetailPage';
 import ProductManagementPage from './pages/admin/products/ProductManagementPage';
@@ -37,6 +38,7 @@ function App() {
 
         {/* Admin Routes */}
         <Route element={<Layout variant="admin" />}>
+          <Route path="/admin" element={<AdminDashboardPage />} />
           <Route path="/admin/orders" element={<OrdersDashboardPage />} />
           <Route path="/admin/orders/:id" element={<AdminOrderDetailPage />} />
           <Route path="/admin/products" element={<ProductManagementPage />} />

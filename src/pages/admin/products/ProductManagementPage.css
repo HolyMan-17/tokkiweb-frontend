@@ -1,6 +1,6 @@
 .product-management-page {
-  padding: 1rem;
-  padding-bottom: 2rem;
+  padding: var(--space-md);
+  padding-bottom: var(--space-xl);
   background-color: var(--color-bg);
   min-height: 100vh;
 }
@@ -9,38 +9,45 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+  gap: var(--space-md);
+  margin-bottom: var(--space-lg);
 }
 
 .products-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .product-row-card {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem;
+  padding: var(--space-md);
 }
 
 .product-info {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: var(--space-sm);
   flex: 1;
+  min-width: 0;
 }
 
 .product-name {
   font-weight: 700;
-  color: #333;
+  color: var(--color-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .product-details {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: var(--space-md);
+  min-width: 0;
 }
 
 .product-price {
@@ -49,39 +56,44 @@
 }
 
 .stock-badge {
-  font-size: 0.75rem;
-  padding: 0.25rem 0.5rem;
-  border-radius: 12px;
+  font-size: var(--text-xs);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--radius-md);
   font-weight: bold;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .stock-badge.in-stock {
-  background-color: #e6f4ea;
-  color: #1e8e3e;
+  background-color: var(--color-success-bg);
+  color: var(--color-success);
 }
 
 .stock-badge.out-of-stock {
-  background-color: #fce8e6;
-  color: #d93025;
+  background-color: var(--color-danger-bg);
+  color: var(--color-danger);
 }
 
 .product-actions {
   display: flex;
-  gap: 0.5rem;
+  gap: var(--space-sm);
+  flex-shrink: 0;
 }
 
 .btn-icon {
   background: none;
-  border: 1px solid #ddd;
-  border-radius: 50%;
-  width: 36px;
-  height: 36px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-full);
+  width: 2.5rem;
+  height: 2.5rem;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #555;
-  transition: all 0.2s;
+  color: var(--color-text-secondary);
+  transition: border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out),
+              background-color var(--duration-fast) var(--ease-out);
 }
 
 .btn-icon.outline:hover {
@@ -90,13 +102,13 @@
 }
 
 .btn-icon.danger-outline {
-  border-color: #fad2e1;
-  color: #d93025;
+  border-color: var(--pink-200);
+  color: var(--color-danger);
 }
 
 .btn-icon.danger-outline:hover {
-  background-color: #fff0f4;
-  border-color: #d93025;
+  background-color: var(--color-danger-bg);
+  border-color: var(--color-danger);
 }
 
 /* Modal Styles */
@@ -118,8 +130,8 @@
   background-color: var(--color-surface);
   width: 100%;
   max-width: var(--max-width);
-  border-radius: 20px 20px 0 0;
-  padding: 1.5rem;
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-lg);
   max-height: 90vh;
   overflow-y: auto;
   box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.15);
@@ -129,7 +141,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  margin-bottom: var(--space-lg);
 }
 
 .modal-header h2 {
@@ -144,31 +156,41 @@
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
-  color: #666;
+  color: var(--color-text-secondary);
 }
 
 .modal-body {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--space-md);
 }
 
 .modal-actions {
   display: flex;
-  gap: 1rem;
-  margin-top: 1.5rem;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
 }
 
 .modal-actions .btn {
   flex: 1;
 }
 
+/* Desktop: product grid + centered dialog */
 @media (min-width: 768px) {
+  .products-list {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: var(--space-lg);
+  }
+
   .modal-overlay {
     align-items: center;
+    padding: var(--space-lg);
   }
-  
+
   .modal-content {
-    border-radius: 12px;
+    max-width: 560px;
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl);
   }
 }

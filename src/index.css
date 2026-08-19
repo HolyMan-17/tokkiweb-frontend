@@ -114,7 +114,7 @@
   --nav-height: 56px;
   --bottom-nav-height: 64px;
   --page-padding: 16px;
-  --max-width: 480px;
+  --max-width: 100%;
 }
 
 /* ─── Reset ─────────────────────────────────────────────── */
@@ -536,10 +536,23 @@ a:hover { color: var(--color-primary-hover); }
   background: var(--p4);
 }
 
-/* ─── Desktop breakpoint ────────────────────────────────── */
+/* ─── Responsive breakpoints ────────────────────────────── */
 @media (min-width: 768px) {
   :root {
-    --max-width: 1200px;
+    --max-width: 720px;
+    --page-padding: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --max-width: 960px;
     --page-padding: 32px;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --max-width: 1200px;
   }
 }
