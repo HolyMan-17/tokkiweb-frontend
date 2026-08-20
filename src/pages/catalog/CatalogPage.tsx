@@ -28,13 +28,13 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 }
 
 const CATEGORY_EMOJIS: Record<string, React.ReactNode> = {
-  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={285} height={270} />,
-  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={396} height={347} />,
-  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" width={362} height={405} />,
-  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={386} height={250} />,
-  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={243} height={257} />,
-  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={461} height={461} />,
-  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={250} height={209} />,
+  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={285} height={270} loading="lazy" />,
+  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={396} height={347} loading="lazy" />,
+  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" width={362} height={405} loading="lazy" />,
+  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={386} height={250} loading="lazy" />,
+  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={243} height={257} loading="lazy" />,
+  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={461} height={461} loading="lazy" />,
+  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={250} height={209} loading="lazy" />,
 };
 
 // ── Carousel ──────────────────────────────────────────────────────────────────
@@ -234,12 +234,12 @@ export default function CatalogPage() {
             <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
           </div>
           <div className="hero-deco hero-deco--left">
-            <img src={cherryBlossom} alt="" className="hero-cherry" width={500} height={500} />
+            <img src={cherryBlossom} alt="" className="hero-cherry" width={500} height={500} loading="lazy" />
           </div>
           <div className="hero-deco hero-deco--right">
-            <img src={branchCherry} alt="" className="hero-branch" width={286} height={347} />
+            <img src={branchCherry} alt="" className="hero-branch" width={286} height={347} loading="lazy" />
           </div>
-          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={1465} height={1464} />
+          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={1465} height={1464} fetchPriority="high" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
           <p className="hero-sub">Maquillaje • Skincare • Accesorios • Ropa • Dulces Asiáticos & Más</p>
         </header>
@@ -248,7 +248,7 @@ export default function CatalogPage() {
         <div className="carousels-wrapper">
           <CategoryCarousel
             title="Todos"
-            emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} />}
+            emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
             products={MOCK_PRODUCTS}
           />
 
