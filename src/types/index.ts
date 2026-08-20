@@ -7,6 +7,7 @@ export interface Product {
   qty_available: number;
   in_stock: boolean;
   category: string;             // category slug or display name
+  product_image?: string;       // image URL/path once product photos are supported
 }
 
 // ─── Orders ────────────────────────────────────────────────

@@ -70,31 +70,19 @@ export default function AdminDashboardPage() {
   ];
 
   const renderSlice = (props: PieSectorShapeProps) => {
-    const { cx = 0, cy = 0, innerRadius = 0, outerRadius = 0, startAngle = 0, endAngle = 0, fill, payload, isActive } = props;
-    const count = typeof payload?.value === 'number' ? payload.value : 0;
-    const name = String(payload?.name ?? '');
+    const { cx = 0, cy = 0, innerRadius = 0, outerRadius = 0, startAngle = 0, endAngle = 0, cornerRadius = 0, fill, isActive } = props;
     return (
-      <g>
-        <Sector
-          cx={cx}
-          cy={cy}
-          innerRadius={innerRadius}
-          outerRadius={isActive ? outerRadius + 7 : outerRadius}
-          startAngle={startAngle}
-          endAngle={endAngle}
-          fill={fill}
-        />
-        {isActive && (
-          <>
-            <text x={cx} y={cy} dy={-8} textAnchor="middle" fill="var(--color-text)" className="font-display" style={{ fontWeight: 700, fontSize: '1.4rem' }}>
-              {name}
-            </text>
-            <text x={cx} y={cy} dy={16} textAnchor="middle" fill="var(--color-text-secondary)" style={{ fontSize: '0.9rem' }}>
-              {count} pedidos
-            </text>
-          </>
-        )}
-      </g>
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        cornerRadius={cornerRadius}
+        fill={fill}
+        className={isActive ? 'pie-sector pie-sector--active' : 'pie-sector'}
+      />
     );
   };
 
@@ -182,6 +170,7 @@ export default function AdminDashboardPage() {
                 innerRadius={60}
                 outerRadius={80}
                 paddingAngle={5}
+                cornerRadius={6}
                 dataKey="value"
                 shape={renderSlice}
               >

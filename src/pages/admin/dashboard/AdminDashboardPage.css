@@ -89,6 +89,19 @@
   font-size: var(--text-md);
 }
 
+.pie-sector {
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 0.25s var(--ease-out),
+              filter 0.25s var(--ease-out),
+              opacity 0.25s var(--ease-out);
+}
+
+.pie-sector--active {
+  transform: scale(1.07);
+  filter: drop-shadow(0 4px 10px rgba(230, 139, 190, 0.45));
+}
+
 .recent-orders {
   padding: var(--space-lg);
 }

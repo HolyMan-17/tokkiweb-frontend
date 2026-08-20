@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.gif';
@@ -28,13 +28,13 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 }
 
 const CATEGORY_EMOJIS: Record<string, React.ReactNode> = {
-  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" />,
-  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" />,
-  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" />,
-  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" />,
-  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" />,
-  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" />,
-  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" />,
+  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={285} height={270} />,
+  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={396} height={347} />,
+  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" width={362} height={405} />,
+  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={386} height={250} />,
+  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={243} height={257} />,
+  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={461} height={461} />,
+  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={250} height={209} />,
 };
 
 // ── Carousel ──────────────────────────────────────────────────────────────────
@@ -72,7 +72,10 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
     return (available - (n - 1) * gap) / n;
   };
 
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so the first computed width is applied
+  // synchronously before the browser paints — cards never render at the
+  // 148px fallback width, eliminating the post-mount width flip (CLS).
+  useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
@@ -231,12 +234,12 @@ export default function CatalogPage() {
             <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
           </div>
           <div className="hero-deco hero-deco--left">
-            <img src={cherryBlossom} alt="" className="hero-cherry" />
+            <img src={cherryBlossom} alt="" className="hero-cherry" width={500} height={500} />
           </div>
           <div className="hero-deco hero-deco--right">
-            <img src={branchCherry} alt="" className="hero-branch" />
+            <img src={branchCherry} alt="" className="hero-branch" width={286} height={347} />
           </div>
-          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" />
+          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={1465} height={1464} />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
           <p className="hero-sub">Maquillaje • Skincare • Accesorios • Ropa • Dulces Asiáticos & Más</p>
         </header>
@@ -245,7 +248,7 @@ export default function CatalogPage() {
         <div className="carousels-wrapper">
           <CategoryCarousel
             title="Todos"
-            emoji={<img src={sparklesImg} alt="" className="category-sparkle" />}
+            emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} />}
             products={MOCK_PRODUCTS}
           />
 

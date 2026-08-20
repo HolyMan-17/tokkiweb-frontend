@@ -141,7 +141,9 @@ body {
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  overflow-x: hidden;
+  /* clip (not hidden) prevents horizontal scroll WITHOUT turning <body>
+     into a scroll container — otherwise position: sticky breaks on iOS */
+  overflow-x: clip;
   min-height: 100dvh;
 }
 
