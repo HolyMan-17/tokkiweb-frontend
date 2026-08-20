@@ -62,39 +62,44 @@
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
 }
 
-/* Round icon buttons (home, gear, admin icons) */
-.nav-icon-btn {
+/* Pill buttons (home, admin, etc.) — cart stays as an icon below */
+.nav-pill {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--color-text-secondary);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   border: 2px solid var(--pink-200);
-  transition: all 0.18s;
+  transition: background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
   text-decoration: none;
+  white-space: nowrap;
 }
 
-.nav-icon-btn:hover {
+.nav-pill:hover {
   background: var(--pink-100);
   border-color: var(--pink-300);
   color: var(--color-text);
 }
 
-/* Admin logout button — soft red tint so it reads as "exit" */
-.nav-logout {
-  color: #c0567a;
+/* Admin / store-accent pill — pink accent so it reads as the "door" out */
+.nav-pill-accent {
+  border-color: var(--pink-300);
+  color: var(--color-primary);
 }
 
-.nav-logout:hover {
-  background: #fdeef4;
-  border-color: #e8a9c2;
-  color: #a03d61;
+.nav-pill-accent:hover {
+  background: var(--pink-100);
+  border-color: var(--pink-400);
+  color: var(--color-text);
 }
 
 .nav-cart {
@@ -143,7 +148,7 @@
   100% { transform: scale(1); }
 }
 
-/* Admin header keeps a nowrap layout for its icon buttons */
+/* Admin header keeps a nowrap layout for its pills */
 .top-nav-admin .nav-inner {
   flex-wrap: nowrap;
 }
@@ -162,6 +167,10 @@
   .nav-inner {
     padding: 0 32px;
   }
+
+  .nav-actions {
+    gap: 12px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -170,6 +179,3 @@
     transition: none !important;
   }
 }
-
-.nav-text-link { font-family: var(--font-display); font-weight: 700; color: var(--color-primary); text-decoration: none; font-size: 1rem; padding: 8px; transition: opacity 0.2s; }
-.nav-text-link:hover { opacity: 0.8; }

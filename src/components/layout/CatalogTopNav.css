@@ -70,7 +70,43 @@ nav.top-nav {
 .nav-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+}
+
+/* Pill buttons (admin) — cart stays as an icon below */
+.nav-pill {
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--pink-200);
+  transition: background var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.nav-pill:hover {
+  background: var(--pink-100);
+  border-color: var(--pink-300);
+  color: var(--color-text);
+}
+
+.nav-pill-accent {
+  border-color: var(--pink-300);
+  color: var(--color-primary);
+}
+
+.nav-pill-accent:hover {
+  background: var(--pink-100);
+  border-color: var(--pink-400);
+  color: var(--color-text);
 }
 
 .nav-cart {

@@ -1,4 +1,5 @@
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
+import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
 import { MOCK_ORDERS } from '../../../mock/data';
 import StatusBadge from '../../../components/ui/StatusBadge';
@@ -23,6 +24,7 @@ const PIE_COLORS = {
 
 interface TooltipPayloadItem {
   value?: number | string;
+  name?: string;
 }
 
 interface CustomTooltipProps {
@@ -35,6 +37,18 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
     return (
       <div className="chart-tooltip">
         <p className="tooltip-value">{formatPrice(String(payload[0].value ?? 0))}</p>
+      </div>
+    );
+  }
+  return null;
+}
+
+function PieTooltip({ active, payload }: CustomTooltipProps) {
+  if (active && payload && payload.length) {
+    return (
+      <div className="chart-tooltip">
+        <p className="tooltip-label">{payload[0].name}</p>
+        <p className="tooltip-value">{payload[0].value} pedidos</p>
       </div>
     );
   }
@@ -54,6 +68,35 @@ export default function AdminDashboardPage() {
     { name: 'Aprobados', value: approvedCount, color: PIE_COLORS.approved },
     { name: 'Cancelados', value: canceledCount, color: PIE_COLORS.canceled },
   ];
+
+  const renderSlice = (props: PieSectorShapeProps) => {
+    const { cx = 0, cy = 0, innerRadius = 0, outerRadius = 0, startAngle = 0, endAngle = 0, fill, payload, isActive } = props;
+    const count = typeof payload?.value === 'number' ? payload.value : 0;
+    const name = String(payload?.name ?? '');
+    return (
+      <g>
+        <Sector
+          cx={cx}
+          cy={cy}
+          innerRadius={innerRadius}
+          outerRadius={isActive ? outerRadius + 7 : outerRadius}
+          startAngle={startAngle}
+          endAngle={endAngle}
+          fill={fill}
+        />
+        {isActive && (
+          <>
+            <text x={cx} y={cy} dy={-8} textAnchor="middle" fill="var(--color-text)" className="font-display" style={{ fontWeight: 700, fontSize: '1.4rem' }}>
+              {name}
+            </text>
+            <text x={cx} y={cy} dy={16} textAnchor="middle" fill="var(--color-text-secondary)" style={{ fontSize: '0.9rem' }}>
+              {count} pedidos
+            </text>
+          </>
+        )}
+      </g>
+    );
+  };
 
   const recentOrders = MOCK_ORDERS.slice(0, 3);
 
@@ -110,19 +153,19 @@ export default function AdminDashboardPage() {
         <h2 className="section-title">Ventas por Día</h2>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={200}>
-            <AreaChart data={MOCK_SALES_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorSales" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="var(--color-primary)" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="var(--color-primary)" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
+            <BarChart data={MOCK_SALES_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
               <YAxis hide />
-              <Tooltip content={<CustomTooltip />} />
-              <Area type="monotone" dataKey="sales" stroke="var(--color-primary)" strokeWidth={3} fillOpacity={1} fill="url(#colorSales)" />
-            </AreaChart>
+              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--pink-50)' }} />
+              <Bar
+                dataKey="sales"
+                fill="var(--color-primary)"
+                radius={[8, 8, 0, 0]}
+                maxBarSize={40}
+                activeBar={{ fill: 'var(--pink-400)', stroke: 'var(--pink-500)', strokeWidth: 2 }}
+              />
+            </BarChart>
           </ResponsiveContainer>
         </div>
       </section>
@@ -140,11 +183,13 @@ export default function AdminDashboardPage() {
                 outerRadius={80}
                 paddingAngle={5}
                 dataKey="value"
+                shape={renderSlice}
               >
                 {pieData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
                 ))}
               </Pie>
+              <Tooltip content={<PieTooltip />} />
               <Legend 
                 verticalAlign="bottom" 
                 height={36} 

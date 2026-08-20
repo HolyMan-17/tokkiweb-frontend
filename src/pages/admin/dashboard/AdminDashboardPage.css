@@ -76,6 +76,12 @@
   box-shadow: var(--shadow-sm);
 }
 
+.tooltip-label {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin: 0 0 2px 0;
+}
+
 .tooltip-value {
   color: var(--color-primary);
   font-family: var(--font-display);
