@@ -1,7 +1,7 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
-import { MOCK_ORDERS } from '../../../mock/data';
+import { MOCK_ORDERS, MOCK_PRODUCTS } from '../../../mock/data';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import { formatPrice, formatDate } from '../../../constants';
 import './AdminDashboardPage.css';
@@ -60,7 +60,8 @@ export default function AdminDashboardPage() {
   const approvedCount = 2;
   const canceledCount = 1;
   const totalOrders = 6;
-  const totalProducts = 35;
+  const totalProducts = MOCK_PRODUCTS.length;
+  const inStockCount = MOCK_PRODUCTS.filter(p => p.qty_available > 0).length;
   const totalSales = 93.00;
 
   const pieData = [
@@ -133,7 +134,7 @@ export default function AdminDashboardPage() {
           </div>
           <div className="stat-value font-display">{totalProducts}</div>
           <div className="stat-label text-muted">Productos</div>
-          <div className="stat-sub text-success">35 en stock</div>
+          <div className="stat-sub text-success">{inStockCount} en stock</div>
         </div>
       </section>
 

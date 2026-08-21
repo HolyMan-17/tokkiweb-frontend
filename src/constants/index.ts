@@ -7,6 +7,8 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Pines & Chapas',      emoji: '📌' },
   { name: 'Ropa',                emoji: '👗' },
   { name: 'Dulces Asiáticos',    emoji: '🍡' },
+  { name: 'Peluches y Figuras',  emoji: '🧸' },
+  { name: 'Otros',               emoji: '🛍️' },
 ];
 
 export function slugify(text: string): string {

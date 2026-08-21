@@ -332,6 +332,73 @@ export const MOCK_PRODUCTS: Product[] = [
     in_stock: true,
     category: 'Dulces Asiáticos',
   },
+
+  // ── Peluches y Figuras ──────────────────────────────────
+  {
+    product_id: 36,
+    product_name: 'Peluche Sanrio Pompompurin',
+    product_price: '18.00',
+    product_description: 'Peluche suave de Pompompurin, el perrito dorado de Sanrio. Tamaño mediano, perfecto para abrazar y decorar.',
+    qty_available: 8,
+    in_stock: true,
+    category: 'Peluches y Figuras',
+  },
+  {
+    product_id: 37,
+    product_name: 'Peluche Totoro Mediano',
+    product_price: '22.00',
+    product_description: 'Peluche de Totoro de Studio Ghibli. Tamaño mediano, tejido ultra suave. Un clásico del cine japonés.',
+    qty_available: 6,
+    in_stock: true,
+    category: 'Peluches y Figuras',
+  },
+  {
+    product_id: 38,
+    product_name: 'Figura Chibi Anime',
+    product_price: '12.50',
+    product_description: 'Figura coleccionable estilo chibi. Modelos variados según disponibilidad. Base incluida.',
+    qty_available: 15,
+    in_stock: true,
+    category: 'Peluches y Figuras',
+  },
+  {
+    product_id: 39,
+    product_name: 'Llavero Peluche Keychain',
+    product_price: '6.00',
+    product_description: 'Llavero peluche kawaii con diseño aleatorio. Perfecto para mochilas y bolsos.',
+    qty_available: 0,
+    in_stock: false,
+    category: 'Peluches y Figuras',
+  },
+
+  // ── Otros ────────────────────────────────────────────────
+  {
+    product_id: 40,
+    product_name: 'Stickers Kawaii Pack',
+    product_price: '2.00',
+    product_description: 'Pack de stickers kawaii de 12 diseños. Decoración para cuadernos, laptop y más.',
+    qty_available: 50,
+    in_stock: true,
+    category: 'Otros',
+  },
+  {
+    product_id: 41,
+    product_name: 'Cuaderno Japonesa A5',
+    product_price: '5.50',
+    product_description: 'Cuaderno A5 con diseño japonés kawaii. 80 hojas, papel de alta calidad.',
+    qty_available: 20,
+    in_stock: true,
+    category: 'Otros',
+  },
+  {
+    product_id: 42,
+    product_name: 'Bolsa Tote Kawaii',
+    product_price: '8.00',
+    product_description: 'Bolsa tote de algodón con estampado kawaii. Resistente y espaciosa para el día a día.',
+    qty_available: 25,
+    in_stock: true,
+    category: 'Otros',
+  },
 ];
 
 // ─── Mock Orders ───────────────────────────────────────────

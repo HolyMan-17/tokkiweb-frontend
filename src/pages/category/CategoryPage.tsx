@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
 import { MOCK_PRODUCTS } from '../../mock/data';
@@ -5,41 +6,186 @@ import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import { CATEGORIES, slugify } from '../../constants';
 
+type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
+
+const SORT_OPTIONS: { value: SortOption; label: string }[] = [
+  { value: 'recent',     label: 'Más recientes' },
+  { value: 'price-asc',  label: 'Precio: menor a mayor' },
+  { value: 'price-desc', label: 'Precio: mayor a menor' },
+  { value: 'name',       label: 'Nombre A–Z' },
+];
+
+const SEARCH_SVG = (
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8" />
+    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+  </svg>
+);
+
+const CLEAR_SVG = (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <line x1="18" y1="6" x2="6" y2="18" />
+    <line x1="6" y1="6" x2="18" y2="18" />
+  </svg>
+);
+
 export default function CategoryPage() {
   const { slug } = useParams();
 
   const category = CATEGORIES.find(c => slugify(c.name) === slug);
-  const products = category
+  const allProducts = category
     ? MOCK_PRODUCTS.filter(p => p.category === category.name)
     : [];
+
+  const [query, setQuery] = useState('');
+  const [sort, setSort] = useState<SortOption>('recent');
+  const [stockOnly, setStockOnly] = useState(false);
+
+  const filtered = useMemo(() => {
+    let result = [...allProducts];
+
+    // Search filter
+    if (query.trim()) {
+      const q = query.trim().toLowerCase();
+      result = result.filter(p => p.product_name.toLowerCase().includes(q));
+    }
+
+    // Stock filter
+    if (stockOnly) {
+      result = result.filter(p => p.in_stock && p.qty_available > 0);
+    }
+
+    // Sort
+    switch (sort) {
+      case 'price-asc':
+        result.sort((a, b) => Number(a.product_price) - Number(b.product_price));
+        break;
+      case 'price-desc':
+        result.sort((a, b) => Number(b.product_price) - Number(a.product_price));
+        break;
+      case 'name':
+        result.sort((a, b) => a.product_name.localeCompare(b.product_name));
+        break;
+      // 'recent' = original order
+    }
+
+    return result;
+  }, [allProducts, query, sort, stockOnly]);
+
+  const hasActiveFilters = query.trim() !== '' || stockOnly || sort !== 'recent';
+  const isFiltered = filtered.length !== allProducts.length;
+
+  const clearFilters = () => {
+    setQuery('');
+    setSort('recent');
+    setStockOnly(false);
+  };
+
+  if (!category) {
+    return (
+      <>
+        <CatalogTopNav />
+        <div className="category-page">
+          <div className="category-empty">
+            <h1 className="category-page-title">Categoría no encontrada</h1>
+            <Link to="/" className="back-link">← Volver al inicio</Link>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
       <CatalogTopNav />
 
       <div className="category-page">
-        {category ? (
-          <>
-            <header className="category-page-header">
-              <Link to="/" className="back-link">← Volver</Link>
-              <h1 className="category-page-title">
-                <span>{category.emoji}</span> {category.name}
-              </h1>
-              <p className="category-page-count">{products.length} productos</p>
-            </header>
+        {/* Header */}
+        <header className="category-page-header">
+          <Link to="/" className="back-link">← Volver</Link>
+          <h1 className="category-page-title">
+            <span>{category.emoji}</span> {category.name}
+          </h1>
+        </header>
 
-            <div className="category-grid">
-              {products.map(p => (
-                <div key={p.product_id} className="category-grid-item">
-                  <ProductCard product={p} />
-                </div>
-              ))}
-            </div>
-          </>
+        {/* Search bar */}
+        <div className="category-search-bar">
+          <span className="search-icon">{SEARCH_SVG}</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder={`Buscar en ${category.name}...`}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+          />
+          {query && (
+            <button
+              className="search-clear"
+              onClick={() => setQuery('')}
+              aria-label="Limpiar búsqueda"
+            >
+              {CLEAR_SVG}
+            </button>
+          )}
+        </div>
+
+        {/* Filters row */}
+        <div className="category-filters">
+          <div className="filters-left">
+            <button
+              className={`stock-pill${!stockOnly ? ' active' : ''}`}
+              onClick={() => setStockOnly(false)}
+            >
+              Todos
+            </button>
+            <button
+              className={`stock-pill${stockOnly ? ' active' : ''}`}
+              onClick={() => setStockOnly(true)}
+            >
+              En stock ✓
+            </button>
+          </div>
+
+          <select
+            className="sort-select"
+            value={sort}
+            onChange={e => setSort(e.target.value as SortOption)}
+          >
+            {SORT_OPTIONS.map(opt => (
+              <option key={opt.value} value={opt.value}>{opt.label}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Result count */}
+        <p className="category-result-count">
+          {isFiltered
+            ? `Mostrando ${filtered.length} de ${allProducts.length} productos`
+            : `${allProducts.length} productos`
+          }
+        </p>
+
+        {/* Grid or empty state */}
+        {filtered.length > 0 ? (
+          <div className="category-grid">
+            {filtered.map(p => (
+              <div key={p.product_id} className="category-grid-item">
+                <ProductCard product={p} />
+              </div>
+            ))}
+          </div>
         ) : (
-          <div className="category-empty">
-            <h1 className="category-page-title">Categoría no encontrada</h1>
-            <Link to="/" className="back-link">← Volver al inicio</Link>
+          <div className="category-no-results">
+            <span className="no-results-icon">🔍</span>
+            <h2 className="no-results-title">No encontramos productos</h2>
+            <p className="no-results-sub">Intenta con otra búsqueda o cambia los filtros</p>
+            {hasActiveFilters && (
+              <button className="btn btn-outline no-results-clear" onClick={clearFilters}>
+                Limpiar filtros
+              </button>
+            )}
           </div>
         )}
       </div>
