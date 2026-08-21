@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.gif';
@@ -34,16 +34,9 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
 
-  const updateArrows = () => {
-    const track = trackRef.current;
-    if (!track) return;
-    const maxScroll = track.scrollWidth - track.clientWidth;
-    setCanScrollLeft(track.scrollLeft > 0);
-    setCanScrollRight(track.scrollLeft < maxScroll - 1);
-  };
-
   // Compute a card width so an exact whole number of cards fits the
   // visible track width on every screen, and fill the row precisely.
+  // All layout reads happen BEFORE any style write (no forced reflow).
   const computeCardWidth = (track: HTMLDivElement): number => {
     const styles = getComputedStyle(track);
     const available =
@@ -57,47 +50,69 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
     return (available - (n - 1) * gap) / n;
   };
 
-  // useLayoutEffect (not useEffect) so the first computed width is applied
-  // synchronously before the browser paints — cards never render at the
-  // 148px fallback width, eliminating the post-mount width flip (CLS).
+  // Read layout (scroll position/width), then update arrow state. Called from
+  // scroll events — throttled with rAF so reads never follow a write in the
+  // same task (which is what forces reflow).
+  const updateArrows = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    setCanScrollLeft(track.scrollLeft > 0);
+    setCanScrollRight(track.scrollLeft < maxScroll - 1);
+  }, []);
+
+  // One measure+apply pass per frame: read all geometry first, then write the
+  // CSS var — never interleaved, so the browser never invalidates styles and
+  // forces a synchronous layout on a following read.
+  const applyWidth = useCallback(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const width = computeCardWidth(track);
+    track.style.setProperty('--carousel-card-width', `${width}px`);
+    updateArrows();
+  }, [updateArrows]);
+
+  // Measure on mount (synchronously, before paint — prevents the 148px
+  // fallback flash / CLS) and react to size changes via ResizeObserver.
+  // No polling: no rAF loops, no setTimeout re-measures.
   useLayoutEffect(() => {
     const track = trackRef.current;
     if (!track) return;
 
-    const recompute = () => {
-      track.style.setProperty('--carousel-card-width', `${computeCardWidth(track)}px`);
-      updateArrows();
-    };
+    applyWidth();
 
-    recompute();
-    const rafId = requestAnimationFrame(recompute);
-    const timerId = window.setTimeout(recompute, 150);
-    window.addEventListener('resize', recompute);
+    let scrollRaf = 0;
+    const onScroll = () => {
+      if (scrollRaf) return;
+      scrollRaf = requestAnimationFrame(() => {
+        scrollRaf = 0;
+        updateArrows();
+      });
+    };
+    track.addEventListener('scroll', onScroll, { passive: true });
+
+    const ro = new ResizeObserver(() => applyWidth());
+    ro.observe(track);
 
     return () => {
-      cancelAnimationFrame(rafId);
-      window.clearTimeout(timerId);
-      window.removeEventListener('resize', recompute);
+      if (scrollRaf) cancelAnimationFrame(scrollRaf);
+      track.removeEventListener('scroll', onScroll);
+      ro.disconnect();
     };
-  }, []);
+  }, [applyWidth, updateArrows]);
 
   const scroll = (dir: 'left' | 'right') => {
     const track = trackRef.current;
     if (!track) return;
 
-    // Slide by exactly one whole card using the SAME computed width
-    // (--carousel-card-width) plus the gap, so every step advances one
-    // card regardless of viewport. Fall back to the measured item width
-    // or a fraction of the track if the variable is not set yet.
+    // Read the CSS var (no layout read — it's a style value) and slide by
+    // exactly one whole card plus the gap. Fallback only if unset.
     const trackStyle = getComputedStyle(track);
     const gap = parseFloat(trackStyle.columnGap) || parseFloat(trackStyle.gap) || 12;
     const varCardWidth = parseFloat(trackStyle.getPropertyValue('--carousel-card-width'));
-    const item = track.querySelector<HTMLElement>('.carousel-item');
     const cardWidth = Number.isFinite(varCardWidth) && varCardWidth > 0
       ? varCardWidth + gap
-      : item
-        ? item.offsetWidth + gap
-        : track.clientWidth * 0.8;
+      : track.clientWidth * 0.8;
 
     track.scrollBy({
       left: dir === 'right' ? cardWidth : -cardWidth,
