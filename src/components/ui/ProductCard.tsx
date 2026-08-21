@@ -4,6 +4,7 @@ import './ProductCard.css';
 import type { Product } from '../../types';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
+import { ROUTES } from '../../lib/routes';
 
 export function ProductCard({ product }: { product: Product }) {
   const { addItem } = useCart();
@@ -19,7 +20,7 @@ export function ProductCard({ product }: { product: Product }) {
 
   return (
     <Link
-      to={`/products/${product.product_id}`}
+      to={ROUTES.product(product.product_id)}
       className={`product-card ${!product.in_stock ? 'out-of-stock' : ''} ${popped ? 'popped' : ''}`}
     >
       <div className="card-frame">

@@ -1,8 +1,9 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
-import { MOCK_ORDERS, MOCK_PRODUCTS } from '../../../mock/data';
+import { useOrders, useProducts, toOrderSummary } from '../../../store/localStore';
 import StatusBadge from '../../../components/ui/StatusBadge';
+import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
 import './AdminDashboardPage.css';
 
@@ -56,13 +57,18 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export default function AdminDashboardPage() {
-  const pendingCount = 3;
-  const approvedCount = 2;
-  const canceledCount = 1;
-  const totalOrders = 6;
-  const totalProducts = MOCK_PRODUCTS.length;
-  const inStockCount = MOCK_PRODUCTS.filter(p => p.qty_available > 0).length;
-  const totalSales = 93.00;
+  const orders = useOrders().map(toOrderSummary);
+  const products = useProducts();
+
+  const pendingCount = orders.filter(o => o.status === 'pending').length;
+  const approvedCount = orders.filter(o => o.status === 'approved').length;
+  const canceledCount = orders.filter(o => o.status === 'canceled').length;
+  const totalOrders = orders.length;
+  const totalProducts = products.length;
+  const inStockCount = products.filter(p => p.qty_available > 0).length;
+  const totalSales = orders
+    .filter(o => o.status === 'approved')
+    .reduce((s, o) => s + Number(o.total_amount), 0);
 
   const pieData = [
     { name: 'Pendientes', value: pendingCount, color: PIE_COLORS.pending },
@@ -87,7 +93,7 @@ export default function AdminDashboardPage() {
     );
   };
 
-  const recentOrders = MOCK_ORDERS.slice(0, 3);
+  const recentOrders = orders.slice(0, 3);
 
   return (
     <div className="page admin-dashboard">
@@ -100,8 +106,10 @@ export default function AdminDashboardPage() {
         <div className="card stat-card animate-slideUp">
           <div className="stat-icon">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20V10"/>
-              <path d="m18 20-6-10-6 10"/>
+              <rect x="2" y="6" width="20" height="12" rx="2.5" />
+              <circle cx="12" cy="12" r="2.5" />
+              <path d="M6 12h.01" />
+              <path d="M18 12h.01" />
             </svg>
           </div>
           <div className="stat-value text-primary font-display">{formatPrice(totalSales.toString())}</div>
@@ -211,7 +219,7 @@ export default function AdminDashboardPage() {
           ))}
         </div>
         <div className="section-footer">
-          <Link to="/admin/orders" className="btn btn-outline btn-block">Ver todos</Link>
+          <Link to={ADMIN_ROUTES.orders} className="btn btn-outline btn-block">Ver todos</Link>
         </div>
       </section>
     </div>

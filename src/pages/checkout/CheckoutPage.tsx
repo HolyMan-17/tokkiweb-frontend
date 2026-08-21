@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './CheckoutPage.css';
 import { useCart } from '../../context/CartContext';
-import { formatPrice, COUNTRY_CODES, DELIVERY_TYPES, PAYMENT_METHODS } from '../../constants';
+import { createOrder } from '../../store/localStore';
+import {
+  formatPrice, COUNTRY_CODES, DELIVERY_TYPES, PAYMENT_METHODS,
+  normalizePhoneNumber, validatePhoneNumber, getCountryHint,
+} from '../../constants';
+import { ROUTES } from '../../lib/routes';
 
 export default function CheckoutPage() {
-  const { items, total } = useCart();
+  const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -16,6 +21,25 @@ export default function CheckoutPage() {
     deliveryType: DELIVERY_TYPES[0].value,
     paymentMethod: PAYMENT_METHODS[0].value,
   });
+  const [phoneError, setPhoneError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 3000);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
+
+  const selectedCountry =
+    COUNTRY_CODES.find(c => c.code === formData.countryCode) ?? COUNTRY_CODES[0];
 
   const sanitizeName = (value: string) =>
     value
@@ -29,27 +53,50 @@ export default function CheckoutPage() {
       name === 'name' || name === 'lastName'
         ? sanitizeName(value)
         : name === 'phone'
-          ? value.replace(/\D/g, '').slice(0, 15)
+          ? value.replace(/\D/g, '').slice(0, selectedCountry.digits + 1)
           : value;
     setFormData(prev => ({ ...prev, [name]: sanitized }));
+    if (name === 'countryCode') {
+      const country = COUNTRY_CODES.find(c => c.code === value) ?? COUNTRY_CODES[0];
+      setPhoneError(validatePhoneNumber(country, formData.phone));
+    }
+    if (name === 'phone') {
+      setPhoneError(validatePhoneNumber(selectedCountry, sanitized));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.lastName || !formData.phone) {
-      alert('Por favor completa todos los campos requeridos.');
+      showToast('Por favor completa todos los campos requeridos.');
       return;
     }
     if (!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.name) || !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.lastName)) {
-      alert('Ingresa un nombre válido.');
+      showToast('Ingresa un nombre válido.');
       return;
     }
-    if (formData.phone.replace(/\D/g, '').length < 7) {
-      alert('Ingresa un teléfono válido (mínimo 7 dígitos).');
+    const phoneErrorMsg = validatePhoneNumber(selectedCountry, formData.phone);
+    if (phoneErrorMsg) {
+      setPhoneError(phoneErrorMsg);
+      showToast('Numero de telefono invalido');
       return;
     }
-    // Simulate API call and redirect
-    navigate('/confirmation');
+
+    // Create the order in the local store, then hand it to the confirmation
+    // page via router state so it can render the real order id + total.
+    setIsSubmitting(true);
+    const tlf_num = `${selectedCountry.code}${normalizePhoneNumber(selectedCountry, formData.phone)}`;
+    const order = createOrder({
+      client: {
+        name: formData.name.trim(),
+        last_name: formData.lastName.trim(),
+        tlf_num,
+      },
+      items,
+    });
+
+    clearCart();
+    navigate(ROUTES.confirmation, { state: { order } });
   };
 
   if (items.length === 0) {
@@ -58,7 +105,7 @@ export default function CheckoutPage() {
         <div className="page-header">
           <h1 className="page-title">No hay productos</h1>
         </div>
-        <button className="btn btn-primary" onClick={() => navigate('/')}>
+        <button className="btn btn-primary" onClick={() => navigate(ROUTES.home)}>
           Volver a la tienda
         </button>
       </div>
@@ -68,7 +115,7 @@ export default function CheckoutPage() {
   return (
     <div className="page checkout-page animate-fadeIn">
       <nav className="detail-nav">
-        <Link to="/cart" className="back-link text-primary font-semibold">
+        <Link to={ROUTES.cart} className="back-link text-primary font-semibold">
           ← Volver al carrito
         </Link>
       </nav>
@@ -78,7 +125,7 @@ export default function CheckoutPage() {
         <p className="page-subtitle">Completa tus datos para procesar el pedido</p>
       </div>
 
-      <form onSubmit={handleSubmit} className="checkout-form stagger">
+      <form onSubmit={handleSubmit} className="checkout-form stagger" noValidate>
         <section className="form-section card">
           <h2 className="section-title">Información de contacto</h2>
           
@@ -131,16 +178,22 @@ export default function CheckoutPage() {
               <input 
                 type="tel" 
                 name="phone" 
-                className="form-input phone-number" 
+                className={`form-input phone-number ${phoneError ? 'form-input-error' : ''}`} 
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="414 1234567"
+                placeholder={getCountryHint(selectedCountry)}
                 inputMode="tel"
-                maxLength={15}
+                maxLength={selectedCountry.digits + 1}
                 autoComplete="tel-national"
+                aria-invalid={phoneError ? 'true' : 'false'}
                 required
               />
             </div>
+            {formData.phone && (
+              <p className={`phone-preview ${phoneError ? 'phone-preview-error' : ''}`} role="status">
+                {selectedCountry.code} {normalizePhoneNumber(selectedCountry, formData.phone) || '· · ·'}
+              </p>
+            )}
           </div>
         </section>
 
@@ -206,10 +259,21 @@ export default function CheckoutPage() {
           </div>
         </section>
 
-        <button type="submit" className="btn btn-primary btn-lg btn-block mt-md">
-          Confirmar pedido
+        <button type="submit" className="btn btn-primary btn-lg btn-block mt-md" disabled={isSubmitting}>
+          {isSubmitting ? 'Procesando…' : 'Confirmar pedido'}
         </button>
       </form>
+
+      {toast && (
+        <div className="checkout-toast" role="alert">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="12" />
+            <line x1="12" y1="16" x2="12.01" y2="16" />
+          </svg>
+          {toast}
+        </div>
+      )}
     </div>
   );
 }

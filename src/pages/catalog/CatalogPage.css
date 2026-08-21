@@ -298,6 +298,18 @@
   height: 4rem;
 }
 
+/* Peluches y Figuras bear icon — bigger than the standard icons */
+.category-bear {
+  width: 4rem;
+  height: 4rem;
+}
+
+/* Otros beating heart icon — bigger than the standard icons */
+.category-heart {
+  width: 3.4rem;
+  height: 3.4rem;
+}
+
 .category-header-actions {
   display: flex;
   align-items: center;

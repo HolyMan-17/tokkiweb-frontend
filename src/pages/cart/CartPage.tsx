@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import './CartPage.css';
 import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
+import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import cartImg from '../../assets/cart.png';
 
@@ -17,7 +18,7 @@ export default function CartPage() {
         </div>
         <h2 className="empty-title">Tu carrito está vacío</h2>
         <p className="empty-subtitle">¡Explora nuestra tienda y encuentra tus productos favoritos!</p>
-        <button className="btn btn-primary mt-lg" onClick={() => navigate('/')}>
+        <button className="btn btn-primary mt-lg" onClick={() => navigate(ROUTES.home)}>
           Ver productos
         </button>
       </div>
@@ -75,7 +76,7 @@ export default function CartPage() {
         </div>
         <button 
           className="btn btn-primary btn-lg btn-block mt-md" 
-          onClick={() => navigate('/checkout')}
+          onClick={() => navigate(ROUTES.checkout)}
         >
           Proceder al pago
         </button>

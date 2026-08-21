@@ -2,21 +2,16 @@ import { useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.gif';
-import lipstickGif from '../../assets/lipstick.gif';
-import cosmeticImg from '../../assets/cosmetic.avif';
-import ringImg from '../../assets/ring.png';
-import lentesImg from '../../assets/lentes_contacto.webp';
-import dressImg from '../../assets/dress.png';
-import pinImg from '../../assets/pin.png';
-import treatGif from '../../assets/treat.gif';
 import tokkiLogo from '../../assets/tokki_logo.avif';
 import cherryBlossom from '../../assets/cherry_blossom.gif';
 import branchCherry from '../../assets/branch_cherry.gif';
-import { MOCK_PRODUCTS } from '../../mock/data';
+import { useProducts } from '../../store/localStore';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
+import { CATEGORY_ICONS } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
+import { ROUTES } from '../../lib/routes';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,16 +21,6 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
     return acc;
   }, {});
 }
-
-const CATEGORY_EMOJIS: Record<string, React.ReactNode> = {
-  Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={285} height={270} loading="lazy" />,
-  Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={396} height={347} loading="lazy" />,
-  Accesorios: <img src={ringImg} alt="" className="category-emoji-img" width={362} height={405} loading="lazy" />,
-  'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={386} height={250} loading="lazy" />,
-  'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={243} height={257} loading="lazy" />,
-  Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={461} height={461} loading="lazy" />,
-  'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={250} height={209} loading="lazy" />,
-};
 
 // ── Carousel ──────────────────────────────────────────────────────────────────
 
@@ -210,7 +195,8 @@ function SocialCircles() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
-  const grouped = groupByCategory(MOCK_PRODUCTS);
+  const products = useProducts();
+  const grouped = groupByCategory(products);
 
   return (
     <>
@@ -249,7 +235,7 @@ export default function CatalogPage() {
           <CategoryCarousel
             title="Todos"
             emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
-            products={MOCK_PRODUCTS}
+            products={products}
           />
 
           {CATEGORIES.map(cat => {
@@ -259,9 +245,9 @@ export default function CatalogPage() {
               <CategoryCarousel
                 key={cat.name}
                 title={cat.name}
-                emoji={CATEGORY_EMOJIS[cat.name] ?? cat.emoji}
+                emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
                 products={products}
-                seeMoreTo={`/categorias/${slugify(cat.name)}`}
+                seeMoreTo={ROUTES.category(slugify(cat.name))}
               />
             );
           })}

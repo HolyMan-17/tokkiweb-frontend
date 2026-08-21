@@ -1,24 +1,37 @@
-import { useNavigate } from 'react-router-dom';
-import { MOCK_ORDER_DETAIL } from '../../../mock/data';
+import { useState } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
+import { useOrders, setOrderStatus } from '../../../store/localStore';
 import { formatPrice, formatDateTime } from '../../../constants';
+import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import './OrderDetailPage.css';
 
+type PendingAction = 'approve' | 'cancel' | null;
+
 export default function OrderDetailPage() {
+  const { id } = useParams();
   const navigate = useNavigate();
-  
-  // In a real app we would fetch by id. Using mock directly for now.
-  const order = MOCK_ORDER_DETAIL;
+  const orders = useOrders();
+  const [pendingAction, setPendingAction] = useState<PendingAction>(null);
 
-  const handleApprove = () => {
-    console.log(`Approving order ${order.order_id}`);
-    // mock action
+  const order = orders.find(o => o.order_id === Number(id));
+
+  const confirmAction = () => {
+    if (!order || !pendingAction) return;
+    setOrderStatus(order.order_id, pendingAction === 'approve' ? 'approved' : 'canceled');
+    setPendingAction(null);
   };
 
-  const handleCancel = () => {
-    console.log(`Canceling order ${order.order_id}`);
-    // mock action
-  };
+  if (!order) {
+    return (
+      <div className="page product-not-found">
+        <h2 className="page-title">Pedido no encontrado</h2>
+        <button className="btn btn-primary mt-md" onClick={() => navigate(ADMIN_ROUTES.orders)}>
+          Volver a pedidos
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="page order-detail-page">
@@ -81,15 +94,54 @@ export default function OrderDetailPage() {
 
         {order.status === 'pending' && (
           <div className="action-buttons">
-            <button className="btn btn-outline cancel-btn" onClick={handleCancel}>
+            <button className="btn btn-outline cancel-btn" onClick={() => setPendingAction('cancel')}>
               Cancelar
             </button>
-            <button className="btn btn-success" onClick={handleApprove}>
+            <button className="btn btn-success" onClick={() => setPendingAction('approve')}>
               Aprobar
             </button>
           </div>
         )}
       </div>
+
+      {pendingAction && (
+        <div className="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
+          <div className="confirm-dialog animate-slideUp">
+            <div className="confirm-icon">
+              {pendingAction === 'approve' ? (
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+              ) : (
+                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+                </svg>
+              )}
+            </div>
+            <h2 id="confirm-title" className="confirm-title font-display">
+              {pendingAction === 'approve' ? '¿Aprobar este pedido?' : '¿Cancelar este pedido?'}
+            </h2>
+            <p className="confirm-text">
+              {pendingAction === 'approve'
+                ? 'Al aprobar el pedido se confirma la venta.'
+                : 'Al cancelar el pedido se restaurará el stock de los productos.'}
+              {' '}Esta acción <strong>no se puede revertir</strong>.
+            </p>
+            <div className="confirm-actions">
+              <button className="btn btn-outline" onClick={() => setPendingAction(null)}>
+                Volver
+              </button>
+              <button
+                className={`btn ${pendingAction === 'approve' ? 'btn-success' : 'btn-danger'}`}
+                onClick={confirmAction}
+              >
+                {pendingAction === 'approve' ? 'Sí, aprobar' : 'Sí, cancelar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

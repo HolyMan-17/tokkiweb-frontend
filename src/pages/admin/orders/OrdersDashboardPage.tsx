@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { MOCK_ORDERS } from '../../../mock/data';
+import { useOrders, toOrderSummary } from '../../../store/localStore';
 import { formatPrice, formatDate } from '../../../constants';
+import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import './OrdersDashboardPage.css';
 
@@ -9,8 +10,9 @@ type FilterStatus = 'all' | 'pending' | 'approved' | 'canceled';
 
 export default function OrdersDashboardPage() {
   const [filter, setFilter] = useState<FilterStatus>('all');
+  const orders = useOrders().map(toOrderSummary);
 
-  const filteredOrders = MOCK_ORDERS.filter((order) => {
+  const filteredOrders = orders.filter((order) => {
     if (filter === 'all') return true;
     return order.status === filter;
   });
@@ -55,7 +57,7 @@ export default function OrdersDashboardPage() {
           filteredOrders.map((order, index) => (
             <Link 
               key={order.order_id} 
-              to={`/admin/orders/${order.order_id}`}
+              to={ADMIN_ROUTES.orderDetail(order.order_id)}
               className="card order-card animate-slideUp"
               style={{ animationDelay: `${index * 0.05}s` }}
             >

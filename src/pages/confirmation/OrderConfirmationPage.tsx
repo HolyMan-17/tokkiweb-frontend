@@ -1,23 +1,27 @@
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import './OrderConfirmationPage.css';
 import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
+import { ROUTES } from '../../lib/routes';
+import type { OrderDetail } from '../../types';
 
 export default function OrderConfirmationPage() {
-  const { clearCart, items, total } = useCart();
+  const { clearCart } = useCart();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  // Save items and total in case we want to display them before clearing
-  // For a real app, this would come from a server response state or location.state
-  const savedItems = [...items];
-  const savedTotal = total;
+  // Order created at checkout is passed via router state.
+  const order = (location.state as { order?: OrderDetail } | null)?.order;
 
   useEffect(() => {
-    // Clear cart on mount
+    // Clear the cart once the order has been captured from state.
     clearCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const savedItems = order?.items ?? [];
+  const savedTotal = order?.total_amount ?? '0';
 
   return (
     <div className="page confirmation-page animate-fadeIn text-center">
@@ -30,8 +34,12 @@ export default function OrderConfirmationPage() {
       </div>
 
       <h1 className="page-title text-primary mt-lg">¡Pedido confirmado!</h1>
-      <p className="order-id">Pedido #1001</p>
-      
+      {order ? (
+        <p className="order-id">Pedido #{order.order_id}</p>
+      ) : (
+        <p className="order-id">Pedido #—</p>
+      )}
+
       <div className="status-badge-container mt-md mb-lg">
         <span className="badge badge-pending">Pendiente</span>
       </div>
@@ -44,10 +52,10 @@ export default function OrderConfirmationPage() {
         <div className="order-summary-card card stagger mt-lg text-left">
           <h2 className="section-title">Resumen</h2>
           <div className="summary-list">
-            {savedItems.map(item => (
-              <div key={item.product.product_id} className="summary-row">
-                <span>{item.quantity}x {item.product.product_name}</span>
-                <span>{formatPrice(Number(item.product.product_price) * item.quantity)}</span>
+            {savedItems.map((item, idx) => (
+              <div key={idx} className="summary-row">
+                <span>{item.product_qty}x {item.product_name}</span>
+                <span>{formatPrice(item.product_total)}</span>
               </div>
             ))}
           </div>
@@ -58,7 +66,7 @@ export default function OrderConfirmationPage() {
         </div>
       )}
 
-      <button className="btn btn-primary btn-lg btn-block mt-xl" onClick={() => navigate('/')}>
+      <button className="btn btn-primary btn-lg btn-block mt-xl" onClick={() => navigate(ROUTES.home)}>
         Volver al inicio
       </button>
     </div>

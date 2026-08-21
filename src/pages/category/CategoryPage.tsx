@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
-import { MOCK_PRODUCTS } from '../../mock/data';
+import { useProducts } from '../../store/localStore';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
+import { getCategoryIcon } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
+import { ROUTES } from '../../lib/routes';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
 
@@ -33,11 +35,13 @@ const CLEAR_SVG = (
 
 export default function CategoryPage() {
   const { slug } = useParams();
+  const allStoreProducts = useProducts();
 
   const category = CATEGORIES.find(c => slugify(c.name) === slug);
-  const allProducts = category
-    ? MOCK_PRODUCTS.filter(p => p.category === category.name)
-    : [];
+  const allProducts = useMemo(
+    () => (category ? allStoreProducts.filter(p => p.category === category.name) : []),
+    [category, allStoreProducts],
+  );
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('recent');
@@ -90,7 +94,7 @@ export default function CategoryPage() {
         <div className="category-page">
           <div className="category-empty">
             <h1 className="category-page-title">Categoría no encontrada</h1>
-            <Link to="/" className="back-link">← Volver al inicio</Link>
+            <Link to={ROUTES.home} className="back-link">← Volver al inicio</Link>
           </div>
         </div>
       </>
@@ -104,9 +108,10 @@ export default function CategoryPage() {
       <div className="category-page">
         {/* Header */}
         <header className="category-page-header">
-          <Link to="/" className="back-link">← Volver</Link>
+          <Link to={ROUTES.home} className="back-link">← Volver</Link>
           <h1 className="category-page-title">
-            <span>{category.emoji}</span> {category.name}
+            <span>{getCategoryIcon(category.name) ?? category.emoji}</span>{' '}
+            {category.name}
           </h1>
         </header>
 

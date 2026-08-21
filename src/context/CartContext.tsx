@@ -1,6 +1,7 @@
 /* eslint-disable react-refresh/only-export-components */
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { Product, CartItem } from '../types';
+import { loadCart, saveCart } from '../store/localStore';
 
 interface CartContextType {
   items: CartItem[];
@@ -15,7 +16,12 @@ interface CartContextType {
 const CartContext = createContext<CartContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [items, setItems] = useState<CartItem[]>([]);
+  const [items, setItems] = useState<CartItem[]>(loadCart);
+
+  // Persist every cart change to localStorage.
+  useEffect(() => {
+    saveCart(items);
+  }, [items]);
 
   const addItem = useCallback((product: Product, qty = 1) => {
     setItems(prev => {

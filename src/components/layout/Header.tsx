@@ -1,7 +1,8 @@
 import { Link, useLocation } from 'react-router-dom';
 import { UserButton } from '@clerk/react';
 import { useCart } from '../../context/CartContext';
-import { ADMIN_PATH, ROLES, CLERK_PUBLISHABLE_KEY } from '../../lib/auth';
+import { ROLES, CLERK_PUBLISHABLE_KEY } from '../../lib/auth';
+import { ROUTES, ADMIN_ROUTES } from '../../lib/routes';
 import { useAdminAuth } from '../auth/useAdminAuth';
 import './Header.css';
 import hoppingBunny from '../../assets/hopping_bunny.gif';
@@ -75,7 +76,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
   const { items } = useCart();
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const location = useLocation();
-  const isCartPage = location.pathname === '/cart';
+  const isCartPage = location.pathname === ROUTES.cart;
   const { role } = useAdminAuth();
   const isTech = role === ROLES.TECH;
   const hasAdminRole = role === ROLES.OWNER || role === ROLES.TECH;
@@ -86,7 +87,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
     <header className={`top-nav ${variant === 'admin' ? 'top-nav-admin' : ''}`}>
       <div className="nav-inner">
         <Link
-          to={variant === 'admin' ? ADMIN_PATH : '/'}
+          to={variant === 'admin' ? ADMIN_ROUTES.root : ROUTES.home}
           className="nav-logo"
           aria-label="Tokki"
         >
@@ -98,38 +99,38 @@ export function Header({ variant = 'customer' }: HeaderProps) {
         <div className="nav-actions">
           {variant === 'customer' ? (
             <>
-              <Link to="/" className="nav-icon-btn" aria-label="Inicio" title="Inicio">
+              <Link to={ROUTES.home} className="nav-icon-btn" aria-label="Inicio" title="Inicio">
                 {HOME_SVG}
               </Link>
               {!isCartPage && (
-                <Link to="/cart" className="nav-cart" aria-label="Carrito">
+                <Link to={ROUTES.cart} className="nav-cart" aria-label="Carrito">
                   {CART_SVG}
                   {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
                 </Link>
               )}
               {showAdminLink && (
-                <Link to={ADMIN_PATH} className="nav-icon-btn" aria-label="Panel de administración" title="Panel de administración">
+                <Link to={ADMIN_ROUTES.root} className="nav-icon-btn" aria-label="Panel de administración" title="Panel de administración">
                   {GEAR_SVG}
                 </Link>
               )}
             </>
           ) : (
             <>
-              <Link to={ADMIN_PATH} className="nav-icon-btn" aria-label="Inicio" title="Inicio">
+              <Link to={ADMIN_ROUTES.root} className="nav-icon-btn" aria-label="Inicio" title="Inicio">
                 {HOME_SVG}
               </Link>
-              <Link to={`${ADMIN_PATH}/orders`} className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
+              <Link to={ADMIN_ROUTES.orders} className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
                 {ORDERS_SVG}
               </Link>
-              <Link to={`${ADMIN_PATH}/products`} className="nav-icon-btn" aria-label="Productos" title="Productos">
+              <Link to={ADMIN_ROUTES.products} className="nav-icon-btn" aria-label="Productos" title="Productos">
                 {PRODUCTS_SVG}
               </Link>
               {(isTech || !clerkConfigured) && (
-                <Link to={`${ADMIN_PATH}/dev`} className="nav-icon-btn" aria-label="Herramientas de desarrollo" title="Herramientas de desarrollo">
+                <Link to={ADMIN_ROUTES.dev} className="nav-icon-btn" aria-label="Herramientas de desarrollo" title="Herramientas de desarrollo">
                   {DEV_SVG}
                 </Link>
               )}
-              <Link to="/" className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
+              <Link to={ROUTES.home} className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {LOGOUT_SVG}
               </Link>
               {clerkConfigured && <UserButton />}

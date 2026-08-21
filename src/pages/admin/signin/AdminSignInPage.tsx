@@ -1,5 +1,5 @@
 import { SignIn } from '@clerk/react';
-import { ADMIN_PATH } from '../../../lib/auth';
+import { ADMIN_ROUTES } from '../../../lib/routes';
 import hoppingBunny from '../../../assets/hopping_bunny.gif';
 import './AdminSignInPage.css';
 
@@ -11,8 +11,8 @@ export default function AdminSignInPage() {
       <p className="admin-signin-sub">Inicia sesión para acceder al panel</p>
       <SignIn
         routing="hash"
-        forceRedirectUrl={ADMIN_PATH}
-        fallbackRedirectUrl={ADMIN_PATH}
+        forceRedirectUrl={ADMIN_ROUTES.root}
+        fallbackRedirectUrl={ADMIN_ROUTES.root}
       />
     </div>
   );

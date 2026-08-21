@@ -1,26 +1,29 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
-import { MOCK_PRODUCTS } from '../../mock/data';
+import { useProducts } from '../../store/localStore';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
+import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
+import beatingHeart from '../../assets/beating_heart.gif';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
+  const products = useProducts();
   
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
 
-  const product = MOCK_PRODUCTS.find(p => p.product_id === Number(id));
+  const product = products.find(p => p.product_id === Number(id));
 
   if (!product) {
     return (
       <div className="page product-not-found">
         <h2 className="page-title">Producto no encontrado</h2>
-        <button className="btn btn-primary mt-md" onClick={() => navigate('/')}>
+        <button className="btn btn-primary mt-md" onClick={() => navigate(ROUTES.home)}>
           Volver al inicio
         </button>
       </div>
@@ -36,7 +39,7 @@ export default function ProductDetailPage() {
   return (
     <div className="page product-detail-page animate-fadeIn">
       <nav className="detail-nav">
-        <Link to="/" className="back-link text-primary font-semibold">
+        <Link to={ROUTES.home} className="back-link text-primary font-semibold">
           ← Volver
         </Link>
       </nav>
@@ -88,7 +91,8 @@ export default function ProductDetailPage() {
 
       {showToast && (
         <div className="toast animate-slideUp">
-          ¡Agregado al carrito! 🛍️
+          <img src={beatingHeart} alt="" className="toast-bag" width={300} height={284} />
+          ¡Agregado al carrito!
         </div>
       )}
     </div>

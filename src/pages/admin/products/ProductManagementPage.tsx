@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { MOCK_PRODUCTS } from '../../../mock/data';
+import { useMemo, useState, useRef, useEffect } from 'react';
+import { useProducts, saveProducts } from '../../../store/localStore';
 import type { Product } from '../../../types';
 import { formatPrice, CATEGORIES } from '../../../constants';
 import './ProductManagementPage.css';
@@ -81,7 +81,7 @@ function validateForm(form: ProductFormState): FormErrors {
 }
 
 export default function ProductManagementPage() {
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
+  const products = useProducts();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
@@ -91,6 +91,14 @@ export default function ProductManagementPage() {
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<number | null>(null);
+
+  const showToast = (message: string) => {
+    setToast(message);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(null), 2500);
+  };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -186,18 +194,20 @@ export default function ProductManagementPage() {
     };
 
     if (editingProduct) {
-      setProducts(prev => prev.map(p =>
+      saveProducts(products.map(p =>
         p.product_id === editingProduct.product_id ? productData : p
       ));
     } else {
-      setProducts(prev => [...prev, productData]);
+      saveProducts([...products, productData]);
     }
     closeModal();
+    showToast(editingProduct ? 'Producto actualizado' : 'Producto agregado');
   };
 
   const handleArchive = (productId: number) => {
     if (window.confirm('¿Estás seguro de que deseas archivar este producto?')) {
-      setProducts(prev => prev.filter(p => p.product_id !== productId));
+      saveProducts(products.filter(p => p.product_id !== productId));
+      showToast('Producto archivado');
     }
   };
 
@@ -208,6 +218,12 @@ export default function ProductManagementPage() {
   };
 
   const hasActiveFilters = search.trim() !== '' || category !== 'Todos' || stock !== 'all';
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   return (
     <div className="page product-management-page">
@@ -489,6 +505,12 @@ export default function ProductManagementPage() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {toast && (
+        <div className="product-toast" role="status">
+          {toast}
         </div>
       )}
     </div>

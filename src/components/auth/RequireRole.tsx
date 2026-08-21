@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
-import { ADMIN_PATH } from '../../lib/auth';
 import type { AppRole } from '../../lib/auth';
+import { ADMIN_ROUTES } from '../../lib/routes';
 import { useAdminAuth } from './useAdminAuth';
 import './AuthGate.css';
 
@@ -27,7 +27,7 @@ export function RequireRole({ roles, children, fallback }: RequireRoleProps) {
   }
 
   if (!isSignedIn) {
-    return configured ? <Navigate to={`${ADMIN_PATH}/sign-in`} replace /> : <AuthBlockedMessage />;
+    return configured ? <Navigate to={ADMIN_ROUTES.signIn} replace /> : <AuthBlockedMessage />;
   }
 
   if (!roles.includes(role)) {
