@@ -172,7 +172,7 @@ export default function CheckoutPage() {
                 autoComplete="country-code"
               >
                 {COUNTRY_CODES.map(c => (
-                  <option key={c.code} value={c.code}>{c.short} ({c.code})</option>
+                  <option key={`${c.short}-${c.code}`} value={c.code}>{c.short} ({c.code})</option>
                 ))}
               </select>
               <input 

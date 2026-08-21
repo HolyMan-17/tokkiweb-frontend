@@ -29,35 +29,7 @@
   margin: 0;
 }
 
-/* floating corner deco */
-.confirmation-page::before,
-.confirmation-page::after {
-  position: absolute;
-  font-size: 2.2rem;
-  opacity: 0.3;
-  pointer-events: none;
-  animation: confetti-float 5s ease-in-out infinite;
-}
-
-.confirmation-page::before {
-  content: '🎀';
-  top: 18px;
-  left: 22px;
-}
-
-.confirmation-page::after {
-  content: '🐰';
-  bottom: 18px;
-  right: 22px;
-  animation-delay: 2.5s;
-}
-
-@keyframes confetti-float {
-  0%, 100% { transform: translateY(0) rotate(-8deg); }
-  50%      { transform: translateY(-10px) rotate(8deg); }
-}
-
-/* ─── Success icon ──────────────────────────────────────── */
+/* ─── Success icon with brand deco ──────────────────────── */
 .success-icon-container {
   position: relative;
   display: flex;
@@ -67,26 +39,29 @@
 .success-icon-container::before,
 .success-icon-container::after {
   position: absolute;
-  top: 8px;
-  font-size: 1.5rem;
+  top: 50%;
+  transform: translateY(-50%);
   pointer-events: none;
-  animation: confetti-float 4s ease-in-out infinite;
   background-repeat: no-repeat;
   background-size: contain;
 }
 
+/* Bunny dance gif — left of the check icon */
 .success-icon-container::before {
-  content: '🎉';
-  left: -54px;
+  content: '';
+  left: -100px;
+  background-image: url('../../assets/bunny_dance.gif');
+  width: 5rem;
+  height: 5rem;
 }
 
+/* Sparkles gif — right of the check icon */
 .success-icon-container::after {
   content: '';
-  right: -54px;
+  right: -88px;
   background-image: url('../../assets/sparkles.gif');
-  width: 1.5rem;
-  height: 1.5rem;
-  animation-delay: 2s;
+  width: 3.4rem;
+  height: 3.4rem;
 }
 
 .success-icon {
@@ -238,10 +213,6 @@
 
 /* ─── Reduced motion ────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
-  .confirmation-page::before,
-  .confirmation-page::after,
-  .success-icon-container::before,
-  .success-icon-container::after,
   .success-icon,
   .confirmation-page > .btn {
     animation: none !important;

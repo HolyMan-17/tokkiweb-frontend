@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { ClerkProvider, useUser } from '@clerk/react';
+import { ui } from '@clerk/ui';
 import { ADMIN_DEV_BYPASS, CLERK_PUBLISHABLE_KEY, ROLES } from '../../lib/auth';
 import type { AppRole } from '../../lib/auth';
 import { AdminAuthContext } from './AdminAuthContext';
@@ -59,6 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     <ClerkProvider
       publishableKey={CLERK_PUBLISHABLE_KEY}
       afterSignOutUrl="/"
+      ui={ui}
     >
       <ClerkBridge>{children}</ClerkBridge>
     </ClerkProvider>
