@@ -169,7 +169,7 @@ function SocialCircles() {
   return (
     <div className="social-circles" aria-label="Redes sociales">
       <a
-        href="https://wa.me/"
+        href="https://www.whatsapp.com/catalog/584122698243/?app_absent=0"
         target="_blank"
         rel="noreferrer"
         className="social-circle social-whatsapp"
@@ -180,7 +180,7 @@ function SocialCircles() {
         </svg>
       </a>
       <a
-        href="https://instagram.com/"
+        href="https://www.instagram.com/tokki.shopve/"
         target="_blank"
         rel="noreferrer"
         className="social-circle social-instagram"
@@ -193,7 +193,7 @@ function SocialCircles() {
         </svg>
       </a>
       <a
-        href="https://tiktok.com/"
+        href="https://www.tiktok.com/@tokki.shopve"
         target="_blank"
         rel="noreferrer"
         className="social-circle social-tiktok"
