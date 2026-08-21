@@ -172,10 +172,10 @@
 .hero-logo {
   width: min(150px, 40vw);
   height: auto;
-  /* Matches tokki_logo.avif's intrinsic 1465×1464 — reserves the exact
-     pre-load aspect ratio (belt-and-braces on top of the width/height
-     HTML attributes) so the hero never shifts when the logo arrives. */
-  aspect-ratio: 1465 / 1464;
+  /* Matches tokki_logo.avif's intrinsic 420×420 — reserves the exact
+      pre-load aspect ratio (belt-and-braces on top of the width/height
+      HTML attributes) so the hero never shifts when the logo arrives. */
+  aspect-ratio: 1 / 1;
   object-fit: contain;
   margin: 0 auto var(--space-sm);
   display: block;

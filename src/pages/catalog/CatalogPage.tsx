@@ -24,6 +24,13 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 
 // ── Carousel ──────────────────────────────────────────────────────────────────
 
+// Cap the number of cards rendered per carousel track. Carousels are
+// horizontally scrolled showcases, not full grids — each category's full
+// inventory lives on its category page (the "Ver más" pill). Capping keeps
+// the DOM small (Lighthouse flags tracks with dozens of children) and
+// shrinks the synchronous layout pass that measures every track on mount.
+const MAX_CARDS_PER_CAROUSEL = 16;
+
 function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   title: string;
   emoji: React.ReactNode;
@@ -56,21 +63,30 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   const updateArrows = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
+    // Read all geometry in one batch — no style write precedes these reads,
+    // so the browser never has to compute layout twice (no forced reflow).
     const maxScroll = track.scrollWidth - track.clientWidth;
-    setCanScrollLeft(track.scrollLeft > 0);
-    setCanScrollRight(track.scrollLeft < maxScroll - 1);
+    const left = track.scrollLeft;
+    setCanScrollLeft(left > 0);
+    setCanScrollRight(left < maxScroll - 1);
   }, []);
 
-  // One measure+apply pass per frame: read all geometry first, then write the
-  // CSS var — never interleaved, so the browser never invalidates styles and
-  // forces a synchronous layout on a following read.
+  // One measure+apply pass per frame: read ALL geometry first (card width +
+  // arrow state), then write the CSS var once at the end. Writing before all
+  // reads are done is what invalidates layout and forces a synchronous
+  // reflow on the next read — so reads and writes are never interleaved.
   const applyWidth = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
+    // ── reads (no writes in between) ──
     const width = computeCardWidth(track);
+    const maxScroll = track.scrollWidth - track.clientWidth;
+    const left = track.scrollLeft;
+    // ── single write (invalidates layout, but no read follows) ──
     track.style.setProperty('--carousel-card-width', `${width}px`);
-    updateArrows();
-  }, [updateArrows]);
+    setCanScrollLeft(left > 0);
+    setCanScrollRight(left < maxScroll - 1);
+  }, []);
 
   // Measure on mount (synchronously, before paint — prevents the 148px
   // fallback flash / CLS) and react to size changes via ResizeObserver.
@@ -152,8 +168,8 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
         </div>
       </div>
 
-      <div className="carousel-track" ref={trackRef} onScroll={updateArrows}>
-        {products.map(p => (
+      <div className="carousel-track" ref={trackRef}>
+        {products.slice(0, MAX_CARDS_PER_CAROUSEL).map(p => (
           <div key={p.product_id} className="carousel-item">
             <ProductCard product={p} />
           </div>
@@ -240,7 +256,7 @@ export default function CatalogPage() {
           <div className="hero-deco hero-deco--right">
             <img src={branchCherry} alt="" className="hero-branch" width={200} height={242} loading="lazy" />
           </div>
-          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={526} height={526} fetchPriority="high" />
+          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={420} height={420} fetchPriority="high" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
           <p className="hero-sub">Maquillaje • Skincare • Accesorios • Peluches y Figuras • Dulces Asiáticos & Más</p>
         </header>

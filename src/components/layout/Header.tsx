@@ -1,11 +1,15 @@
+import { lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { UserButton } from '@clerk/react';
 import { useCart } from '../../context/CartContext';
 import { ROLES, CLERK_PUBLISHABLE_KEY } from '../../lib/auth';
 import { ROUTES, ADMIN_ROUTES } from '../../lib/routes';
 import { useAdminAuth } from '../auth/useAdminAuth';
 import './Header.css';
 import hoppingBunny from '../../assets/hopping_bunny.gif';
+
+// Clerk's <UserButton> is lazy so @clerk/react stays out of the customer
+// (and catalog) bundle — it only loads when the admin header renders it.
+const AdminUserButton = lazy(() => import('./AdminUserButton'));
 
 interface HeaderProps {
   variant?: 'customer' | 'admin';
@@ -132,7 +136,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
               </Link>
               {clerkConfigured && (
                 <span className="nav-user">
-                  <UserButton />
+                  <Suspense fallback={null}><AdminUserButton /></Suspense>
                 </span>
               )}
             </>
