@@ -220,12 +220,12 @@ export default function CatalogPage() {
             <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
           </div>
           <div className="hero-deco hero-deco--left">
-            <img src={cherryBlossom} alt="" className="hero-cherry" width={500} height={500} loading="lazy" />
+            <img src={cherryBlossom} alt="" className="hero-cherry" width={224} height={224} loading="lazy" />
           </div>
           <div className="hero-deco hero-deco--right">
-            <img src={branchCherry} alt="" className="hero-branch" width={286} height={347} loading="lazy" />
+            <img src={branchCherry} alt="" className="hero-branch" width={200} height={242} loading="lazy" />
           </div>
-          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={1465} height={1464} fetchPriority="high" />
+          <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={526} height={526} fetchPriority="high" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
           <p className="hero-sub">Maquillaje • Skincare • Accesorios • Peluches y Figuras • Dulces Asiáticos & Más</p>
         </header>

@@ -6,7 +6,7 @@ import './AdminSignInPage.css';
 export default function AdminSignInPage() {
   return (
     <div className="admin-signin-page">
-      <img src={hoppingBunny} alt="Tokki el conejo" className="admin-signin-logo" width={500} height={605} />
+      <img src={hoppingBunny} alt="Tokki el conejo" className="admin-signin-logo" width={120} height={146} />
       <h1 className="admin-signin-title">Tokki Shop Admin</h1>
       <p className="admin-signin-sub">Inicia sesión para acceder al panel</p>
       <SignIn

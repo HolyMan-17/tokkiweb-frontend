@@ -91,7 +91,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
           className="nav-logo"
           aria-label="Tokki"
         >
-          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" width={500} height={605} /></span>
+          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" width={120} height={146} /></span>
           <span className="logo-text">{variant === 'admin' ? 'Tokki Shop' : 'Tokki'}</span>
           <span className="logo-store">{variant === 'admin' ? 'Admin' : 'Store'}</span>
         </Link>

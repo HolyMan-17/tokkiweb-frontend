@@ -17,7 +17,7 @@ export function CatalogTopNav() {
     <nav className="top-nav">
       <div className="nav-inner">
         <Link to={ROUTES.home} className="nav-logo">
-          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" width={500} height={605} /></span>
+          <span className="logo-bunny"><img src={hoppingBunny} alt="Tokki el conejo" width={120} height={146} /></span>
           <span className="logo-text">Tokki</span>
           <span className="logo-store">Shop</span>
         </Link>

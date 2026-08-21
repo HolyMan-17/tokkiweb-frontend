@@ -91,7 +91,7 @@ export default function ProductDetailPage() {
 
       {showToast && (
         <div className="toast animate-slideUp">
-          <img src={beatingHeart} alt="" className="toast-bag" width={300} height={284} />
+          <img src={beatingHeart} alt="" className="toast-bag" width={190} height={180} />
           ¡Agregado al carrito!
         </div>
       )}

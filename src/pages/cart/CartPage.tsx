@@ -4,7 +4,7 @@ import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
-import cartImg from '../../assets/cart.png';
+import cartImg from '../../assets/cart.avif';
 
 export default function CartPage() {
   const { items, total, removeItem, updateQuantity } = useCart();
@@ -14,7 +14,7 @@ export default function CartPage() {
     return (
       <div className="page cart-empty-state animate-fadeIn">
         <div className="empty-icon animate-scaleIn">
-          <img src={cartImg} alt="Carrito vacío" width={482} height={513} />
+          <img src={cartImg} alt="Carrito vacío" width={300} height={319} />
         </div>
         <h2 className="empty-title">Tu carrito está vacío</h2>
         <p className="empty-subtitle">¡Explora nuestra tienda y encuentra tus productos favoritos!</p>
