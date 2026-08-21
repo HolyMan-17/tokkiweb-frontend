@@ -225,9 +225,23 @@ function SocialCircles() {
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
+const SCROLL_KEY = 'tokki_catalog_scroll';
+
 export default function CatalogPage() {
   const products = useProducts();
   const grouped = groupByCategory(products);
+
+  // Restore the scroll position when returning from a category page, and
+  // remember it when leaving so "Volver" lands where the user was.
+  useLayoutEffect(() => {
+    const saved = Number(sessionStorage.getItem(SCROLL_KEY) || '0');
+    if (saved > 0) {
+      requestAnimationFrame(() => window.scrollTo(0, saved));
+    }
+    return () => {
+      sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
+    };
+  }, []);
 
   return (
     <>

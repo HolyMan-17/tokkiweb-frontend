@@ -6,7 +6,6 @@
   z-index: 100;
   background: var(--color-surface);
   border-bottom: 2px solid var(--pink-200);
-  box-shadow: var(--shadow-nav, 0 2px 12px rgba(230, 139, 190, 0.12));
 }
 
 .nav-inner {
