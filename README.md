@@ -1,73 +1,41 @@
-# React + TypeScript + Vite
+# Tokki Shop — Frontend 🐰
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Kawaii-themed online store frontend for **Tokki Shop** (Asian-inspired products: makeup, skincare, accessories, contact lenses, pins, clothing, Asian sweets) targeting a young Venezuelan / LatAm audience.
 
-Currently, two official plugins are available:
+**Aesthetic:** "Korean kawaii × streetwear sticker" — pastel-pink surfaces, chunky rounded shapes, soft tinted shadows, playful micro-interactions.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Stack
 
-## React Compiler
+- React 19 + TypeScript + Vite
+- react-router-dom v7 (SPA)
+- Vanilla CSS (design system in `src/index.css`), no Tailwind / CSS-in-JS
+- Fonts: **DynaPuff** (display) + **Sour Gummy** (body), self-hosted via `@fontsource`
+- Clerk (admin auth), recharts (admin dashboard), motion (optional orchestration)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+## Getting started
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+pnpm install
+cp .env.example .env.local   # add VITE_CLERK_PUBLISHABLE_KEY (admin only)
+pnpm dev                     # http://localhost:5173 (proxies /api → :3000)
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm preview`.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+## Current state (localStorage flow)
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+The full shop flow runs on a localStorage-backed data layer (`src/store/localStore.ts`) seeded from `src/mock/data.ts` on first run — browse catalog, cart, checkout, order creation, admin product CRUD and order approve/cancel all work end-to-end. Backend integration via `src/api/client.ts` is not wired yet.
+
+To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_v1` from localStorage.
+
+## Layout & routing
+
+- Customer storefront: `/` (catalog), `/categorias/:slug`, `/products/:id`, `/cart`, `/checkout`, `/confirmation`
+- Admin panel (hidden path): `/tokki-admin` — dashboard, orders, products, dev tools; guarded by Clerk roles
+- All paths live in `src/lib/routes.ts` — never hardcode route strings
+- Admin pages are lazy-loaded; deployed to Vercel with SPA rewrites (`vercel.json`)
+
+## Docs
+
+- `AGENTS.md` — agent guidelines, architecture, conventions, design system
+- `FRONTEND_REQUIREMENTS.md` — functional requirements & API contract

@@ -148,13 +148,51 @@
   flex-wrap: nowrap;
 }
 
+/* Admin user button (Clerk avatar) — sized to match the icon buttons and
+   never clipped. The avatar trigger renders at its own intrinsic size, so we
+   wrap it and force a consistent box. */
+.nav-user {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.nav-user .cl-userButtonTrigger,
+.nav-user .cl-avatarBox {
+  width: 38px;
+  height: 38px;
+}
+
 @media (max-width: 767px) {
   .top-nav-admin .nav-inner {
     gap: 8px;
+    padding: 0 12px;
   }
 
   .top-nav-admin .logo-store {
     display: none;
+  }
+
+  /* Compact icons on mobile so all admin actions + avatar fit */
+  .top-nav-admin .nav-icon-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .top-nav-admin .nav-icon-btn svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .top-nav-admin .nav-user .cl-userButtonTrigger,
+  .top-nav-admin .nav-user .cl-avatarBox {
+    width: 32px;
+    height: 32px;
+  }
+
+  .top-nav-admin .nav-actions {
+    gap: 6px;
   }
 }
 
@@ -165,6 +203,17 @@
 
   .nav-actions {
     gap: 12px;
+  }
+}
+
+/* Ultra-narrow phones: drop the logo text entirely so the actions fit */
+@media (max-width: 359.98px) {
+  .top-nav-admin .logo-text {
+    display: none;
+  }
+
+  .top-nav-admin .nav-actions {
+    gap: 4px;
   }
 }
 

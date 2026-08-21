@@ -116,9 +116,6 @@ export function Header({ variant = 'customer' }: HeaderProps) {
             </>
           ) : (
             <>
-              <Link to={ADMIN_ROUTES.root} className="nav-icon-btn" aria-label="Inicio" title="Inicio">
-                {HOME_SVG}
-              </Link>
               <Link to={ADMIN_ROUTES.orders} className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
                 {ORDERS_SVG}
               </Link>
@@ -133,7 +130,11 @@ export function Header({ variant = 'customer' }: HeaderProps) {
               <Link to={ROUTES.home} className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {LOGOUT_SVG}
               </Link>
-              {clerkConfigured && <UserButton />}
+              {clerkConfigured && (
+                <span className="nav-user">
+                  <UserButton />
+                </span>
+              )}
             </>
           )}
         </div>

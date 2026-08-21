@@ -4,6 +4,7 @@ import { useOrders, setOrderStatus } from '../../../store/localStore';
 import { formatPrice, formatDateTime } from '../../../constants';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import './OrderDetailPage.css';
 
 type PendingAction = 'approve' | 'cancel' | null;
@@ -105,42 +106,22 @@ export default function OrderDetailPage() {
       </div>
 
       {pendingAction && (
-        <div className="confirm-overlay" role="dialog" aria-modal="true" aria-labelledby="confirm-title">
-          <div className="confirm-dialog animate-slideUp">
-            <div className="confirm-icon">
-              {pendingAction === 'approve' ? (
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              ) : (
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
-                </svg>
-              )}
-            </div>
-            <h2 id="confirm-title" className="confirm-title font-display">
-              {pendingAction === 'approve' ? '¿Aprobar este pedido?' : '¿Cancelar este pedido?'}
-            </h2>
-            <p className="confirm-text">
+        <ConfirmDialog
+          open={pendingAction !== null}
+          variant={pendingAction === 'approve' ? 'success' : 'danger'}
+          title={pendingAction === 'approve' ? '¿Aprobar este pedido?' : '¿Cancelar este pedido?'}
+          message={
+            <>
               {pendingAction === 'approve'
                 ? 'Al aprobar el pedido se confirma la venta.'
                 : 'Al cancelar el pedido se restaurará el stock de los productos.'}
               {' '}Esta acción <strong>no se puede revertir</strong>.
-            </p>
-            <div className="confirm-actions">
-              <button className="btn btn-outline" onClick={() => setPendingAction(null)}>
-                Volver
-              </button>
-              <button
-                className={`btn ${pendingAction === 'approve' ? 'btn-success' : 'btn-danger'}`}
-                onClick={confirmAction}
-              >
-                {pendingAction === 'approve' ? 'Sí, aprobar' : 'Sí, cancelar'}
-              </button>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+          confirmLabel={pendingAction === 'approve' ? 'Sí, aprobar' : 'Sí, cancelar'}
+          onConfirm={confirmAction}
+          onCancel={() => setPendingAction(null)}
+        />
       )}
     </div>
   );

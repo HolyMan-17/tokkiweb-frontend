@@ -39,3 +39,67 @@
   width: 100%;
   max-width: 420px;
 }
+
+.admin-signin-page .cl-card {
+  border-radius: var(--radius-xl) !important;
+  border: 2.5px solid var(--color-border) !important;
+  box-shadow: var(--shadow-xl) !important;
+  overflow: hidden;
+}
+
+.admin-signin-page .cl-headerTitle,
+.admin-signin-page .cl-formTitle {
+  font-family: var(--font-display) !important;
+  color: var(--color-text) !important;
+}
+
+.admin-signin-page .cl-headerSubtitle,
+.admin-signin-page .cl-formHeaderSubtitle {
+  font-family: var(--font-body) !important;
+  color: var(--color-text-secondary) !important;
+}
+
+.admin-signin-page .cl-formFieldLabel {
+  font-family: var(--font-display) !important;
+  font-size: var(--text-sm) !important;
+  color: var(--color-text) !important;
+}
+
+.admin-signin-page .cl-formFieldInput,
+.admin-signin-page .cl-input {
+  border-radius: var(--radius-md) !important;
+  border: 2px solid var(--color-border) !important;
+  font-family: var(--font-body) !important;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.admin-signin-page .cl-formFieldInput:focus,
+.admin-signin-page .cl-input:focus {
+  border-color: var(--color-primary) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-ghost) !important;
+}
+
+.admin-signin-page .cl-formButtonPrimary,
+.admin-signin-page .cl-primaryButton {
+  font-family: var(--font-display) !important;
+  font-weight: 700 !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--color-primary) !important;
+  border: 2px solid var(--color-primary) !important;
+  transition: transform var(--duration-fast) var(--ease-spring),
+              box-shadow var(--duration-normal) var(--ease-out),
+              background var(--duration-normal) var(--ease-out);
+}
+
+.admin-signin-page .cl-formButtonPrimary:hover,
+.admin-signin-page .cl-primaryButton:hover {
+  background: var(--color-primary-hover) !important;
+  box-shadow: var(--shadow-float) !important;
+  transform: translateY(-2px);
+}
+
+.admin-signin-page .cl-formButtonPrimary:active,
+.admin-signin-page .cl-primaryButton:active {
+  transform: scale(0.95);
+}

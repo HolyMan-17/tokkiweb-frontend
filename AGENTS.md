@@ -67,32 +67,57 @@ Fonts load locally via `@fontsource/*` packages (imported in `src/main.tsx`), NO
 ```
 src/
 ├── api/client.ts          # Shared fetch wrapper (envelope normalization)
-├── assets/                # Static images (hero.png, SVGs)
+├── assets/                # Brand gifs/images (hopping_bunny, cherry_blossom,
+│                          #   category icons, logos, etc.)
 ├── components/
+│   ├── auth/              # AdminAuth (AuthProvider), useAdminAuth,
+│   │                      #   RequireRole, AdminAuthContext, AuthGate.css
 │   ├── layout/            # CatalogTopNav, Header, Layout (+CSS each)
 │   └── ui/                # ProductCard, QuantitySelector, StatusBadge,
-│                          #   EmptyState, LoadingSpinner (+CSS each)
-├── constants/index.ts     # Categories, delivery/payment options, country
-│                          #   codes, formatPrice(), formatDate()
-├── context/CartContext.tsx # React Context cart (add/update/remove/clear)
-├── mock/data.ts           # Static dev data (MOCK_PRODUCTS, MOCK_ORDERS)
+│                          #   EmptyState, LoadingSpinner, ConfirmDialog,
+│                          #   CategoryIcons (+CSS each)
+├── constants/index.ts     # Categories, delivery/payment options, full
+│                          #   country-code list (digits+hints+validation),
+│                          #   formatPrice(), formatDate()
+├── context/CartContext.tsx # React Context cart (add/update/remove/clear),
+│                          #   persisted to localStorage
+├── lib/
+│   ├── auth.ts            # ADMIN_PATH (/tokki-admin), roles, Clerk config
+│   └── routes.ts          # ROUTES + ADMIN_ROUTES — single source of truth
+│                          #   for every path (no hardcoded strings in pages)
+├── mock/data.ts           # Seed data (MOCK_PRODUCTS, MOCK_ORDERS) — used to
+│                          #   prime localStorage on first run only
+├── store/localStore.ts    # localStorage-backed data layer (products, orders,
+│                          #   cart). Hooks: useProducts(), useOrders() +
+│                          #   mutations (createOrder, setOrderStatus,
+│                          #   saveProducts). Simulates the API before wiring.
 ├── pages/
-│   ├── catalog/           # CatalogPage (standalone, full-bleed carousels)
+│   ├── catalog/           # CatalogPage (standalone, full-bleed carousels,
+│   │                      #   animated hero bg, brand logo + gifs)
 │   ├── category/          # CategoryPage (standalone, product grid)
 │   ├── product/           # ProductDetailPage (Layout variant="customer")
 │   ├── cart/              # CartPage
-│   ├── checkout/          # CheckoutPage
-│   ├── confirmation/      # OrderConfirmationPage
+│   ├── checkout/          # CheckoutPage (country-aware phone validation)
+│   ├── confirmation/      # OrderConfirmationPage (reads order via state)
 │   └── admin/
+│       ├── dashboard/     # AdminDashboardPage (recharts: bar + pie)
 │       ├── orders/        # OrdersDashboardPage, OrderDetailPage
-│       └── products/      # ProductManagementPage
+│       ├── products/      # ProductManagementPage (CRUD modal + filters)
+│       ├── devtools/      # DevToolsPage (tech role only)
+│       └── signin/        # AdminSignInPage (Clerk, branded)
 ├── types/index.ts         # Product, OrderSummary, OrderDetail, CartItem,
 │                          #   CheckoutPayload, ApiResponse<T>
 ├── index.css              # Design system: tokens, reset, button/card/form/
 │                          #   badge systems, animations, skeleton loader
-├── main.tsx               # React root + font imports
-└── App.tsx                # Route definitions
+├── main.tsx               # React root + font imports + font preloading
+└── App.tsx                # Route definitions (admin lazy-loaded)
 ```
+
+### Routing
+
+- All paths live in `src/lib/routes.ts` (`ROUTES` for the storefront, `ADMIN_ROUTES` for the panel). **Never hardcode** `/path` strings in pages/components — always use the helpers.
+- Admin pages are `lazy()`-loaded inside a `<Suspense>` boundary so the recharts/admin bundle never ships to storefront visitors.
+- Deployed to Vercel with SPA rewrites (`vercel.json`): every route rewrites to `/index.html` so deep links (including `/tokki-admin`) don't 404.
 
 ### File Naming
 
@@ -116,6 +141,8 @@ src/
 - Links use react-router `<Link>` / `<NavLink>`, never `<a>` for internal nav.
 - Icons are inline SVGs (no icon library). Keep stroke-based, `currentColor`, consistent `strokeWidth`.
 - Prices arrive as **strings** from the backend (`"49.99"`). Use `formatPrice()` from constants for display. Use `Number(x)` for arithmetic.
+- Category emojis on the storefront are replaced by brand gifs/pngs — use the shared `CATEGORY_ICONS` map (`src/components/ui/CategoryIcons.tsx`), never hand-roll per page.
+- Every confirmation pop-up uses the shared `<ConfirmDialog>` (`src/components/ui/ConfirmDialog.tsx`). Never use native `window.confirm()` / `window.alert()`.
 
 ### API Patterns
 
@@ -124,31 +151,44 @@ src/
 - Returns a discriminated union: `{ ok: true; data: T }` | `{ ok: false; message: string }`.
 - Vite proxies `/api` → `http://localhost:3000` (see `vite.config.ts`).
 
-### Current State (Mock Data)
+### Current State (localStorage flow)
 
-All pages currently render from static data in `src/mock/data.ts`. Backend integration is **not yet wired**. When connecting pages to the real API:
-1. Replace `MOCK_*` imports with `useEffect` + `api()` calls
+The full shop flow runs on `src/store/localStore.ts` — a localStorage-backed data layer seeded from `src/mock/data.ts` on first run. Products, orders, and the cart all persist and stay in sync across pages (via `useSyncExternalStore`). Backend integration is **not yet wired**. When connecting pages to the real API:
+1. Replace `useProducts()` / `useOrders()` / `createOrder()` / `setOrderStatus()` / `saveProducts()` calls with `useEffect` + `api()` calls
 2. Add loading states (`<LoadingSpinner />`) and error handling
 3. Pass real API response data via `navigate('/path', { state: { ... } })` where needed (e.g. checkout → confirmation)
+4. Keep `localStore.ts` only as long as the mock flow is needed — delete it (and the mock seed) once the API is live
+
+To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_v1` from localStorage.
 
 ---
 
 ## Categories
 
-Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel per category.
+Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel per category. Each category has a brand asset (gif/png) in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`) shown instead of the emoji on the catalog, category page, and admin product filter chips.
 
 | Category            | Emoji | Product Examples                          |
 |---------------------|-------|-------------------------------------------|
 | Maquillaje          | 💄    | Lip balms, gloss, eyeshadow, tints, liner |
 | Skincare            | 🧴    | Face masks, serums, eye patches, sunscreen|
 | Accesorios          | 💎    | Chains, necklaces, rings, earrings, clips |
-| Pulseras            | 📿    | Bracelets, bead sets, thread bracelets    |
 | Lentes de Contacto  | 👁️    | Colored cosmetic contact lenses           |
-| Pines               | 📌    | Enamel pins, pin sets                     |
+| Pines & Chapas      | 📌    | Enamel pins, pin sets                     |
 | Ropa                | 👗    | Crop tops, socks, hats, kawaii sets       |
 | Dulces Asiáticos    | 🍡    | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune   |
+| Peluches y Figuras  | 🧸    | Plushies, anime figures, keychains        |
+| Otros               | 🛍️    | Stickers, notebooks, totes                |
 
 To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.
+
+## Phone numbers (checkout)
+
+`COUNTRY_CODES` in `src/constants/index.ts` covers ~90 countries with per-country E.164 national digit counts, placeholder hints, and leading-zero normalization. Helpers:
+- `normalizePhoneNumber(country, raw)` — strips a leading "0" trunk prefix where the country drops it in E.164 (e.g. VE `0414…` → `414…`)
+- `validatePhoneNumber(country, raw)` — returns an empty string when valid, else a Spanish hint
+- `getCountryHint(country)` — placeholder from the digit count (or a custom hint)
+
+Checkout shows a live E.164 preview chip (green = valid, red = invalid) and blocks submission with a branded toast on invalid input.
 
 ---
 

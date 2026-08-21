@@ -1,8 +1,24 @@
 # Tokki Shop Frontend — Functional Requirements & API Contract
 
-**Version:** 1.0.0
+**Version:** 1.1.0
 **Backend base URL (dev):** `http://localhost:3000`
 **Frontend calls:** `/api/...` (Vite dev server proxies `/api` → `localhost:3000`)
+
+---
+
+## 0. Current implementation status
+
+> **Update (v1.1.0):** the full shop flow (catalog, cart, checkout → order creation, admin
+> product CRUD + order approve/cancel, dashboard stats) is implemented against a
+> **localStorage-backed data layer** (`src/store/localStore.ts`, seeded from `src/mock/data.ts`
+> on first run) so the flow can be tested before the real API is wired. All pages still follow
+> this document's data shapes and behavior — `localStore.ts` is a stand-in for the API.
+> Clerk auth IS wired: the admin panel lives at the hidden path `/tokki-admin`
+> (`ADMIN_PATH` in `src/lib/auth.ts`) and is guarded by Clerk roles (`owner` / `tech`).
+>
+> **Wiring the real API** = replacing `useProducts()` / `useOrders()` / `createOrder()` /
+> `setOrderStatus()` / `saveProducts()` calls with `useEffect` + `api()` calls, then deleting
+> `localStore.ts` and the mock seed. See `AGENTS.md → Current State` for the checklist.
 
 ---
 
@@ -16,6 +32,10 @@ Two distinct audiences:
 2. **Shop owner (admin):** manage products, review orders, approve/cancel orders.
 
 > Auth (Clerk) is deferred. Until it lands, all endpoints are unauthenticated. The admin pages will be built against the API now and locked down with `requireAuth()` later.
+
+> **Status (v1.1.0):** Clerk auth has landed — admin panel lives at the hidden `/tokki-admin`
+> path, guarded by `RequireRole` with roles from `user.publicMetadata.role` (`owner`, `tech`).
+> See `AGENTS.md → Auth & Admin Routing`.
 
 ---
 

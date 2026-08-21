@@ -3,6 +3,7 @@ import { useProducts, saveProducts } from '../../../store/localStore';
 import type { Product } from '../../../types';
 import { formatPrice, CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
+import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import sparklesGif from '../../../assets/sparkles.gif';
 import './ProductManagementPage.css';
 
@@ -94,6 +95,8 @@ export default function ProductManagementPage() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [toast, setToast] = useState<string | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
+  const [imageErrorOpen, setImageErrorOpen] = useState(false);
   const toastTimer = useRef<number | null>(null);
 
   const showToast = (message: string) => {
@@ -168,7 +171,7 @@ export default function ProductManagementPage() {
     if (!file) return;
     if (!file.type.startsWith('image/')) return;
     if (file.size > 3 * 1024 * 1024) {
-      window.alert('La imagen no puede superar los 3 MB.');
+      setImageErrorOpen(true);
       return;
     }
     const reader = new FileReader();
@@ -207,10 +210,14 @@ export default function ProductManagementPage() {
   };
 
   const handleArchive = (productId: number) => {
-    if (window.confirm('¿Estás seguro de que deseas archivar este producto?')) {
-      saveProducts(products.filter(p => p.product_id !== productId));
-      showToast('Producto archivado');
-    }
+    setArchiveTarget(products.find(p => p.product_id === productId) ?? null);
+  };
+
+  const confirmArchive = () => {
+    if (!archiveTarget) return;
+    saveProducts(products.filter(p => p.product_id !== archiveTarget.product_id));
+    setArchiveTarget(null);
+    showToast('Producto archivado');
   };
 
   const clearFilters = () => {
@@ -517,6 +524,31 @@ export default function ProductManagementPage() {
           {toast}
         </div>
       )}
+
+      <ConfirmDialog
+        open={archiveTarget !== null}
+        variant="danger"
+        title="¿Archivar producto?"
+        message={
+          <>
+            <strong>{archiveTarget?.product_name}</strong> se quitará de la tienda.{' '}
+            Esta acción <strong>no se puede revertir</strong>.
+          </>
+        }
+        confirmLabel="Sí, archivar"
+        onConfirm={confirmArchive}
+        onCancel={() => setArchiveTarget(null)}
+      />
+
+      <ConfirmDialog
+        open={imageErrorOpen}
+        variant="warning"
+        title="Imagen muy pesada"
+        message="La imagen no puede superar los 3 MB. Prueba con una más liviana."
+        confirmLabel="Entendido"
+        onConfirm={() => setImageErrorOpen(false)}
+        onCancel={() => setImageErrorOpen(false)}
+      />
     </div>
   );
 }

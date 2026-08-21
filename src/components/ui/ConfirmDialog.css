@@ -1,0 +1,101 @@
+/* ════════════════════════════════════════════════════════════
+   Tokki Shop · Confirm Dialog
+   Shared kawaii confirmation pop-up (archive products, orders…)
+   ════════════════════════════════════════════════════════════ */
+
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(61, 26, 46, 0.45);
+  backdrop-filter: blur(3px);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-lg);
+}
+
+.confirm-dialog {
+  background: var(--color-surface);
+  width: 100%;
+  max-width: 380px;
+  border-radius: var(--radius-xl);
+  border: 2.5px solid var(--color-border);
+  box-shadow: var(--shadow-xl);
+  padding: var(--space-xl);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.confirm-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-warning-bg);
+  color: var(--color-warning);
+  border: 2px solid var(--color-warning);
+  box-shadow: 0 4px 14px rgba(232, 164, 77, 0.35);
+}
+
+.confirm-icon--danger {
+  background: var(--color-danger-bg);
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+  box-shadow: 0 4px 14px rgba(224, 107, 107, 0.35);
+}
+
+.confirm-icon--success {
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  border-color: var(--color-success);
+  box-shadow: 0 4px 14px rgba(76, 175, 128, 0.35);
+}
+
+.confirm-title {
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  margin: 0;
+}
+
+.confirm-text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.confirm-text strong {
+  color: var(--color-danger);
+  font-weight: 700;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: var(--space-sm);
+  width: 100%;
+}
+
+.confirm-actions .btn {
+  flex: 1;
+}
+
+.confirm-dialog .btn-danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog {
+    animation: none !important;
+  }
+}
