@@ -173,3 +173,14 @@ To add a new category: add it to `CATEGORIES` in constants, add products with th
 - Don't use `overflow-x: clip` on containers that hold scrollable carousels
 - Don't bypass the `api()` wrapper for backend calls
 - Don't use English for UI copy (buttons, labels, empty states, etc.)
+
+---
+
+## Auth & Admin Routing (Clerk)
+
+- The admin panel lives under the hidden path `ADMIN_PATH` (`src/lib/auth.ts`, default `/tokki-admin`). The URL is security-by-obscurity only; real access control is Clerk.
+- Clerk roles come from `user.publicMetadata.role`: `owner` (full admin) and `tech` (full admin + Dev Tools at `/tokki-admin/dev`).
+- Auth is abstracted behind `useAdminAuth()` (`src/components/auth/useAdminAuth.ts`) + `<AuthProvider>` (`src/components/auth/AdminAuth.tsx`). Consumers NEVER call Clerk hooks directly, so the app also runs without Clerk (dev bypass via `VITE_ADMIN_DEV_BYPASS=true`).
+- Guard sections with `<RequireRole roles={[...]}>` (`src/components/auth/RequireRole.tsx`).
+- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`.
+- See `.env.example` for the shape. Never commit a real publishable key.

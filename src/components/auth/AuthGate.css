@@ -1,0 +1,56 @@
+/* ─── Auth gates (Clerk) ─────────────────────────────────── */
+
+.auth-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: var(--space-sm);
+  padding: var(--space-2xl) var(--space-lg);
+  min-height: 50vh;
+}
+
+.auth-gate--loading {
+  color: var(--color-text-muted);
+}
+
+.auth-gate__icon {
+  font-size: 2.5rem;
+}
+
+.auth-gate__title {
+  font-family: var(--font-display);
+  font-size: var(--text-lg);
+  font-weight: 700;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.auth-gate__text {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin: 0;
+  max-width: 34ch;
+}
+
+.auth-gate__text code {
+  font-family: monospace;
+  background: var(--pink-100);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  font-size: 0.85em;
+}
+
+.auth-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--pink-200);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: auth-spin 0.8s linear infinite;
+}
+
+@keyframes auth-spin {
+  to { transform: rotate(360deg); }
+}

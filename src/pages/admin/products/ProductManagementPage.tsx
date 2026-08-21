@@ -6,13 +6,91 @@ import './ProductManagementPage.css';
 
 type StockFilter = 'all' | 'in' | 'out';
 
+interface ProductFormState {
+  product_name: string;
+  product_price: string;
+  qty_available: string;
+  product_description: string;
+  category: string;
+}
+
+interface FormErrors {
+  product_name?: string;
+  product_price?: string;
+  qty_available?: string;
+}
+
+const EMPTY_FORM: ProductFormState = {
+  product_name: '',
+  product_price: '',
+  qty_available: '',
+  product_description: '',
+  category: 'Otros',
+};
+
+// Sanitize text: strip control chars, collapse whitespace, trim.
+function sanitizeText(value: string): string {
+  return value
+    // eslint-disable-next-line no-control-regex
+    .replace(/[\u0000-\u001F\u007F]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Price: allow digits + at most one decimal point + up to 2 decimals.
+function sanitizePrice(value: string): string {
+  let v = value.replace(/[^\d.]/g, '');
+  const firstDot = v.indexOf('.');
+  if (firstDot !== -1) {
+    v = v.slice(0, firstDot + 1) + v.slice(firstDot + 1).replace(/\./g, '');
+  }
+  const [int, dec] = v.split('.');
+  if (dec && dec.length > 2) v = `${int}.${dec.slice(0, 2)}`;
+  return v;
+}
+
+// Quantity: positive integers only.
+function sanitizeQty(value: string): string {
+  return value.replace(/[^\d]/g, '').replace(/^0+(?=\d)/, '');
+}
+
+function validateForm(form: ProductFormState): FormErrors {
+  const errors: FormErrors = {};
+
+  if (!form.product_name) {
+    errors.product_name = 'El nombre es obligatorio.';
+  } else if (form.product_name.length < 2) {
+    errors.product_name = 'El nombre debe tener al menos 2 caracteres.';
+  } else if (form.product_name.length > 80) {
+    errors.product_name = 'El nombre no puede superar los 80 caracteres.';
+  }
+
+  if (!form.product_price) {
+    errors.product_price = 'El precio es obligatorio.';
+  } else if (Number(form.product_price) <= 0) {
+    errors.product_price = 'El precio debe ser mayor que 0.';
+  }
+
+  if (form.qty_available === '') {
+    errors.qty_available = 'La cantidad es obligatoria.';
+  } else if (Number(form.qty_available) > 100000) {
+    errors.qty_available = 'La cantidad no puede superar 100.000.';
+  }
+
+  return errors;
+}
+
 export default function ProductManagementPage() {
-  const [products] = useState<Product[]>(MOCK_PRODUCTS);
+  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('Todos');
   const [stock, setStock] = useState<StockFilter>('all');
+  const [imagePreview, setImagePreview] = useState<string>('');
+  const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -27,28 +105,99 @@ export default function ProductManagementPage() {
 
   const openAddModal = () => {
     setEditingProduct(null);
+    setImagePreview('');
+    setForm(EMPTY_FORM);
+    setErrors({});
+    setTouched({});
     setIsModalOpen(true);
   };
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
+    setImagePreview(product.product_image ?? '');
+    setForm({
+      product_name: product.product_name,
+      product_price: product.product_price,
+      qty_available: String(product.qty_available),
+      product_description: product.product_description,
+      category: product.category,
+    });
+    setErrors({});
+    setTouched({});
     setIsModalOpen(true);
   };
 
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
+    setImagePreview('');
+    setForm(EMPTY_FORM);
+    setErrors({});
+    setTouched({});
   };
 
-  const handleSave = (e: React.FormEvent) => {
+  const handleFieldChange = (field: keyof ProductFormState, raw: string) => {
+    let value = raw;
+    if (field === 'product_name' || field === 'product_description') {
+      value = sanitizeText(value);
+    } else if (field === 'product_price') {
+      value = sanitizePrice(value);
+    } else if (field === 'qty_available') {
+      value = sanitizeQty(value);
+    }
+    setForm(prev => ({ ...prev, [field]: value }));
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleBlur = (field: keyof ProductFormState) => {
+    setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return;
+    if (file.size > 3 * 1024 * 1024) {
+      window.alert('La imagen no puede superar los 3 MB.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    console.log('Saving product...');
+    const nextErrors = validateForm(form);
+    setErrors(nextErrors);
+    setTouched({ product_name: true, product_price: true, qty_available: true });
+    if (Object.keys(nextErrors).length > 0) return;
+
+    const qty = Number(form.qty_available);
+    const productData: Product = {
+      product_id: editingProduct?.product_id ?? Date.now(),
+      product_name: form.product_name,
+      product_price: form.product_price,
+      product_description: form.product_description,
+      qty_available: qty,
+      in_stock: qty > 0,
+      category: form.category,
+      product_image: imagePreview || undefined,
+    };
+
+    if (editingProduct) {
+      setProducts(prev => prev.map(p =>
+        p.product_id === editingProduct.product_id ? productData : p
+      ));
+    } else {
+      setProducts(prev => [...prev, productData]);
+    }
     closeModal();
   };
 
   const handleArchive = (productId: number) => {
     if (window.confirm('¿Estás seguro de que deseas archivar este producto?')) {
-      console.log(`Archiving product ${productId}`);
+      setProducts(prev => prev.filter(p => p.product_id !== productId));
     }
   };
 
@@ -219,43 +368,121 @@ export default function ProductManagementPage() {
               <h2>{editingProduct ? 'Editar Producto' : 'Nuevo Producto'}</h2>
               <button className="close-btn" onClick={closeModal}>&times;</button>
             </div>
-            <form onSubmit={handleSave} className="modal-body">
+            <form onSubmit={handleSave} className="modal-body" noValidate>
+              <div className="form-group">
+                <label className="form-label">Foto del Producto</label>
+                <div className={`image-uploader ${imagePreview ? 'has-image' : ''}`}>
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Vista previa del producto" className="image-uploader-preview" />
+                      <div className="image-uploader-overlay">
+                        <label className="image-uploader-btn">
+                          Cambiar
+                          <input type="file" accept="image/*" onChange={handleImageChange} hidden />
+                        </label>
+                        <button type="button" className="image-uploader-btn image-uploader-remove" onClick={() => setImagePreview('')}>
+                          Quitar
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <label className="image-uploader-empty">
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none"
+                        stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                        <rect x="3" y="3" width="18" height="18" rx="4" />
+                        <circle cx="8.5" cy="8.5" r="1.5" />
+                        <path d="M21 15l-5-5L5 21" />
+                      </svg>
+                      <span>Subir foto</span>
+                      <small>PNG, JPG, WEBP… (máx. 3 MB)</small>
+                      <input type="file" accept="image/*" onChange={handleImageChange} hidden />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <div className="form-group">
                 <label className="form-label">Nombre del Producto</label>
-                <input 
-                  type="text" 
-                  className="form-input" 
-                  defaultValue={editingProduct?.product_name || ''} 
-                  required 
+                <input
+                  type="text"
+                  name="product_name"
+                  className={`form-input ${touched.product_name && errors.product_name ? 'form-input-error' : ''}`}
+                  value={form.product_name}
+                  onChange={e => handleFieldChange('product_name', e.target.value)}
+                  onBlur={() => handleBlur('product_name')}
+                  maxLength={80}
+                  placeholder="Ej. Bálsamo de Fresa"
+                  required
                 />
+                {touched.product_name && errors.product_name && (
+                  <span className="form-error">{errors.product_name}</span>
+                )}
               </div>
+
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="form-label">Precio ($)</label>
+                  <input
+                    type="text"
+                    name="product_price"
+                    inputMode="decimal"
+                    className={`form-input ${touched.product_price && errors.product_price ? 'form-input-error' : ''}`}
+                    value={form.product_price}
+                    onChange={e => handleFieldChange('product_price', e.target.value)}
+                    onBlur={() => handleBlur('product_price')}
+                    placeholder="0.00"
+                    required
+                  />
+                  {touched.product_price && errors.product_price && (
+                    <span className="form-error">{errors.product_price}</span>
+                  )}
+                </div>
+
+                <div className="form-group">
+                  <label className="form-label">Cantidad Disponible</label>
+                  <input
+                    type="text"
+                    name="qty_available"
+                    inputMode="numeric"
+                    className={`form-input ${touched.qty_available && errors.qty_available ? 'form-input-error' : ''}`}
+                    value={form.qty_available}
+                    onChange={e => handleFieldChange('qty_available', e.target.value)}
+                    onBlur={() => handleBlur('qty_available')}
+                    placeholder="0"
+                    required
+                  />
+                  {touched.qty_available && errors.qty_available && (
+                    <span className="form-error">{errors.qty_available}</span>
+                  )}
+                </div>
+              </div>
+
               <div className="form-group">
-                <label className="form-label">Precio ($)</label>
-                <input 
-                  type="number" 
-                  step="0.01" 
-                  className="form-input" 
-                  defaultValue={editingProduct?.product_price || ''} 
-                  required 
-                />
+                <label className="form-label">Categoría</label>
+                <select
+                  name="category"
+                  className="form-input form-select"
+                  value={form.category}
+                  onChange={e => handleFieldChange('category', e.target.value)}
+                >
+                  {CATEGORIES.map(cat => (
+                    <option key={cat.name} value={cat.name}>{cat.emoji} {cat.name}</option>
+                  ))}
+                </select>
               </div>
-              <div className="form-group">
-                <label className="form-label">Cantidad Disponible</label>
-                <input 
-                  type="number" 
-                  className="form-input" 
-                  defaultValue={editingProduct?.qty_available || 0} 
-                  required 
-                />
-              </div>
+
               <div className="form-group">
                 <label className="form-label">Descripción</label>
-                <textarea 
-                  className="form-input" 
-                  rows={4} 
-                  defaultValue={editingProduct?.product_description || ''}
+                <textarea
+                  name="product_description"
+                  className="form-input"
+                  rows={4}
+                  value={form.product_description}
+                  onChange={e => handleFieldChange('product_description', e.target.value)}
+                  placeholder="Describe el producto…"
                 ></textarea>
               </div>
+
               <div className="modal-actions">
                 <button type="button" className="btn btn-outline" onClick={closeModal}>Cancelar</button>
                 <button type="submit" className="btn btn-primary">Guardar</button>

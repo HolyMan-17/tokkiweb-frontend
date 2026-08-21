@@ -1,11 +1,21 @@
 import { Link, useLocation } from 'react-router-dom';
+import { UserButton } from '@clerk/react';
 import { useCart } from '../../context/CartContext';
+import { ADMIN_PATH, ROLES, CLERK_PUBLISHABLE_KEY } from '../../lib/auth';
+import { useAdminAuth } from '../auth/useAdminAuth';
 import './Header.css';
 import hoppingBunny from '../../assets/hopping_bunny.gif';
 
 interface HeaderProps {
   variant?: 'customer' | 'admin';
 }
+
+const DEV_SVG = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+  </svg>
+);
 
 const CART_SVG = (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none"
@@ -66,12 +76,17 @@ export function Header({ variant = 'customer' }: HeaderProps) {
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const location = useLocation();
   const isCartPage = location.pathname === '/cart';
+  const { role } = useAdminAuth();
+  const isTech = role === ROLES.TECH;
+  const hasAdminRole = role === ROLES.OWNER || role === ROLES.TECH;
+  const clerkConfigured = Boolean(CLERK_PUBLISHABLE_KEY);
+  const showAdminLink = !clerkConfigured || hasAdminRole;
 
   return (
     <header className={`top-nav ${variant === 'admin' ? 'top-nav-admin' : ''}`}>
       <div className="nav-inner">
         <Link
-          to={variant === 'admin' ? '/admin/orders' : '/'}
+          to={variant === 'admin' ? ADMIN_PATH : '/'}
           className="nav-logo"
           aria-label="Tokki"
         >
@@ -92,24 +107,32 @@ export function Header({ variant = 'customer' }: HeaderProps) {
                   {totalQty > 0 && <span className="cart-badge">{totalQty}</span>}
                 </Link>
               )}
-              <Link to="/admin/orders" className="nav-icon-btn" aria-label="Panel de administración" title="Panel de administración">
-                {GEAR_SVG}
-              </Link>
+              {showAdminLink && (
+                <Link to={ADMIN_PATH} className="nav-icon-btn" aria-label="Panel de administración" title="Panel de administración">
+                  {GEAR_SVG}
+                </Link>
+              )}
             </>
           ) : (
             <>
-              <Link to="/admin" className="nav-icon-btn" aria-label="Inicio" title="Inicio">
+              <Link to={ADMIN_PATH} className="nav-icon-btn" aria-label="Inicio" title="Inicio">
                 {HOME_SVG}
               </Link>
-              <Link to="/admin/orders" className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
+              <Link to={`${ADMIN_PATH}/orders`} className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
                 {ORDERS_SVG}
               </Link>
-              <Link to="/admin/products" className="nav-icon-btn" aria-label="Productos" title="Productos">
+              <Link to={`${ADMIN_PATH}/products`} className="nav-icon-btn" aria-label="Productos" title="Productos">
                 {PRODUCTS_SVG}
               </Link>
+              {(isTech || !clerkConfigured) && (
+                <Link to={`${ADMIN_PATH}/dev`} className="nav-icon-btn" aria-label="Herramientas de desarrollo" title="Herramientas de desarrollo">
+                  {DEV_SVG}
+                </Link>
+              )}
               <Link to="/" className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {LOGOUT_SVG}
               </Link>
+              {clerkConfigured && <UserButton />}
             </>
           )}
         </div>
