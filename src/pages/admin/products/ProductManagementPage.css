@@ -90,7 +90,8 @@
   color: var(--color-text);
 }
 
-/* Category chips — horizontal scroll on mobile */
+/* Category chips — horizontal scroll on mobile, wrap on desktop so no
+   category is ever hidden behind a clipped scroll region */
 .category-chips {
   display: flex;
   gap: var(--space-sm);
@@ -99,6 +100,7 @@
   -ms-overflow-style: none;
   padding: 2px;
   margin: 0 -2px;
+  -webkit-overflow-scrolling: touch;
 }
 
 .category-chips::-webkit-scrollbar {
@@ -107,6 +109,9 @@
 
 .chip {
   flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-display);
   font-size: var(--text-xs);
   font-weight: 700;
@@ -120,6 +125,13 @@
   transition: background var(--duration-fast) var(--ease-out),
               border-color var(--duration-fast) var(--ease-out),
               color var(--duration-fast) var(--ease-out);
+}
+
+/* Category icons inside the filter chips — slightly larger than the
+   standard category size so they read well inside the pill */
+.chip .category-emoji-img {
+  width: 2.6rem;
+  height: 2.6rem;
 }
 
 .chip:hover {
@@ -552,6 +564,13 @@
 @media (min-width: 768px) {
   .product-management-page {
     padding: var(--space-lg);
+  }
+
+  /* Chips wrap on desktop — every category is visible, nothing clipped */
+  .category-chips {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    justify-content: flex-start;
   }
 
   .products-grid {

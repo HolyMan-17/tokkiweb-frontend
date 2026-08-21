@@ -2,6 +2,8 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useProducts, saveProducts } from '../../../store/localStore';
 import type { Product } from '../../../types';
 import { formatPrice, CATEGORIES } from '../../../constants';
+import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
+import sparklesGif from '../../../assets/sparkles.gif';
 import './ProductManagementPage.css';
 
 type StockFilter = 'all' | 'in' | 'out';
@@ -260,26 +262,28 @@ export default function ProductManagementPage() {
         </div>
 
         <div className="category-chips" role="tablist" aria-label="Filtrar por categoría">
-          <button
-            className={`chip ${category === 'Todos' ? 'chip-active' : ''}`}
-            onClick={() => setCategory('Todos')}
-            role="tab"
-            aria-selected={category === 'Todos'}
-          >
-            ✨ Todos
-          </button>
-          {CATEGORIES.map(cat => (
-            <button
-              key={cat.name}
-              className={`chip ${category === cat.name ? 'chip-active' : ''}`}
-              onClick={() => setCategory(cat.name)}
+<button
+              className={`chip ${category === 'Todos' ? 'chip-active' : ''}`}
+              onClick={() => setCategory('Todos')}
               role="tab"
-              aria-selected={category === cat.name}
+              aria-selected={category === 'Todos'}
             >
-              {cat.emoji} {cat.name}
-            </button>
-          ))}
-        </div>
+<img src={sparklesGif} alt="" className="category-emoji-img" width={188} height={200} />
+            Todos
+          </button>
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.name}
+                className={`chip ${category === cat.name ? 'chip-active' : ''}`}
+                onClick={() => setCategory(cat.name)}
+                role="tab"
+                aria-selected={category === cat.name}
+              >
+                {getCategoryIcon(cat.name) ?? cat.emoji}
+                {cat.name}
+              </button>
+            ))}
+          </div>
 
         <div className="toolbar-bottom">
           <div className="stock-toggle" aria-label="Filtrar por stock">
