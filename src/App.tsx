@@ -9,6 +9,7 @@ import { ROUTES, ADMIN_ROUTES } from './lib/routes';
 // Customer Pages (eager — the storefront is the primary experience)
 import CatalogPage from './pages/catalog/CatalogPage';
 import CategoryPage from './pages/category/CategoryPage';
+import AllProductsPage from './pages/products/AllProductsPage';
 import ProductDetailPage from './pages/product/ProductDetailPage';
 import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
@@ -71,6 +72,9 @@ function App() {
 
           {/* Category — standalone like the catalog, same TopNav */}
           <Route path="/categorias/:slug" element={<CategoryPage />} />
+
+          {/* Todos ("Ver más") — standalone, full inventory browser */}
+          <Route path={ROUTES.allProducts} element={<AllProductsPage />} />
 
           {/* Customer Routes — Layout is lazy so the catalog page stays
               free of the customer chrome bundle (Header/Layout CSS+JS). */}

@@ -7,6 +7,7 @@ import { ADMIN_PATH } from './auth';
 // ─── Customer storefront ───────────────────────────────────
 export const ROUTES = {
   home: '/',
+  allProducts: '/productos',
   category: (slug: string) => `/categorias/${slug}`,
   product: (id: number) => `/products/${id}`,
   cart: '/cart',

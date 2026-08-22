@@ -13,7 +13,9 @@
 /* ── Header ──────────────────────────────────────────────────────────────── */
 
 .category-page-header {
-  padding: var(--space-sm) 0 var(--space-lg);
+  /* Extra bottom space = clear break between the page title and the
+     sticky search bar below it */
+  padding: var(--space-sm) 0 var(--space-xl);
 }
 
 .back-link {
@@ -40,6 +42,26 @@
   line-height: 1.2;
 }
 
+/* Title variant with a leading brand gif (e.g. sparkles on the Todos page) */
+.category-page-title--flex {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+}
+
+/* Brand icons inside page titles sit inline at title scale — consistent
+   with the sparkles treatment on /productos */
+.category-page-title .category-emoji-img {
+  width: 2rem;
+  height: 2rem;
+}
+
+.title-sparkle {
+  width: 2rem;
+  height: auto;
+  flex-shrink: 0;
+}
+
 /* ── Search bar ──────────────────────────────────────────────────────────── */
 
 .category-search-bar {
@@ -58,23 +80,27 @@
               box-shadow var(--duration-fast) var(--ease-out);
 }
 
+/* NOTE: class names here are deliberately namespaced with `category-` —
+   Vite CSS is global, and the admin products page defines generic
+   `.search-input` / `.stock-pill` classes that would otherwise collide. */
+
 .category-search-bar:focus-within {
   border-color: var(--p4);
   box-shadow: 0 0 0 4px rgba(230, 139, 190, 0.15);
 }
 
-.search-icon {
+.category-search-icon {
   display: flex;
   align-items: center;
   color: var(--color-text-muted);
   flex-shrink: 0;
 }
 
-.category-search-bar:focus-within .search-icon {
+.category-search-bar:focus-within .category-search-icon {
   color: var(--color-primary);
 }
 
-.search-input {
+.category-search-input {
   flex: 1;
   min-width: 0;                  /* prevent flex overflow */
   border: none;
@@ -86,12 +112,12 @@
   color: var(--color-text);
 }
 
-.search-input::placeholder {
+.category-search-input::placeholder {
   color: var(--color-text-muted);
   font-weight: 400;
 }
 
-.search-clear {
+.category-search-clear {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -108,7 +134,7 @@
               color var(--duration-fast) var(--ease-out);
 }
 
-.search-clear:active {
+.category-search-clear:active {
   background: var(--p3);
   color: var(--color-text);
 }
@@ -128,7 +154,7 @@
   gap: var(--space-sm);
 }
 
-.stock-pill {
+.category-stock-pill {
   font-family: var(--font-display);
   font-size: var(--text-sm);
   font-weight: 600;
@@ -144,11 +170,11 @@
   white-space: nowrap;
 }
 
-.stock-pill:active {
+.category-stock-pill:active {
   transform: scale(0.96);
 }
 
-.stock-pill.active {
+.category-stock-pill.active {
   background: var(--color-primary);
   color: white;
   border-color: var(--color-primary);
@@ -256,12 +282,12 @@
     transform: translateX(-3px);
   }
 
-  .search-clear:hover {
+  .category-search-clear:hover {
     background: var(--p3);
     color: var(--color-text);
   }
 
-  .stock-pill:hover:not(.active) {
+  .category-stock-pill:hover:not(.active) {
     border-color: var(--p3);
     color: var(--color-text);
     background: var(--p1);

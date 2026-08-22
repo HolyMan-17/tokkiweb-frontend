@@ -1,12 +1,11 @@
 import { useState, useMemo } from 'react';
-import { Link, useParams } from 'react-router-dom';
-import './CategoryPage.css';
+import { Link } from 'react-router-dom';
+import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
 import { useProducts } from '../../store/localStore';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
-import { getCategoryIcon } from '../../components/ui/CategoryIcons';
-import { CATEGORIES, slugify } from '../../constants';
 import { ROUTES } from '../../lib/routes';
+import sparklesImg from '../../assets/sparkles.gif';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
 
@@ -33,15 +32,11 @@ const CLEAR_SVG = (
   </svg>
 );
 
-export default function CategoryPage() {
-  const { slug } = useParams();
-  const allStoreProducts = useProducts();
-
-  const category = CATEGORIES.find(c => slugify(c.name) === slug);
-  const allProducts = useMemo(
-    () => (category ? allStoreProducts.filter(p => p.category === category.name) : []),
-    [category, allStoreProducts],
-  );
+// "Ver más" page for the catalog's "Todos" section — browsable grid of the
+// whole inventory with the same search / stock / sort controls as category
+// pages (styles are shared via CategoryPage.css).
+export default function AllProductsPage() {
+  const allProducts = useProducts();
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('recent');
@@ -50,10 +45,13 @@ export default function CategoryPage() {
   const filtered = useMemo(() => {
     let result = [...allProducts];
 
-    // Search filter
+    // Search filter (name + description)
     if (query.trim()) {
       const q = query.trim().toLowerCase();
-      result = result.filter(p => p.product_name.toLowerCase().includes(q));
+      result = result.filter(p =>
+        p.product_name.toLowerCase().includes(q) ||
+        p.product_description.toLowerCase().includes(q),
+      );
     }
 
     // Stock filter
@@ -87,20 +85,6 @@ export default function CategoryPage() {
     setStockOnly(false);
   };
 
-  if (!category) {
-    return (
-      <>
-        <CatalogTopNav />
-        <div className="category-page">
-          <div className="category-empty">
-            <h1 className="category-page-title">Categoría no encontrada</h1>
-            <Link to={ROUTES.home} className="back-link">← Volver al inicio</Link>
-          </div>
-        </div>
-      </>
-    );
-  }
-
   return (
     <>
       <CatalogTopNav />
@@ -110,8 +94,8 @@ export default function CategoryPage() {
         <header className="category-page-header">
           <Link to={ROUTES.home} className="back-link">← Volver</Link>
           <h1 className="category-page-title category-page-title--flex">
-            <span>{getCategoryIcon(category.name) ?? category.emoji}</span>
-            {category.name}
+            <img src={sparklesImg} alt="" className="title-sparkle" width={188} height={200} loading="lazy" />
+            Todos los productos
           </h1>
         </header>
 
@@ -121,7 +105,7 @@ export default function CategoryPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder={`Buscar en ${category.name}...`}
+            placeholder="Buscar en todo el catálogo..."
             value={query}
             onChange={e => setQuery(e.target.value)}
           />
@@ -157,6 +141,7 @@ export default function CategoryPage() {
             className="sort-select"
             value={sort}
             onChange={e => setSort(e.target.value as SortOption)}
+            aria-label="Ordenar productos"
           >
             {SORT_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -168,8 +153,7 @@ export default function CategoryPage() {
         <p className="category-result-count">
           {isFiltered
             ? `Mostrando ${filtered.length} de ${allProducts.length} productos`
-            : `${allProducts.length} productos`
-          }
+            : `${allProducts.length} productos`}
         </p>
 
         {/* Grid or empty state */}

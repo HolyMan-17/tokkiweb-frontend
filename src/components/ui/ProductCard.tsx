@@ -25,9 +25,18 @@ export function ProductCard({ product }: { product: Product }) {
     >
       <div className="card-frame">
         <div className="card-img-wrap">
-          <div className="card-img-placeholder">
-            {product.product_name.charAt(0)}
-          </div>
+          {product.product_image ? (
+            <img
+              src={product.product_image}
+              alt={product.product_name}
+              loading="lazy"
+              className="card-img"
+            />
+          ) : (
+            <div className="card-img-placeholder">
+              {product.product_name.charAt(0)}
+            </div>
+          )}
           {!product.in_stock && (
             <div className="sold-out-ribbon">Agotado</div>
           )}

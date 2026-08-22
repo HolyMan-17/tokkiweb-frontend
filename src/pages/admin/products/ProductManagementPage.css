@@ -94,20 +94,13 @@
    category is ever hidden behind a clipped scroll region.
    Negative margins break out of the page padding so the scrollable area
    spans the full viewport width and edge pills aren't clipped. */
+/* Chips wrap instead of scrolling: hidden-scrollbar overflow clipped pill
+   edges against the page background and gave desktop no way to reach
+   cut-off chips. */
 .category-chips {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-sm);
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  margin-left: calc(-1 * var(--space-md));
-  margin-right: calc(-1 * var(--space-md));
-  padding: 4px var(--space-md);
-  -webkit-overflow-scrolling: touch;
-}
-
-.category-chips::-webkit-scrollbar {
-  display: none;
 }
 
 .chip {
@@ -263,8 +256,9 @@
 .product-thumb img {
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  padding: 6px;
+  /* cover (not contain): the photo fills the whole frame edge-to-edge
+     instead of letterboxing on the pink gradient */
+  object-fit: cover;
   display: block;
 }
 

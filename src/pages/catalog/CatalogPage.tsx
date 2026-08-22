@@ -281,6 +281,7 @@ export default function CatalogPage() {
             title="Todos"
             emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
             products={products}
+            seeMoreTo={ROUTES.allProducts}
           />
 
           {CATEGORIES.map(cat => {

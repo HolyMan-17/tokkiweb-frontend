@@ -94,7 +94,11 @@ src/
 ├── pages/
 │   ├── catalog/           # CatalogPage (standalone, full-bleed carousels,
 │   │                      #   animated hero bg, brand logo + gifs)
-│   ├── category/          # CategoryPage (standalone, product grid)
+│   ├── category/          # CategoryPage (standalone, product grid) +
+│   │                      #   CategoryPage.css = shared browse styles
+│   │                      #   (search/sort/stock/grid) reused by AllProductsPage
+│   ├── products/          # AllProductsPage ("Ver más" for the Todos carousel,
+│   │                      #   /productos — whole-inventory search/sort/filter)
 │   ├── product/           # ProductDetailPage (Layout variant="customer")
 │   ├── cart/              # CartPage
 │   ├── checkout/          # CheckoutPage (country-aware phone validation)
@@ -118,6 +122,7 @@ src/
 - All paths live in `src/lib/routes.ts` (`ROUTES` for the storefront, `ADMIN_ROUTES` for the panel). **Never hardcode** `/path` strings in pages/components — always use the helpers.
 - Admin pages are `lazy()`-loaded inside a `<Suspense>` boundary so the recharts/admin bundle never ships to storefront visitors.
 - Deployed to Vercel with SPA rewrites (`vercel.json`): every route rewrites to `/index.html` so deep links (including `/tokki-admin`) don't 404.
+- The "Todos" carousel's "Ver más" links to `/productos` (`AllProductsPage`) — the whole-inventory browser. Category carousels link to their `/categorias/:slug` page. Both share the browse UI via `CategoryPage.css`; keep new browse classes namespaced with `category-` (Vite CSS is global — see the collision note in that file).
 
 ### File Naming
 

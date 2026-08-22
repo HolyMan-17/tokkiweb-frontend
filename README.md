@@ -30,7 +30,7 @@ To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_
 
 ## Layout & routing
 
-- Customer storefront: `/` (catalog), `/categorias/:slug`, `/products/:id`, `/cart`, `/checkout`, `/confirmation`
+- Customer storefront: `/` (catalog), `/categorias/:slug`, `/productos` (all products), `/products/:id`, `/cart`, `/checkout`, `/confirmation`
 - Admin panel (hidden path): `/tokki-admin` — dashboard, orders, products, dev tools; guarded by Clerk roles
 - All paths live in `src/lib/routes.ts` — never hardcode route strings
 - Admin pages are lazy-loaded; deployed to Vercel with SPA rewrites (`vercel.json`)
