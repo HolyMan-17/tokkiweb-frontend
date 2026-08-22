@@ -2,6 +2,11 @@ import type { ApiResponse } from '../types';
 
 const BASE = '/api';
 
+type ApiOptions = RequestInit & {
+  /** Pass `useAuth().getToken` from Clerk context to attach a Bearer token. */
+  getToken?: () => Promise<string | null>;
+};
+
 /**
  * Shared fetch wrapper.
  * – Prepends `/api`
@@ -11,14 +16,22 @@ const BASE = '/api';
  */
 export async function api<T = unknown>(
   path: string,
-  options: RequestInit = {},
+  options: ApiOptions = {},
 ): Promise<{ ok: true; data: T; message?: string } | { ok: false; message: string }> {
+  const { getToken, ...fetchOptions } = options;
   const url = `${BASE}${path}`;
 
-  const res = await fetch(url, {
-    headers: { 'Content-Type': 'application/json', ...options.headers },
-    ...options,
-  });
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(fetchOptions.headers as Record<string, string> | undefined),
+  };
+
+  const token = await getToken?.();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
+
+  const res = await fetch(url, { ...fetchOptions, headers });
 
   const json: ApiResponse<T> = await res.json();
 
