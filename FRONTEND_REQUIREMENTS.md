@@ -152,6 +152,8 @@ Most endpoints wrap payloads in a consistent envelope:
 #### `GET /api/products` — List available products
 Returns all non-archived products.
 
+Optional query param: `?category=<name>` — exact, case-sensitive match against `CATEGORIES[i].name` (e.g. `/api/products?category=Maquillaje`). Without it, returns every active product (the client-side filter in `CategoryPage` keeps working either way).
+
 ```json
 {
   "success": true,
@@ -161,6 +163,7 @@ Returns all non-archived products.
       "product_name": "Tokki Hoodie",
       "product_price": "49.99",
       "product_description": "Comfortable oversized cotton hoodie",
+      "category": "Ropa",
       "qty_available": 25,
       "in_stock": true
     }
@@ -172,8 +175,8 @@ Empty result: `{ "success": "true", "message": "There's no registered products."
 > ⚠️ Note: `success` is the **string** `"true"` in the empty case (backend quirk). Check `data`/`message` presence rather than the `success` type.
 
 #### `GET /api/products/:product_id` — Single product
-`200` → `{ success: true, data: { ...Product } }`
-`404` → `{ success: "false", message: "Product was not found." }`
+`200` → `{ success: true, data: { ...Product } }` (includes `category`)
+`404` → `{ success: false, message: "Product was not found." }`
 
 #### `POST /api/products` — Create product (admin)
 Body:
@@ -182,19 +185,23 @@ Body:
   "product_name": "Tokki T-Shirt",
   "product_price": 24.99,
   "product_description": "100% organic cotton graphic tee",
+  "category": "Ropa",
   "qty_available": 50
 }
 ```
-`201` → `{ success: true, row: { product_id, product_name, product_price, product_description, qty_available, in_stock, is_archived } }`
-`400` → `{ success: false, message: "All product fields are required!" }` or `"Product quantity can't be negative."`
+
+**Category rules:** required, non-empty string, max 100 chars. Send the display name exactly as it appears in `CATEGORIES` (the storefront matches `p.category === category.name`). Existing rows created before this field default to `'Otros'`.
+
+`201` → `{ success: true, row: { product_id, product_name, product_price, product_description, category, qty_available, in_stock, is_archived } }`
+`400` → `{ success: false, message: "All product fields are required!" }`, `"A valid product category is required."`, or `"Product quantity can't be negative."`
 
 #### `PATCH /api/products/:product_id` — Update product (admin)
 Body (all optional, at least one):
 ```json
-{ "product_name": "…", "product_price": 19.99, "product_description": "…", "qty_available": 10 }
+{ "product_name": "…", "product_price": 19.99, "product_description": "…", "category": "Ropa", "qty_available": 10 }
 ```
-`200` → `{ success: true, updated_row: { product_id, product_name, product_price, product_description, qty_available, in_stock } }`
-`400` → `{ success: false, message: "At least 1 product field needs to be updated." }`
+`200` → `{ success: true, updated_row: { product_id, product_name, product_price, product_description, category, qty_available, in_stock } }`
+`400` → `{ success: false, message: "At least 1 product field needs to be updated." }` or `"A valid product category is required."`
 `401` → `{ success: false, message: "Product is archived." }`
 `404` → `{ success: false, message: "Product was not found." }`
 

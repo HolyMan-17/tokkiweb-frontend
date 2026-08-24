@@ -43,9 +43,9 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 ### A4. `category` missing from the backend contract
 - **Where:** `src/types/index.ts` (Product), `src/constants/index.ts` (CATEGORIES), `FRONTEND_REQUIREMENTS.md` §4.1
-- **Problem:** The entire storefront UX depends on `Product.category` (per-category carousels, `/categorias/:slug`, admin filters, product form). But the contract's `POST/PATCH /api/products` only accepts name/price/description/qty — no category field exists server-side.
-- **Fix:** requires backend work — add a `category` column + accept it in create/update. Until then, all API-created products would be uncategorized. Flag to backend team before starting integration.
-- **Status:** ☐
+- **Problem:** The entire storefront UX depends on `Product.category` (per-category carousels, `/categorias/:slug`, admin filters, product form). But the contract's `POST/PATCH /api/products` only accepted name/price/description/qty — no category field existed server-side.
+- **Resolution:** ✅ Backend has added the `category` attribute. During wire-up, verify: GET responses include it, POST/PATCH accept it, and its values match the frontend `CATEGORIES` names exactly (the storefront groups/filters by exact string equality).
+- **Status:** ✅ (2026-08-24)
 
 ### A5. Product images unsupported by backend; uploader stores base64 in localStorage
 - **Where:** `src/pages/admin/products/ProductManagementPage.tsx:169-180` (`handleImageChange`), Product form save
@@ -130,7 +130,7 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 1. **A2** prod proxy (needs backend public URL — coordinate)
 2. **A1** harden `api/client.ts`
-3. **A4 / A5 / B5 / B6** contract decisions with backend team (blocking questions)
+3. **A5 / B5 / B6** remaining contract decisions with backend team (blocking questions)
 4. **A3** stop losing checkout fields
 5. **A6 + B1–B4** wire-up page by page (loading/error states included)
 6. C-items opportunistically
@@ -142,3 +142,4 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 | Date | Item | Change |
 |------|------|--------|
 | 2026-08-22 | — | Audit created |
+| 2026-08-24 | A4 | Backend added `category` attribute → resolved (verify exact value match with `CATEGORIES` during wire-up) |
