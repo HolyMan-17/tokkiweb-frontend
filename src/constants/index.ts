@@ -20,18 +20,36 @@ export function slugify(text: string): string {
 }
 
 // ─── Delivery options ──────────────────────────────────────
+// Canonical values — enforced at backend level too, so these exact strings
+// are part of the API contract (do not rename without syncing both sides).
 export const DELIVERY_TYPES = [
-  { value: 'standard', label: 'Envío Estándar' },
-  { value: 'pickup',   label: 'Retiro en Tienda' },
+  { value: 'envio_nacional', label: 'Envío Nacional' },
+  { value: 'delivery',       label: 'Delivery' },
+  { value: 'retiro_tienda',  label: 'Retiro en Tienda' },
 ] as const;
 
 // ─── Payment methods ──────────────────────────────────────
-export const PAYMENT_METHODS = [
-  { value: 'pago_movil',    label: 'Pago Móvil' },
-  { value: 'bank_transfer', label: 'Transferencia Bancaria' },
-  { value: 'cash',          label: 'Efectivo' },
-  { value: 'zelle',         label: 'Zelle' },
-] as const;
+export interface PaymentMethod {
+  value: string;
+  label: string;
+  // When set, the method is only offered for that delivery_type slug
+  // (Efectivo applies exclusively to "Retiro en Tienda").
+  onlyFor?: (typeof DELIVERY_TYPES)[number]['value'];
+}
+
+export const PAYMENT_METHODS: PaymentMethod[] = [
+  { value: 'pago_movil', label: 'Pago Móvil' },
+  { value: 'binance',    label: 'Binance' },
+  { value: 'zelle',      label: 'Zelle' },
+  { value: 'paypal',     label: 'PayPal' },
+  { value: 'cash',       label: 'Efectivo', onlyFor: 'retiro_tienda' },
+];
+
+// Methods selectable for a given delivery_type — Efectivo only appears for
+// "Retiro en Tienda"; every other method is always offered.
+export function getPaymentMethods(deliveryType: string): PaymentMethod[] {
+  return PAYMENT_METHODS.filter(m => m.onlyFor === undefined || m.onlyFor === deliveryType);
+}
 
 // ─── Country codes (full international list) ───────────────
 // `digits` = expected national (significant) number length EXCLUDING the

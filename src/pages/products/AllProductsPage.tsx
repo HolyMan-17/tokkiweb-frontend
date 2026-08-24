@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
-import { useProducts } from '../../store/localStore';
+import { fetchProducts } from '../../store/localStore';
+import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { ROUTES } from '../../lib/routes';
 import sparklesImg from '../../assets/sparkles.gif';
 
@@ -36,7 +39,8 @@ const CLEAR_SVG = (
 // whole inventory with the same search / stock / sort controls as category
 // pages (styles are shared via CategoryPage.css).
 export default function AllProductsPage() {
-  const allProducts = useProducts();
+  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const allProducts = useMemo(() => data ?? [], [data]);
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('recent');
@@ -84,6 +88,24 @@ export default function AllProductsPage() {
     setSort('recent');
     setStockOnly(false);
   };
+
+  if (isLoading) {
+    return (
+      <>
+        <CatalogTopNav />
+        <LoadingSpinner fullPage />
+      </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <>
+        <CatalogTopNav />
+        <ErrorState onRetry={retry} />
+      </>
+    );
+  }
 
   return (
     <>

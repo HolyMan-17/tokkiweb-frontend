@@ -382,8 +382,10 @@
   font-family: var(--font-display);
   font-weight: 600;
   font-size: var(--text-sm);
-  white-space: nowrap;
+  /* Hug content when short; wrap instead of overflowing on narrow screens */
+  width: max-content;
   max-width: calc(100% - var(--space-xl));
+  text-align: center;
   z-index: 1100;
   animation: toast-pop 0.35s var(--ease-spring);
 }

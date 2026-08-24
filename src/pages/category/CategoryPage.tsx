@@ -1,9 +1,12 @@
 import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
-import { useProducts } from '../../store/localStore';
+import { fetchProducts } from '../../store/localStore';
+import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { getCategoryIcon } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
 import { ROUTES } from '../../lib/routes';
@@ -35,7 +38,8 @@ const CLEAR_SVG = (
 
 export default function CategoryPage() {
   const { slug } = useParams();
-  const allStoreProducts = useProducts();
+  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const allStoreProducts = useMemo(() => data ?? [], [data]);
 
   const category = CATEGORIES.find(c => slugify(c.name) === slug);
   const allProducts = useMemo(
@@ -97,6 +101,24 @@ export default function CategoryPage() {
             <Link to={ROUTES.home} className="back-link">← Volver al inicio</Link>
           </div>
         </div>
+      </>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <>
+        <CatalogTopNav />
+        <LoadingSpinner fullPage />
+      </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <>
+        <CatalogTopNav />
+        <ErrorState onRetry={retry} />
       </>
     );
   }

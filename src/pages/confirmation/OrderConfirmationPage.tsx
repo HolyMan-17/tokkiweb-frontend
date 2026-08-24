@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import './OrderConfirmationPage.css';
+import { ErrorState } from '../../components/ui/ErrorState';
 import { useCart } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
 import { ROUTES } from '../../lib/routes';
@@ -16,12 +17,27 @@ export default function OrderConfirmationPage() {
 
   useEffect(() => {
     // Clear the cart once the order has been captured from state.
+    if (!order) return;
     clearCart();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const savedItems = order?.items ?? [];
-  const savedTotal = order?.total_amount ?? '0';
+  if (!order) {
+    return (
+      <div className="page confirmation-page animate-fadeIn text-center">
+        <ErrorState
+          title="Pedido no encontrado"
+          message="No encontramos los datos de tu pedido. Si acabas de comprar, revisa tu historial o vuelve al inicio."
+        />
+        <button className="btn btn-primary btn-lg btn-block mt-xl" onClick={() => navigate(ROUTES.home)}>
+          Volver al inicio
+        </button>
+      </div>
+    );
+  }
+
+  const savedItems = order.items;
+  const savedTotal = order.total_amount;
 
   return (
     <div className="page confirmation-page animate-fadeIn text-center">
@@ -34,11 +50,7 @@ export default function OrderConfirmationPage() {
       </div>
 
       <h1 className="page-title text-primary mt-lg">¡Pedido confirmado!</h1>
-      {order ? (
-        <p className="order-id">Pedido #{order.order_id}</p>
-      ) : (
-        <p className="order-id">Pedido #—</p>
-      )}
+      <p className="order-id">Pedido #{order.order_id}</p>
 
       <div className="status-badge-container mt-md mb-lg">
         <span className="badge badge-pending">Pendiente</span>

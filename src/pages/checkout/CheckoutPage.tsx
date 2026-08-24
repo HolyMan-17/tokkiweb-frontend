@@ -4,22 +4,31 @@ import './CheckoutPage.css';
 import { useCart } from '../../context/CartContext';
 import { createOrder } from '../../store/localStore';
 import {
-  formatPrice, COUNTRY_CODES, DELIVERY_TYPES, PAYMENT_METHODS,
+  formatPrice, COUNTRY_CODES, DELIVERY_TYPES, getPaymentMethods,
   normalizePhoneNumber, validatePhoneNumber, getCountryHint,
 } from '../../constants';
 import { ROUTES } from '../../lib/routes';
+
+interface CheckoutFormState {
+  name: string;
+  lastName: string;
+  countryCode: string;
+  phone: string;
+  deliveryType: string;
+  paymentMethod: string;
+}
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<CheckoutFormState>({
     name: '',
     lastName: '',
     countryCode: COUNTRY_CODES[0].code,
     phone: '',
     deliveryType: DELIVERY_TYPES[0].value,
-    paymentMethod: PAYMENT_METHODS[0].value,
+    paymentMethod: getPaymentMethods(DELIVERY_TYPES[0].value)[0].value,
   });
   const [phoneError, setPhoneError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -41,6 +50,9 @@ export default function CheckoutPage() {
   const selectedCountry =
     COUNTRY_CODES.find(c => c.code === formData.countryCode) ?? COUNTRY_CODES[0];
 
+  // Efectivo only applies to "Retiro en Tienda" — the list adapts live.
+  const paymentOptions = getPaymentMethods(formData.deliveryType);
+
   const sanitizeName = (value: string) =>
     value
       .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g, '')
@@ -55,6 +67,19 @@ export default function CheckoutPage() {
         : name === 'phone'
           ? value.replace(/\D/g, '').slice(0, selectedCountry.digits + 1)
           : value;
+    // Delivery change can invalidate the selected method (e.g. Efectivo
+    // chosen, then switching away from pickup) — reset to first available.
+    if (name === 'deliveryType') {
+      const options = getPaymentMethods(value);
+      setFormData(prev => ({
+        ...prev,
+        deliveryType: value,
+        paymentMethod: options.some(m => m.value === prev.paymentMethod)
+          ? prev.paymentMethod
+          : options[0].value,
+      }));
+      return;
+    }
     setFormData(prev => ({ ...prev, [name]: sanitized }));
     if (name === 'countryCode') {
       const country = COUNTRY_CODES.find(c => c.code === value) ?? COUNTRY_CODES[0];
@@ -84,19 +109,26 @@ export default function CheckoutPage() {
 
     // Create the order in the local store, then hand it to the confirmation
     // page via router state so it can render the real order id + total.
-    setIsSubmitting(true);
-    const tlf_num = `${selectedCountry.code}${normalizePhoneNumber(selectedCountry, formData.phone)}`;
-    const order = createOrder({
-      client: {
-        name: formData.name.trim(),
-        last_name: formData.lastName.trim(),
-        tlf_num,
-      },
-      items,
-    });
+    try {
+      setIsSubmitting(true);
+      const tlf_num = `${selectedCountry.code}${normalizePhoneNumber(selectedCountry, formData.phone)}`;
+      const order = createOrder({
+        client: {
+          name: formData.name.trim(),
+          last_name: formData.lastName.trim(),
+          tlf_num,
+        },
+        items,
+      });
 
-    clearCart();
-    navigate(ROUTES.confirmation, { state: { order } });
+      clearCart();
+      navigate(ROUTES.confirmation, { state: { order } });
+    } catch (error) {
+      console.error('Error al crear el pedido:', error);
+      showToast('No se pudo crear el pedido. Inténtalo de nuevo.');
+      setIsSubmitting(false);
+      return;
+    }
   };
 
   if (items.length === 0) {
@@ -222,7 +254,7 @@ export default function CheckoutPage() {
         <section className="form-section card">
           <h2 className="section-title">Método de pago</h2>
           <div className="radio-cards">
-            {PAYMENT_METHODS.map(method => (
+            {paymentOptions.map(method => (
               <label 
                 key={method.value} 
                 className={`radio-card ${formData.paymentMethod === method.value ? 'selected' : ''}`}

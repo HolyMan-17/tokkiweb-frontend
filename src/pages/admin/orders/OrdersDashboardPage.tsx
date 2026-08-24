@@ -1,21 +1,36 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useOrders, toOrderSummary } from '../../../store/localStore';
+import { fetchOrderSummaries } from '../../../store/localStore';
+import { useAsync } from '../../../hooks/useAsync';
 import { formatPrice, formatDate } from '../../../constants';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import ErrorState from '../../../components/ui/ErrorState';
 import './OrdersDashboardPage.css';
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'canceled';
 
 export default function OrdersDashboardPage() {
   const [filter, setFilter] = useState<FilterStatus>('all');
-  const orders = useOrders().map(toOrderSummary);
+  const { data, isLoading, isError, retry } = useAsync(fetchOrderSummaries, []);
+  const orders = data ?? [];
 
   const filteredOrders = orders.filter((order) => {
     if (filter === 'all') return true;
     return order.status === filter;
   });
+
+  if (isLoading || isError) {
+    return (
+      <div className="page orders-dashboard">
+        <header className="page-header">
+          <h1 className="page-title">Pedidos <span>({filteredOrders.length})</span></h1>
+        </header>
+        {isError ? <ErrorState onRetry={retry} /> : <LoadingSpinner fullPage />}
+      </div>
+    );
+  }
 
   return (
     <div className="page orders-dashboard">

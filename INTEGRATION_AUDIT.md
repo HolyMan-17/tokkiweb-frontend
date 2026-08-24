@@ -42,10 +42,11 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Status:** ☐
 
 ### A4. `category` missing from the backend contract
-- **Where:** `src/types/index.ts` (Product), `src/constants/index.ts` (CATEGORIES), `FRONTEND_REQUIREMENTS.md` §4.1
-- **Problem:** The entire storefront UX depends on `Product.category` (per-category carousels, `/categorias/:slug`, admin filters, product form). But the contract's `POST/PATCH /api/products` only accepted name/price/description/qty — no category field existed server-side.
-- **Resolution:** ✅ Backend has added the `category` attribute. During wire-up, verify: GET responses include it, POST/PATCH accept it, and its values match the frontend `CATEGORIES` names exactly (the storefront groups/filters by exact string equality).
-- **Status:** ✅ (2026-08-24)
+- **Where:** `src/types/index.ts` (Product), `src/constants/index.ts` (CATEGORIES)
+- **Problem:** The entire storefront UX depends on `Product.category`, but the contract's `POST/PATCH /api/products` didn't accept it.
+- **Resolution:** ✅ **Verified against backend code (2026-08-24)** — schema has `category VARCHAR(100) NOT NULL DEFAULT 'Otros'` (+ idempotent migration); GET list/single return it; POST requires it (trimmed string ≤100 chars); PATCH accepts it optionally and preserves otherwise; both mutations return it (`row` / `updated_row`). `API_CONTRACT.md` documents the convention: store the **display name exactly as in the frontend's `CATEGORIES`** (strict-equality matching), which matches how the storefront groups/filters (`p.category === category.name`). Bonus: `GET /api/products?category=` exact-match filter now exists (frontend doesn't need it — client-side filtering).
+- **Known caveat:** backend accepts any string ≤100 chars (no allow-list validation). A product written outside the admin UI with an unexpected value would get no storefront carousel (still visible under "Todos" / `/productos`). Low risk: admin form is a closed `<select>` over `CATEGORIES`.
+- **Status:** ✅
 
 ### A5. Product images unsupported by backend; uploader stores base64 in localStorage
 - **Where:** `src/pages/admin/products/ProductManagementPage.tsx:169-180` (`handleImageChange`), Product form save
@@ -57,7 +58,8 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Where:** every page reads synchronously via `useProducts()` / `useOrders()`
 - **Problem:** `<LoadingSpinner />` and `<EmptyState />` exist in `src/components/ui/` but are **never used anywhere**. All pages assume synchronous local data. Once pages hit the network they need loading + error + retry states (see AGENTS.md → Current State checklist).
 - **Fix:** during page-by-page wire-up, replace direct store reads with `useEffect` + `api()` and render `<LoadingSpinner />` while pending and an error state with retry on failure. Consider a tiny `useApi<T>` hook to avoid repeating boilerplate in ~10 places.
-- **Status:** ☐
+- **Resolution:** ✅ (2026-08-24) Shared infra shipped: `useAsync` hook (`src/hooks/useAsync.ts`), branded `ErrorState` component with retry, route-level `ErrorBoundary` wrapping every screen group in App.tsx, and async API-shaped facades in localStore (`fetchProducts`, `fetchOrderSummaries`, `fetchOrderDetail` with simulated 350 ms latency + `NotFoundError`). Integrated across all 9 data-driven screens; checkout submit wrapped in try/catch with error toast; confirmation page no longer fakes success without order state. At wire-up: swap facade bodies for `api()` calls — screen code unchanged.
+- **Status:** ✅
 
 ---
 
@@ -112,6 +114,7 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - ☐ **C7.** No branded 404 — silent redirect home. Optional.
 - ☐ **C8.** `index.html` missing meta description / Open Graph tags — matters for Instagram/TikTok link previews.
 - ☐ **C9.** No automated tests at all. At minimum, unit-test phone helpers + envelope normalization before integration.
+- ☐ **C10.** Admin order pages don't display `delivery_type` / `payment_method` (`OrdersDashboardPage` / admin `OrderDetailPage`). Once orders carry these fields via the API, surface them (e.g. chip in detail header). Backend jest suite also currently broken (pre-existing ESM config issue) — fix before relying on its tests.
 
 ---
 
@@ -143,3 +146,9 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 |------|------|--------|
 | 2026-08-22 | — | Audit created |
 | 2026-08-24 | A4 | Backend added `category` attribute → resolved (verify exact value match with `CATEGORIES` during wire-up) |
+| 2026-08-24 | A4 | Verified against backend source (`c_products.js`, `tokki_schema.sql`, `API_CONTRACT.md`) — fully compatible; display-name convention documented on both sides. Caveat noted: no server-side allow-list. |
+| 2026-08-24 | Contract | Delivery types redefined to exactly three canonical values, **enforced at both layers** (verified: controller allowlist in `c_orders.js` + `orders_delivery_type_check` DB constraint): `envio_nacional` ("Envío Nacional"), `delivery` ("Delivery"), `retiro_tienda` ("Retiro en Tienda") — see `src/constants/index.ts`. All docs on both repos synced. Note: A3 still open — checkout doesn't send these fields yet. |
+| 2026-08-24 | Contract | Final cross-repo compatibility scan: ✅ slugs byte-identical both sides; default selection (`envio_nacional`) valid; case-sensitive allowlist safe (closed `<select>`/radios); 400 message matches docs; frontend lint+build pass. Side findings: backend jest suite broken (pre-existing ESM config) → added C10 (admin UI doesn't show delivery/payment yet). |
+| 2026-08-24 | Contract | Payment methods redefined (frontend): exactly five — `pago_movil`, `binance`, `zelle`, `paypal`, `cash`. **Rule:** `cash` ("Efectivo") only offered for `delivery_type = retiro_tienda`; changing delivery invalidates/reset the selection (`getPaymentMethods()` in `constants/index.ts`). `bank_transfer` removed. Backend still stores it free-form — flag allowlist + conditional rule to backend when wiring orders. |
+| 2026-08-24 | UI fix | Toast overflow on mobile: checkout error toast (`.checkout-toast`) and admin toast (`.product-toast`) used `white-space: nowrap` → long messages clipped outside the pill on narrow screens. Fixed with `width: max-content` + `text-align: center` (hug content when short, wrap when long). |
+| 2026-08-24 | A6 | Loading/error states shipped for all screens (3 parallel agents): `useAsync` hook + `ErrorState` + route `ErrorBoundary` + async store facades (`fetchProducts` / `fetchOrderSummaries` / `fetchOrderDetail`, 350 ms simulated latency, `NotFoundError`). Browse pages keep TopNav during pending/error; product detail no longer flashes "no encontrado"; admin order detail distinguishes 404 vs failure; checkout submit hardened with try/catch + toast; confirmation without state shows honest "Pedido no encontrado". Lint+build clean; zero sync store reads left in pages. |

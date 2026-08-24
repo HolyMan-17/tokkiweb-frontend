@@ -1,8 +1,11 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
-import { useOrders, useProducts, toOrderSummary } from '../../../store/localStore';
+import { fetchOrderSummaries, fetchProducts } from '../../../store/localStore';
+import { useAsync } from '../../../hooks/useAsync';
 import StatusBadge from '../../../components/ui/StatusBadge';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import ErrorState from '../../../components/ui/ErrorState';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
 import './AdminDashboardPage.css';
@@ -57,8 +60,11 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export default function AdminDashboardPage() {
-  const orders = useOrders().map(toOrderSummary);
-  const products = useProducts();
+  const { data, isLoading, isError, retry } = useAsync(
+    () => Promise.all([fetchOrderSummaries(), fetchProducts()]),
+    []
+  );
+  const [orders, products] = data ?? [[], []];
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
   const approvedCount = orders.filter(o => o.status === 'approved').length;
@@ -94,6 +100,18 @@ export default function AdminDashboardPage() {
   };
 
   const recentOrders = orders.slice(0, 3);
+
+  if (isLoading || isError) {
+    return (
+      <div className="page admin-dashboard">
+        <header className="page-header">
+          <h1 className="page-title">Panel de Control 👋</h1>
+          <p className="page-subtitle">Un resumen rápido de tu tienda</p>
+        </header>
+        {isError ? <ErrorState onRetry={retry} /> : <LoadingSpinner fullPage />}
+      </div>
+    );
+  }
 
   return (
     <div className="page admin-dashboard">

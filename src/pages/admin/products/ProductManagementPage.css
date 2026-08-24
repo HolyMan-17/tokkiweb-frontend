@@ -725,8 +725,10 @@
   font-weight: 600;
   font-size: var(--text-sm);
   text-align: center;
+  /* Hug content when short; wrap instead of overflowing on narrow screens */
+  width: max-content;
+  max-width: calc(100% - var(--space-xl));
   z-index: 1100;
-  white-space: nowrap;
   animation: toast-in 0.3s var(--ease-spring);
 }
 

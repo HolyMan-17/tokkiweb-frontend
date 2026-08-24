@@ -1,14 +1,17 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useMemo, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.gif';
 import tokkiLogo from '../../assets/tokki_logo.avif';
 import cherryBlossom from '../../assets/cherry_blossom.gif';
 import branchCherry from '../../assets/branch_cherry.gif';
-import { useProducts } from '../../store/localStore';
+import { fetchProducts } from '../../store/localStore';
+import { useAsync } from '../../hooks/useAsync';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { CATEGORY_ICONS } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
 import { ROUTES } from '../../lib/routes';
@@ -228,8 +231,9 @@ function SocialCircles() {
 const SCROLL_KEY = 'tokki_catalog_scroll';
 
 export default function CatalogPage() {
-  const products = useProducts();
-  const grouped = groupByCategory(products);
+  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const products = useMemo(() => data ?? [], [data]);
+  const grouped = useMemo(() => groupByCategory(products), [products]);
 
   // Restore the scroll position when returning from a category page, and
   // remember it when leaving so "Volver" lands where the user was.
@@ -242,6 +246,24 @@ export default function CatalogPage() {
       sessionStorage.setItem(SCROLL_KEY, String(window.scrollY));
     };
   }, []);
+
+  if (isLoading) {
+    return (
+      <>
+        <CatalogTopNav />
+        <LoadingSpinner fullPage />
+      </>
+    );
+  }
+
+  if (isError) {
+    return (
+      <>
+        <CatalogTopNav />
+        <ErrorState onRetry={retry} />
+      </>
+    );
+  }
 
   return (
     <>

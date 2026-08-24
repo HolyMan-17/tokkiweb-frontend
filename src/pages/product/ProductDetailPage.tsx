@@ -1,23 +1,35 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
-import { useProducts } from '../../store/localStore';
+import { fetchProducts } from '../../store/localStore';
+import { useAsync } from '../../hooks/useAsync';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
+import ErrorState from '../../components/ui/ErrorState';
+import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import beatingHeart from '../../assets/beating_heart.gif';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const products = useProducts();
-  
+  const { data, isLoading, isError, retry } = useAsync(fetchProducts, [id]);
+  const products = data ?? [];
+
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
 
   const product = products.find(p => p.product_id === Number(id));
+
+  if (isLoading) {
+    return <LoadingSpinner fullPage />;
+  }
+
+  if (isError) {
+    return <ErrorState onRetry={retry} />;
+  }
 
   if (!product) {
     return (

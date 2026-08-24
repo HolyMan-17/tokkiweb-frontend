@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './components/auth/AdminAuth';
 import { ScrollToTop } from './components/ScrollToTop';
+import ErrorBoundary from './components/ErrorBoundary';
 import { ADMIN_PATH, ROLES } from './lib/auth';
 import { ROUTES, ADMIN_ROUTES } from './lib/routes';
 
@@ -68,20 +69,22 @@ function App() {
         <ScrollToTop />
         <Routes>
           {/* Home / Catalog — standalone, brings its own TopNav */}
-          <Route path={ROUTES.home} element={<CatalogPage />} />
+          <Route path={ROUTES.home} element={<ErrorBoundary sectionName="el catálogo"><CatalogPage /></ErrorBoundary>} />
 
           {/* Category — standalone like the catalog, same TopNav */}
-          <Route path="/categorias/:slug" element={<CategoryPage />} />
+          <Route path="/categorias/:slug" element={<ErrorBoundary sectionName="la categoría"><CategoryPage /></ErrorBoundary>} />
 
           {/* Todos ("Ver más") — standalone, full inventory browser */}
-          <Route path={ROUTES.allProducts} element={<AllProductsPage />} />
+          <Route path={ROUTES.allProducts} element={<ErrorBoundary sectionName="los productos"><AllProductsPage /></ErrorBoundary>} />
 
           {/* Customer Routes — Layout is lazy so the catalog page stays
               free of the customer chrome bundle (Header/Layout CSS+JS). */}
           <Route
             element={
               <Suspense fallback={<PageLoading />}>
-                <Layout variant="customer" />
+                <ErrorBoundary sectionName="la página">
+                  <Layout variant="customer" />
+                </ErrorBoundary>
               </Suspense>
             }
           >
@@ -101,7 +104,9 @@ function App() {
                 <AdminClerkProvider>
                   <SuspenseBoundary>
                     <RequireRole roles={[ROLES.OWNER, ROLES.TECH]}>
-                      <Layout variant="admin" />
+                      <ErrorBoundary sectionName="el panel de administración">
+                        <Layout variant="admin" />
+                      </ErrorBoundary>
                     </RequireRole>
                   </SuspenseBoundary>
                 </AdminClerkProvider>
@@ -122,7 +127,9 @@ function App() {
                 <AdminClerkProvider>
                   <SuspenseBoundary>
                     <RequireRole roles={[ROLES.TECH]}>
-                      <Layout variant="admin" />
+                      <ErrorBoundary sectionName="las herramientas de desarrollo">
+                        <Layout variant="admin" />
+                      </ErrorBoundary>
                     </RequireRole>
                   </SuspenseBoundary>
                 </AdminClerkProvider>
@@ -140,7 +147,9 @@ function App() {
               <Suspense fallback={<AdminLoading />}>
                 <AdminClerkProvider>
                   <SuspenseBoundary>
-                    <AdminSignInPage />
+                    <ErrorBoundary sectionName="el inicio de sesión">
+                      <AdminSignInPage />
+                    </ErrorBoundary>
                   </SuspenseBoundary>
                 </AdminClerkProvider>
               </Suspense>

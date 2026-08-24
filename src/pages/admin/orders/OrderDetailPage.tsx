@@ -1,10 +1,13 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useOrders, setOrderStatus } from '../../../store/localStore';
+import { fetchOrderDetail, setOrderStatus, NotFoundError } from '../../../store/localStore';
+import { useAsync } from '../../../hooks/useAsync';
 import { formatPrice, formatDateTime } from '../../../constants';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import ErrorState from '../../../components/ui/ErrorState';
 import './OrderDetailPage.css';
 
 type PendingAction = 'approve' | 'cancel' | null;
@@ -12,27 +15,49 @@ type PendingAction = 'approve' | 'cancel' | null;
 export default function OrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const orders = useOrders();
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
-
-  const order = orders.find(o => o.order_id === Number(id));
+  const { data: order, isLoading, isError, error, retry } = useAsync(
+    () => fetchOrderDetail(Number(id)),
+    [id]
+  );
 
   const confirmAction = () => {
     if (!order || !pendingAction) return;
-    setOrderStatus(order.order_id, pendingAction === 'approve' ? 'approved' : 'canceled');
+    try {
+      setOrderStatus(order.order_id, pendingAction === 'approve' ? 'approved' : 'canceled');
+    } catch (err) {
+      console.error('No se pudo actualizar el estado del pedido', err);
+    }
     setPendingAction(null);
   };
 
-  if (!order) {
+  if (isLoading) {
     return (
-      <div className="page product-not-found">
-        <h2 className="page-title">Pedido no encontrado</h2>
-        <button className="btn btn-primary mt-md" onClick={() => navigate(ADMIN_ROUTES.orders)}>
-          Volver a pedidos
-        </button>
+      <div className="page order-detail-page">
+        <LoadingSpinner fullPage />
       </div>
     );
   }
+
+  if (isError) {
+    if (error instanceof NotFoundError) {
+      return (
+        <div className="page product-not-found">
+          <h2 className="page-title">Pedido no encontrado</h2>
+          <button className="btn btn-primary mt-md" onClick={() => navigate(ADMIN_ROUTES.orders)}>
+            Volver a pedidos
+          </button>
+        </div>
+      );
+    }
+    return (
+      <div className="page order-detail-page">
+        <ErrorState onRetry={retry} />
+      </div>
+    );
+  }
+
+  if (!order) return null;
 
   return (
     <div className="page order-detail-page">

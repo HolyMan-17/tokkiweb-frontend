@@ -225,7 +225,7 @@ Body:
     "country_code": "+58",
     "tlf_num": "041469996703"
   },
-  "delivery_type": "standard",
+  "delivery_type": "envio_nacional",
   "payment_method": "credit_card",
   "items": [
     { "product_id": 1, "product_qty": 2 },
@@ -233,6 +233,8 @@ Body:
   ]
 }
 ```
+
+**Delivery types (backend-enforced):** `delivery_type` must be exactly one of `envio_nacional`, `delivery`, `retiro_tienda` (slugs). Map them to display labels in `DELIVERY_TYPES` — `"Envío Nacional"`, `"Delivery"`, `"Retiro en Tienda"` — the API only accepts the slugs; anything else returns `400`.
 
 **Phone rules:**
 - Either `country_code` + local `tlf_num` (`"041469996703"`) **or** a full international `tlf_num` (`"+5841469996703"`) — with `country_code` omitted in the latter case.
@@ -245,6 +247,8 @@ Body:
   "success": true,
   "data": {
     "order_id": 5,
+    "delivery_type": "envio_nacional",
+    "payment_method": "credit_card",
     "total_amount": "99.98",
     "items": [
       { "id": 1, "name": "Tokki Hoodie", "ordered_qty": 2, "price": "49.99" }
@@ -306,12 +310,20 @@ Only `pending` orders can be approved.
 
 ## 5. Delivery types & payment methods
 
-The backend stores these as free strings (`VARCHAR`, no enum). The **frontend must define the option lists** and send a value:
+- **Delivery (backend-enforced):** `delivery_type` must be exactly one of three canonical slugs —
+  `envio_nacional`, `delivery`, `retiro_tienda`. The orders controller rejects anything else with
+  `400` and a DB CHECK constraint (`orders_delivery_type_check`) backstops it. Display labels
+  ("Envío Nacional", "Delivery", "Retiro en Tienda") live in `DELIVERY_TYPES`
+  (`src/constants/index.ts`); the API stores/returns slugs only.
+- **Payment (frontend rule):** the checkout offers exactly five methods — `PAYMENT_METHODS`
+  slugs: `pago_movil`, `binance`, `zelle`, `paypal`, `cash`. **Efectivo (`cash`) is only
+  offered/selectable when `delivery_type` is `retiro_tienda`**; switching delivery away from
+  pickup while `cash` is selected resets the method to the first available option
+  (`getPaymentMethods(deliveryType)` in `src/constants/index.ts`). Server-side, `payment_method`
+  remains a free string for now.
 
-- **Delivery:** e.g. `standard`, `pickup` (define per shop).
-- **Payment:** e.g. `credit_card`, `bank_transfer`, `cash_on_delivery`, `whatsapp` (define per shop).
-
-> Keep these in a single constants file so they're consistent across forms and the admin UI.
+> Keep these lists in a single constants file so they're consistent across forms and the admin UI,
+> and sync any backend-side allowlist changes with `DELIVERY_TYPES` / `PAYMENT_METHODS`.
 
 ---
 

@@ -213,3 +213,38 @@ export function saveCart(items: CartItem[]) {
 export function toOrderSummary(o: OrderDetail): OrderSummary {
   return toSummary(o);
 }
+
+// ─── Async facade (API-shaped reads) ───────────────────────
+// Mirrors the future network calls so screens exercise their real loading /
+// error paths today. When wiring the backend, replace each body with an
+// `api()` call — signatures stay identical. `NotFoundError` maps to the
+// backend's 404s (missing product / order).
+const SIMULATED_LATENCY_MS = 350;
+
+function delay(ms = SIMULATED_LATENCY_MS): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+export class NotFoundError extends Error {
+  constructor(message = 'Recurso no encontrado') {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
+
+export async function fetchProducts(): Promise<Product[]> {
+  await delay();
+  return loadProducts();
+}
+
+export async function fetchOrderSummaries(): Promise<OrderSummary[]> {
+  await delay();
+  return loadOrders().map(toSummary);
+}
+
+export async function fetchOrderDetail(orderId: number): Promise<OrderDetail> {
+  await delay();
+  const order = getOrder(orderId);
+  if (!order) throw new NotFoundError(`El pedido #${orderId} no existe.`);
+  return order;
+}

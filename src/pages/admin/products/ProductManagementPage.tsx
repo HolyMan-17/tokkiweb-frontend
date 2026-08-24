@@ -1,9 +1,12 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { useProducts, saveProducts } from '../../../store/localStore';
+import { fetchProducts, saveProducts } from '../../../store/localStore';
+import { useAsync } from '../../../hooks/useAsync';
 import type { Product } from '../../../types';
 import { formatPrice, CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import ErrorState from '../../../components/ui/ErrorState';
 import sparklesGif from '../../../assets/sparkles.gif';
 import './ProductManagementPage.css';
 
@@ -84,7 +87,8 @@ function validateForm(form: ProductFormState): FormErrors {
 }
 
 export default function ProductManagementPage() {
-  const products = useProducts();
+  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const products = useMemo(() => data ?? [], [data]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
@@ -198,12 +202,17 @@ export default function ProductManagementPage() {
       product_image: imagePreview || undefined,
     };
 
-    if (editingProduct) {
-      saveProducts(products.map(p =>
-        p.product_id === editingProduct.product_id ? productData : p
-      ));
-    } else {
-      saveProducts([...products, productData]);
+    try {
+      if (editingProduct) {
+        saveProducts(products.map(p =>
+          p.product_id === editingProduct.product_id ? productData : p
+        ));
+      } else {
+        saveProducts([...products, productData]);
+      }
+    } catch {
+      showToast('No se pudo guardar el producto.');
+      return;
     }
     closeModal();
     showToast(editingProduct ? 'Producto actualizado' : 'Producto agregado');
@@ -215,7 +224,13 @@ export default function ProductManagementPage() {
 
   const confirmArchive = () => {
     if (!archiveTarget) return;
-    saveProducts(products.filter(p => p.product_id !== archiveTarget.product_id));
+    try {
+      saveProducts(products.filter(p => p.product_id !== archiveTarget.product_id));
+    } catch {
+      showToast('No se pudo archivar el producto.');
+      setArchiveTarget(null);
+      return;
+    }
     setArchiveTarget(null);
     showToast('Producto archivado');
   };
@@ -233,6 +248,22 @@ export default function ProductManagementPage() {
       if (toastTimer.current) window.clearTimeout(toastTimer.current);
     };
   }, []);
+
+  if (isLoading || isError) {
+    return (
+      <div className="page product-management-page">
+        <header className="page-header">
+          <div>
+            <h1 className="page-title">Productos <span>({products.length})</span></h1>
+          </div>
+          <button className="btn btn-primary" onClick={openAddModal}>
+            Agregar producto
+          </button>
+        </header>
+        {isError ? <ErrorState onRetry={retry} /> : <LoadingSpinner fullPage />}
+      </div>
+    );
+  }
 
   return (
     <div className="page product-management-page">
