@@ -165,11 +165,14 @@ Optional query param: `?category=<name>` — exact, case-sensitive match against
       "product_description": "Comfortable oversized cotton hoodie",
       "category": "Ropa",
       "qty_available": 25,
-      "in_stock": true
+      "in_stock": true,
+      "product_image_url": "http://localhost:3000/images/products/7c9e6679-7425-40de-944b-e07fc1f90ae7.webp"
     }
   ]
 }
 ```
+
+**Images:** every product payload carries `product_image_url` — an absolute URL (or `null` when no image). Render it directly in `<img src>`; never build image URLs yourself. Files are WebP, ≤1600px wide.
 
 Empty result: `{ "success": "true", "message": "There's no registered products." }`
 > ⚠️ Note: `success` is the **string** `"true"` in the empty case (backend quirk). Check `data`/`message` presence rather than the `success` type.

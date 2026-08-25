@@ -13,7 +13,7 @@ describe('index.html — meta description & Open Graph', () => {
   it('tiene una meta description en español', () => {
     const tag = attr('name', 'description');
     expect(tag).toBeDefined();
-    expect(tag!).toMatch(/tienda|accesorios|kawaii|coreana/i);
+    expect(tag!).toMatch(/tienda|accesorios|asiatica|coreana/i);
   });
 
   it('declara los tags Open Graph esenciales', () => {
