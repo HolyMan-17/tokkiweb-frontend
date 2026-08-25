@@ -23,7 +23,7 @@ export function slugify(text: string): string {
 // Canonical values — enforced at backend level too, so these exact strings
 // are part of the API contract (do not rename without syncing both sides).
 export const DELIVERY_TYPES = [
-  { value: 'envio_nacional', label: 'Envío Nacional' },
+  { value: 'envio_nacional', label: 'Envío Nacional (Zoom)' },
   { value: 'delivery',       label: 'Delivery' },
   { value: 'retiro_tienda',  label: 'Retiro en Tienda' },
 ] as const;

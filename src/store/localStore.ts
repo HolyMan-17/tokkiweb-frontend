@@ -53,6 +53,7 @@ function toSummary(o: OrderDetail): OrderSummary {
     order_id: o.order_id,
     name: o.client.name,
     last_name: o.client.last_name,
+    cedula: o.client.cedula,
     tlf_num: o.client.tlf_num,
     total_amount: o.total_amount,
     status: o.status,
@@ -64,7 +65,14 @@ function toSummary(o: OrderDetail): OrderSummary {
 // Seed orders as full OrderDetail records. Order 1 reuses the rich mock
 // detail; the rest get plausible line items derived from the product list.
 function seedOrders(): OrderDetail[] {
-  return MOCK_ORDERS.map(o => {
+  // Plausible delivery/payment combos for the mock orders (cycled by index).
+  const seedDelivery = ['envio_nacional', 'delivery', 'retiro_tienda'] as const;
+  const seedPayment: Record<(typeof seedDelivery)[number], string> = {
+    envio_nacional: 'pago_movil',
+    delivery: 'zelle',
+    retiro_tienda: 'cash',
+  };
+  return MOCK_ORDERS.map((o, idx) => {
     if (o.order_id === MOCK_ORDER_DETAIL.order_id) {
       return { ...MOCK_ORDER_DETAIL, items: [...MOCK_ORDER_DETAIL.items] };
     }
@@ -78,10 +86,13 @@ function seedOrders(): OrderDetail[] {
       };
     });
     const total = items.reduce((s, it) => s + Number(it.product_total), 0);
+    const deliveryType = seedDelivery[idx % seedDelivery.length];
     return {
       order_id: o.order_id,
       status: o.status,
       client: { name: o.name, last_name: o.last_name, tlf_num: o.tlf_num },
+      delivery_type: deliveryType,
+      payment_method: seedPayment[deliveryType],
       total_amount: total.toFixed(2),
       created_at: o.created_at,
       items,
@@ -153,7 +164,9 @@ export function getOrders(): OrderDetail[] {
 
 // Creates a pending order from the cart, decrements stock, and persists both.
 export function createOrder(input: {
-  client: { name: string; last_name: string; tlf_num: string };
+  client: { name: string; last_name: string; cedula?: string; tlf_num: string };
+  delivery_type: string;
+  payment_method: string;
   items: CartItem[];
 }): OrderDetail {
   const products = loadProducts();
@@ -173,6 +186,8 @@ export function createOrder(input: {
     order_id: maxId + 1,
     status: 'pending',
     client: input.client,
+    delivery_type: input.delivery_type,
+    payment_method: input.payment_method,
     total_amount: total.toFixed(2),
     created_at: new Date().toISOString(),
     items: orderItems,
@@ -247,4 +262,14 @@ export async function fetchOrderDetail(orderId: number): Promise<OrderDetail> {
   const order = getOrder(orderId);
   if (!order) throw new NotFoundError(`El pedido #${orderId} no existe.`);
   return order;
+}
+
+// Test-only reset: wipes persisted keys and the in-memory caches so each test
+// starts from a clean slate (the caches otherwise shadow direct localStorage
+// writes made inside tests).
+export function resetStoreForTests() {
+  productsCache = null;
+  ordersCache = null;
+  localStorage.removeItem(PRODUCTS_KEY);
+  localStorage.removeItem(ORDERS_KEY);
 }

@@ -39,7 +39,8 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Where:** `src/pages/checkout/CheckoutPage.tsx:89-96`, `src/store/localStore.ts` (`createOrder`)
 - **Problem:** The form collects `deliveryType` and `paymentMethod`, but `createOrder()` is called with only `{ client, items }` — the two selections are never sent or persisted. `CheckoutPayload` in `src/types/index.ts` includes them; the local store signature doesn't match it.
 - **Fix:** extend `createOrder` input to accept both fields; when wiring the API, include them in the `POST /api/orders` body per contract.
-- **Status:** ☐
+- **Resolution:** ✅ (2026-08-25) `createOrder` now accepts and persists `delivery_type` + `payment_method`; checkout sends the form selections through (`CheckoutPage.tsx`). Types updated (`OrderDetail.delivery_type` / `.payment_method`); seed orders carry plausible combos. At wire-up: pass both fields in the `POST /api/orders` body unchanged.
+- **Status:** ✅
 
 ### A4. `category` missing from the backend contract
 - **Where:** `src/types/index.ts` (Product), `src/constants/index.ts` (CATEGORIES)
@@ -60,6 +61,12 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Fix:** during page-by-page wire-up, replace direct store reads with `useEffect` + `api()` and render `<LoadingSpinner />` while pending and an error state with retry on failure. Consider a tiny `useApi<T>` hook to avoid repeating boilerplate in ~10 places.
 - **Resolution:** ✅ (2026-08-24) Shared infra shipped: `useAsync` hook (`src/hooks/useAsync.ts`), branded `ErrorState` component with retry, route-level `ErrorBoundary` wrapping every screen group in App.tsx, and async API-shaped facades in localStore (`fetchProducts`, `fetchOrderSummaries`, `fetchOrderDetail` with simulated 350 ms latency + `NotFoundError`). Integrated across all 9 data-driven screens; checkout submit wrapped in try/catch with error toast; confirmation page no longer fakes success without order state. At wire-up: swap facade bodies for `api()` calls — screen code unchanged.
 - **Status:** ✅
+
+### A7. `cedula` not in the backend order contract (NEW 2026-08-25)
+- **Where:** checkout form (`CheckoutPage.tsx`), `OrderDetail` / `CheckoutPayload` types, admin `OrderDetailPage`
+- **Problem:** The client form now collects cédula (`V-` / `E-` / `J-` + digits) and the frontend persists/surfaces it locally, but `POST /api/orders` and the clients schema don't accept or store it yet.
+- **Fix:** backend adds `cedula VARCHAR(12)` (combined form `"V-12345678"`) to the client/order record + accepts/returns it in order endpoints; sync `API_CONTRACT.md`. Frontend is already sending it — no further changes expected at wire-up if the field round-trips.
+- **Status:** ☐ *(backend action)*
 
 ---
 
@@ -112,9 +119,12 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - ☐ **C5.** Canceling an order locally doesn't restore stock (backend does) — demo-only divergence; remember when comparing behaviors after wiring.
 - ☐ **C6.** Dev Tools page displays `VITE_API_URL` but client hardcodes `/api` — misleading until A1 lands.
 - ☐ **C7.** No branded 404 — silent redirect home. Optional.
-- ☐ **C8.** `index.html` missing meta description / Open Graph tags — matters for Instagram/TikTok link previews.
-- ☐ **C9.** No automated tests at all. At minimum, unit-test phone helpers + envelope normalization before integration.
-- ☐ **C10.** Admin order pages don't display `delivery_type` / `payment_method` (`OrdersDashboardPage` / admin `OrderDetailPage`). Once orders carry these fields via the API, surface them (e.g. chip in detail header). Backend jest suite also currently broken (pre-existing ESM config issue) — fix before relying on its tests.
+- ✅ **C8.** `index.html` missing meta description / Open Graph tags — matters for Instagram/TikTok link previews.
+  - **Resolution (2026-08-25):** Full SEO + preview set added to `index.html` — Spanish meta description, canonical URL, Open Graph (`og:title/description/type/url/image/alt/locale`, `og:locale es_VE`) and Twitter `summary_large_image` card. Absolute URLs are injected at build time via `%VITE_PUBLIC_SITE_URL%` (new env var, documented in `.env.example`; **must be set in Vercel before launch** or previews render broken). Favicon switched to `favicon.svg` with PNG fallback. Guarded by static contract tests (`src/test/indexHtml.test.ts`). TODO (cosmetic): dedicated 1200×630 OG image — currently reuses `tokki_logo.png` (~1.3 MB).
+- 🔄 **C9.** No automated tests at all. At minimum, unit-test phone helpers + envelope normalization before integration.
+  - **Update (2026-08-25):** Vitest + Testing Library now set up (jsdom, `pnpm test` / `pnpm test:run`, setup in `src/test/setup.ts`; TDD mandated in AGENTS.md). First suites shipped: checkout cédula behavior (4 tests) + admin order detail full-data rendering (5 tests). Still missing: phone helper + `api()` envelope normalization unit tests — do these next per the original suggestion.
+- 🔄 **C10.** Admin order pages don't display `delivery_type` / `payment_method` (`OrdersDashboardPage` / admin `OrderDetailPage`). Once orders carry these fields via the API, surface them (e.g. chip in detail header). Backend jest suite also currently broken (pre-existing ESM config issue) — fix before relying on its tests.
+  - **Update (2026-08-25):** Admin `OrderDetailPage` now shows cédula (client card) + a dedicated "Entrega y pago" card with human-readable labels resolved from `DELIVERY_TYPES` / `PAYMENT_METHODS`. Remaining: surface chips in the `OrdersDashboardPage` list rows.
 
 ---
 
@@ -152,3 +162,8 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 | 2026-08-24 | Contract | Payment methods redefined (frontend): exactly five — `pago_movil`, `binance`, `zelle`, `paypal`, `cash`. **Rule:** `cash` ("Efectivo") only offered for `delivery_type = retiro_tienda`; changing delivery invalidates/reset the selection (`getPaymentMethods()` in `constants/index.ts`). `bank_transfer` removed. Backend still stores it free-form — flag allowlist + conditional rule to backend when wiring orders. |
 | 2026-08-24 | UI fix | Toast overflow on mobile: checkout error toast (`.checkout-toast`) and admin toast (`.product-toast`) used `white-space: nowrap` → long messages clipped outside the pill on narrow screens. Fixed with `width: max-content` + `text-align: center` (hug content when short, wrap when long). |
 | 2026-08-24 | A6 | Loading/error states shipped for all screens (3 parallel agents): `useAsync` hook + `ErrorState` + route `ErrorBoundary` + async store facades (`fetchProducts` / `fetchOrderSummaries` / `fetchOrderDetail`, 350 ms simulated latency, `NotFoundError`). Browse pages keep TopNav during pending/error; product detail no longer flashes "no encontrado"; admin order detail distinguishes 404 vs failure; checkout submit hardened with try/catch + toast; confirmation without state shows honest "Pedido no encontrado". Lint+build clean; zero sync store reads left in pages. |
+| 2026-08-25 | Contract (NEW) | **Cédula field added to checkout** — client form now collects a Venezuelan ID with prefix combobox (`V-` / `E-` / `J-`) + digits-only input, validated (5–9 digits) and sent as combined `"V-12345678"` on the order client. Persisted locally via `createOrder`; surfaced in admin OrderDetailPage. ⚠️ Backend action needed: add `cedula` column to clients/orders schema + accept it in `POST /api/orders`; sync API_CONTRACT.md before wire-up. |
+| 2026-08-25 | A3 | Checkout now sends `delivery_type` + `payment_method` through `createOrder()` and they persist on the order — no longer dropped. |
+| 2026-08-25 | C9 | Test infra landed: Vitest 4 + Testing Library (jsdom, threads pool for Windows worker timeouts), `pnpm test`/`pnpm test:run`, TDD workflow codified in AGENTS.md. 9 behavior tests passing (checkout cédula, admin order detail). Phone-helper + envelope-normalization unit tests still pending. |
+| 2026-08-25 | C10 | Admin OrderDetailPage now displays cédula + "Entrega y pago" (delivery/payment labels from constants slugs). OrdersDashboardPage list chips still pending. |
+| 2026-08-25 | C8 | SEO + link-preview tags shipped in `index.html` (description, canonical, OG, Twitter card). New `VITE_PUBLIC_SITE_URL` env var (`.env.example`) — set it in Vercel before launch. Static tests guard the tags. Test infra hardened: jsdom `localStorage` shim in setup, single-worker config (`maxWorkers: 1`, `fileParallelism: false`) to dodge flaky Windows worker spawns. Suite: 14/14 green, lint + build clean. |

@@ -12,11 +12,15 @@ import { ROUTES } from '../../lib/routes';
 interface CheckoutFormState {
   name: string;
   lastName: string;
+  cedulaType: string;
+  cedula: string;
   countryCode: string;
   phone: string;
   deliveryType: string;
   paymentMethod: string;
 }
+
+const CEDULA_TYPES = ['V-', 'E-', 'J-'];
 
 export default function CheckoutPage() {
   const { items, total, clearCart } = useCart();
@@ -25,12 +29,15 @@ export default function CheckoutPage() {
   const [formData, setFormData] = useState<CheckoutFormState>({
     name: '',
     lastName: '',
+    cedulaType: CEDULA_TYPES[0],
+    cedula: '',
     countryCode: COUNTRY_CODES[0].code,
     phone: '',
     deliveryType: DELIVERY_TYPES[0].value,
     paymentMethod: getPaymentMethods(DELIVERY_TYPES[0].value)[0].value,
   });
   const [phoneError, setPhoneError] = useState('');
+  const [cedulaError, setCedulaError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | null>(null);
@@ -59,14 +66,22 @@ export default function CheckoutPage() {
       .replace(/\s{2,}/g, ' ')
       .slice(0, 60);
 
+  const validateCedula = (value: string) => {
+    if (!value) return 'Ingresa tu número de cédula.';
+    if (value.length < 5 || value.length > 9) return 'La cédula debe tener entre 5 y 9 dígitos.';
+    return '';
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     const sanitized =
       name === 'name' || name === 'lastName'
         ? sanitizeName(value)
-        : name === 'phone'
-          ? value.replace(/\D/g, '').slice(0, selectedCountry.digits + 1)
-          : value;
+        : name === 'cedula'
+          ? value.replace(/\D/g, '').slice(0, 9)
+          : name === 'phone'
+            ? value.replace(/\D/g, '').slice(0, selectedCountry.digits + 1)
+            : value;
     // Delivery change can invalidate the selected method (e.g. Efectivo
     // chosen, then switching away from pickup) — reset to first available.
     if (name === 'deliveryType') {
@@ -88,16 +103,25 @@ export default function CheckoutPage() {
     if (name === 'phone') {
       setPhoneError(validatePhoneNumber(selectedCountry, sanitized));
     }
+    if (name === 'cedula') {
+      setCedulaError(validateCedula(sanitized));
+    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.lastName || !formData.phone) {
+    if (!formData.name || !formData.lastName || !formData.cedula || !formData.phone) {
       showToast('Por favor completa todos los campos requeridos.');
       return;
     }
     if (!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.name) || !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.lastName)) {
       showToast('Ingresa un nombre válido.');
+      return;
+    }
+    const cedulaErrorMsg = validateCedula(formData.cedula);
+    if (cedulaErrorMsg) {
+      setCedulaError(cedulaErrorMsg);
+      showToast('Numero de cedula invalido');
       return;
     }
     const phoneErrorMsg = validatePhoneNumber(selectedCountry, formData.phone);
@@ -116,8 +140,11 @@ export default function CheckoutPage() {
         client: {
           name: formData.name.trim(),
           last_name: formData.lastName.trim(),
+          cedula: `${formData.cedulaType}${formData.cedula}`,
           tlf_num,
         },
+        delivery_type: formData.deliveryType,
+        payment_method: formData.paymentMethod,
         items,
       });
 
@@ -194,7 +221,43 @@ export default function CheckoutPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Teléfono</label>
+            <label className="form-label" htmlFor="cedula">Cédula</label>
+            <div className="phone-input-group">
+              <select
+                name="cedulaType"
+                id="cedulaType"
+                className="form-select phone-select cedula-select"
+                value={formData.cedulaType}
+                onChange={handleInputChange}
+                aria-label="Tipo de cédula"
+              >
+                {CEDULA_TYPES.map(t => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+              <input
+                type="tel"
+                name="cedula"
+                id="cedula"
+                className={`form-input phone-number ${cedulaError ? 'form-input-error' : ''}`}
+                value={formData.cedula}
+                onChange={handleInputChange}
+                placeholder="Ej. 12345678"
+                inputMode="numeric"
+                maxLength={9}
+                aria-invalid={cedulaError ? 'true' : 'false'}
+                required
+              />
+            </div>
+            {formData.cedula && !cedulaError && (
+              <p className="phone-preview" role="status">
+                {formData.cedulaType}{formData.cedula}
+              </p>
+            )}
+          </div>
+
+          <div className="form-group">
+            <label className="form-label" htmlFor="phone">Teléfono</label>
             <div className="phone-input-group">
               <select 
                 name="countryCode" 
@@ -207,9 +270,10 @@ export default function CheckoutPage() {
                   <option key={`${c.short}-${c.code}`} value={c.code}>{c.short} ({c.code})</option>
                 ))}
               </select>
-              <input 
-                type="tel" 
-                name="phone" 
+              <input
+                type="tel"
+                name="phone"
+                id="phone"
                 className={`form-input phone-number ${phoneError ? 'form-input-error' : ''}`} 
                 value={formData.phone}
                 onChange={handleInputChange}

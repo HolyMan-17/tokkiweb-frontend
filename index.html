@@ -2,9 +2,42 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/tokki_logo.png" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="alternate icon" type="image/png" href="/tokki_logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tokki Shop</title>
+
+    <!-- SEO -->
+    <!-- VITE_PUBLIC_SITE_URL is injected at build time (see .env.example).
+         OG/Twitter crawlers require ABSOLUTE URLs — set it before deploying. -->
+    <title>Tokki Shop — Accesorios y Dulces Coreanos Kawaii</title>
+    <meta
+      name="description"
+      content="Tokki Shop: tienda kawaii de maquillaje, skincare, accesorios, lentes de contacto, pines, ropa, peluches y dulces asiáticos. Envíos a toda Venezuela. 🐰"
+    />
+    <meta name="theme-color" content="#e68bbe" />
+    <link rel="canonical" href="%VITE_PUBLIC_SITE_URL%/" />
+
+    <!-- Open Graph (Instagram / TikTok / WhatsApp / Facebook link previews) -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Tokki Shop" />
+    <meta property="og:title" content="Tokki Shop — Accesorios y Dulces Coreanos Kawaii" />
+    <meta
+      property="og:description"
+      content="Tienda kawaii de maquillaje, skincare, accesorios, lentes de contacto, pines, ropa, peluches y dulces asiáticos. Envíos a toda Venezuela. 🐰"
+    />
+    <meta property="og:url" content="%VITE_PUBLIC_SITE_URL%/" />
+    <meta property="og:image" content="%VITE_PUBLIC_SITE_URL%/tokki_logo.png" />
+    <meta property="og:image:alt" content="Logo de Tokki Shop" />
+    <meta property="og:locale" content="es_VE" />
+
+    <!-- Twitter/X card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Tokki Shop — Accesorios y Dulces Coreanos Kawaii" />
+    <meta
+      name="twitter:description"
+      content="Tienda kawaii de maquillaje, skincare, accesorios, dulces asiáticos y más. Envíos a toda Venezuela. 🐰"
+    />
+    <meta name="twitter:image" content="%VITE_PUBLIC_SITE_URL%/tokki_logo.png" />
   </head>
   <body>
     <div id="root"></div>

@@ -168,6 +168,24 @@ To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_
 
 ---
 
+## Development Workflow (TDD)
+
+All development **must** follow Test-Driven Development (Red → Green → Refactor):
+
+1. **Red** — Before writing any production code, write a failing test that captures the expected behavior (component render/logic test, utility unit test, store mutation test).
+2. **Green** — Write the minimal production code needed to make the test pass.
+3. **Refactor** — Clean up both code and tests while keeping them green.
+
+Rules:
+
+- Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
+- Run the full test suite (`pnpm test` / one-shot `pnpm test:run`) before declaring any task complete — all tests must pass.
+- Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
+- Pure logic (validators, formatters, `localStore` mutations, sanitizers) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
+- Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
+
+---
+
 ## Categories
 
 Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel per category. Each category has a brand asset (gif/png) in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`) shown instead of the emoji on the catalog, category page, and admin product filter chips.
@@ -227,5 +245,5 @@ Checkout shows a live E.164 preview chip (green = valid, red = invalid) and bloc
 - Clerk roles come from `user.publicMetadata.role`: `owner` (full admin) and `tech` (full admin + Dev Tools at `/tokki-admin/dev`).
 - Auth is abstracted behind `useAdminAuth()` (`src/components/auth/useAdminAuth.ts`) + `<AuthProvider>` (`src/components/auth/AdminAuth.tsx`). Consumers NEVER call Clerk hooks directly, so the app also runs without Clerk (dev bypass via `VITE_ADMIN_DEV_BYPASS=true`).
 - Guard sections with `<RequireRole roles={[...]}>` (`src/components/auth/RequireRole.tsx`).
-- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`.
+- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`, `VITE_PUBLIC_SITE_URL` (injected into `index.html` OG/canonical tags — required in Vercel for link previews; see `.env.example`).
 - See `.env.example` for the shape. Never commit a real publishable key.

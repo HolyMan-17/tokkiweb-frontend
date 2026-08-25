@@ -1,4 +1,4 @@
-import { defineConfig, type Plugin } from 'vite'
+import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
 import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -71,5 +71,17 @@ export default defineConfig({
         changeOrigin: true,
       }
     }
-  }
+  },
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: './src/test/setup.ts',
+    css: false,
+    // Forks workers time out on some Windows setups; threads are faster to spawn.
+    pool: 'threads',
+    // Worker spawns on this machine are slow/flaky (Defender scans) — keep
+    // them few and sequential so startup stays under Vitest's 60 s timeout.
+    fileParallelism: false,
+    maxWorkers: 1,
+  },
 })

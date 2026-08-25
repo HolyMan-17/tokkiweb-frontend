@@ -110,6 +110,11 @@
   font-size: var(--text-base);
 }
 
+.cedula-select {
+  width: 84px;
+  max-width: 84px;
+}
+
 .phone-number {
   flex: 1;
   min-width: 0;

@@ -15,6 +15,7 @@ export interface OrderSummary {
   order_id: number;
   name: string;
   last_name: string;
+  cedula?: string;              // "V-12345678" | "E-…" | "J-…" (optional until backend ships it)
   tlf_num: string;
   total_amount: string;
   status: 'pending' | 'approved' | 'canceled';
@@ -32,7 +33,9 @@ export interface OrderItem {
 export interface OrderDetail {
   order_id: number;
   status: 'pending' | 'approved' | 'canceled';
-  client: { name: string; last_name: string; tlf_num: string };
+  client: { name: string; last_name: string; cedula?: string; tlf_num: string };
+  delivery_type: string;        // DELIVERY_TYPES slug (e.g. "envio_nacional")
+  payment_method: string;       // PAYMENT_METHODS slug (e.g. "pago_movil")
   total_amount: string;
   created_at: string;
   items: OrderItem[];
@@ -49,6 +52,7 @@ export interface CheckoutPayload {
   client_info: {
     name: string;
     last_name: string;
+    cedula?: string;
     country_code: string;
     tlf_num: string;
   };

@@ -472,8 +472,11 @@ export const MOCK_ORDER_DETAIL: OrderDetail = {
   client: {
     name: 'María',
     last_name: 'González',
+    cedula: 'V-26345678',
     tlf_num: '+584146999670',
   },
+  delivery_type: 'envio_nacional',
+  payment_method: 'pago_movil',
   total_amount: '18.50',
   created_at: '2026-08-13T14:30:00.000Z',
   items: [
