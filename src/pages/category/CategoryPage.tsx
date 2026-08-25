@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
@@ -38,7 +38,7 @@ const CLEAR_SVG = (
 
 export default function CategoryPage() {
   const { slug } = useParams();
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allStoreProducts = useMemo(() => data ?? [], [data]);
 
   const category = CATEGORIES.find(c => slugify(c.name) === slug);

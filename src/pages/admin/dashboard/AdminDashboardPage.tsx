@@ -1,7 +1,8 @@
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
-import { fetchOrderSummaries, fetchProducts } from '../../../store/localStore';
+import { fetchOrderSummaries } from '../../../store/localStore';
+import { fetchAllProducts } from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -60,10 +61,11 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export default function AdminDashboardPage() {
-  const { data, isLoading, isError, retry } = useAsync(
-    () => Promise.all([fetchOrderSummaries(), fetchProducts()]),
-    []
-  );
+  const { data, isLoading, isError, retry } = useAsync(async () => {
+    // Orders still come from the local sim; products now live in the API.
+    const [orders, products] = await Promise.all([fetchOrderSummaries(), fetchAllProducts()]);
+    return [orders, products] as const;
+  }, []);
   const [orders, products] = data ?? [[], []];
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;

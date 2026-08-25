@@ -6,6 +6,9 @@ export interface AdminAuthValue {
   isLoaded: boolean;
   isSignedIn: boolean;
   role: AppRole;
+  /** Resolves a Clerk session JWT for Authorization headers on admin API
+   *  calls. Undefined when Clerk isn't mounted (storefront / dev bypass). */
+  getAdminToken?: () => Promise<string | null>;
 }
 
 export const AdminAuthContext = createContext<AdminAuthValue>({

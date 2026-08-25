@@ -5,7 +5,7 @@ import sparklesImg from '../../assets/sparkles.gif';
 import tokkiLogo from '../../assets/tokki_logo.avif';
 import cherryBlossom from '../../assets/cherry_blossom.gif';
 import branchCherry from '../../assets/branch_cherry.gif';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
@@ -231,7 +231,7 @@ function SocialCircles() {
 const SCROLL_KEY = 'tokki_catalog_scroll';
 
 export default function CatalogPage() {
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
   const grouped = useMemo(() => groupByCategory(products), [products]);
 

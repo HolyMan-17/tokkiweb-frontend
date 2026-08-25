@@ -57,7 +57,8 @@ function toSummary(o: OrderDetail): OrderSummary {
     tlf_num: o.client.tlf_num,
     total_amount: o.total_amount,
     status: o.status,
-    item_count: o.items.reduce((s, i) => s + i.product_qty, 0),
+    // LINES not units — matches backend COUNT(o_i.product_id) (see B6).
+    item_count: o.items.length,
     created_at: o.created_at,
   };
 }
@@ -209,13 +210,22 @@ export function createOrder(input: {
 }
 
 // ─── Cart persistence ──────────────────────────────────────
+// Cart lines carry full product snapshots (they may reference products that
+// now live in the API rather than this store), so validation is structural.
 export function loadCart(): CartItem[] {
   try {
     const raw = localStorage.getItem(CART_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as CartItem[];
-    const valid = new Set(loadProducts().map(p => p.product_id));
-    return parsed.filter(i => valid.has(i.product.product_id));
+    return parsed.filter(
+      i =>
+        i &&
+        i.product &&
+        Number.isFinite(i.product.product_id) &&
+        typeof i.product.product_price === 'string' &&
+        Number.isInteger(i.quantity) &&
+        i.quantity > 0,
+    );
   } catch {
     return [];
   }
@@ -245,11 +255,6 @@ export class NotFoundError extends Error {
     super(message);
     this.name = 'NotFoundError';
   }
-}
-
-export async function fetchProducts(): Promise<Product[]> {
-  await delay();
-  return loadProducts();
 }
 
 export async function fetchOrderSummaries(): Promise<OrderSummary[]> {

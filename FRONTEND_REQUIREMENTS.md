@@ -196,7 +196,9 @@ Body:
 **Category rules:** required, non-empty string, max 100 chars. Send the display name exactly as it appears in `CATEGORIES` (the storefront matches `p.category === category.name`). Existing rows created before this field default to `'Otros'`.
 
 `201` → `{ success: true, row: { product_id, product_name, product_price, product_description, category, qty_available, in_stock, is_archived } }`
-`400` → `{ success: false, message: "All product fields are required!" }`, `"A valid product category is required."`, or `"Product quantity can't be negative."`
+`400` → `{ success: false, message: ... }` where messages include `"All product fields are required!"`, `"A valid product category is required."`, `"Product quantity must be a whole number."`, or `"Product quantity can't be negative."`
+
+> ⚠️ **Types are strict now:** `product_price` must be a JSON **number** and `qty_available` an **integer** — coerce `<input>` values (`Number(...)`, `parseInt`) before sending; string-typed numbers are rejected.
 
 #### `PATCH /api/products/:product_id` — Update product (admin)
 Body (all optional, at least one):
@@ -204,14 +206,36 @@ Body (all optional, at least one):
 { "product_name": "…", "product_price": 19.99, "product_description": "…", "category": "Ropa", "qty_available": 10 }
 ```
 `200` → `{ success: true, updated_row: { product_id, product_name, product_price, product_description, category, qty_available, in_stock } }`
-`400` → `{ success: false, message: "At least 1 product field needs to be updated." }` or `"A valid product category is required."`
+`400` → `{ success: false, message: "At least 1 product field needs to be updated." }`, `"A valid product category is required."`, `"product_price must be a positive number."`, `"Product quantity must be a whole number."`, or `"Product quantity can't be negative."` (invalid values are rejected, never silently ignored)
 `401` → `{ success: false, message: "Product is archived." }`
 `404` → `{ success: false, message: "Product was not found." }`
 
 #### `DELETE /api/products/:product_id` — Archive product (admin)
-Soft-delete: sets `is_archived = true`, `qty_available = 0`, `in_stock = false`.
+Soft-delete: sets `is_archived = true`, `qty_available = 0`, `in_stock = false` (the stored image file is removed server-side too).
 `200` → `{ success: true, message: "Product successfully archived" }`
 `404` → `{ success: false, message: "Product ID is not valid." }`
+
+#### `POST /api/products/:product_id/image` — Upload / replace image (admin)
+Multipart form (NOT JSON) with a single file under the **`image`** field:
+
+```ts
+const form = new FormData();
+form.append('image', file);          // jpeg / png / webp, ≤ 5 MB
+await api(`/products/${id}/image`, { method: 'POST', body: form, getToken });
+```
+
+> ⚠️ When sending a `FormData`, do **not** set `Content-Type` manually — the browser supplies the multipart boundary. Strip the default header for this call.
+
+Backend normalizes to WebP (≤1600px), so no client-side processing is required; optionally compress before upload to save bandwidth. Re-uploading replaces the old image atomically.
+
+`200` → `{ success: true, data: { product_id, product_image_url } }`
+`400` → size/type violations, e.g. `"Image exceeds the 5 MB size limit."`, `"File content is not a supported image (jpeg, png, webp)."`
+`404` → `"Product was not found."` or `"Product is archived."`
+
+#### `DELETE /api/products/:product_id/image` — Remove image (admin)
+`200` → `{ success: true, data: { product_id, product_image_url: null } }`
+Idempotent: returns success even if the product had no image.
+`404` → `"Product was not found."` or `"Product is archived."`
 
 ---
 
@@ -238,6 +262,8 @@ Body:
 ```
 
 **Delivery types (backend-enforced):** `delivery_type` must be exactly one of `envio_nacional`, `delivery`, `retiro_tienda` (slugs). Map them to display labels in `DELIVERY_TYPES` — `"Envío Nacional"`, `"Delivery"`, `"Retiro en Tienda"` — the API only accepts the slugs; anything else returns `400`.
+
+**Items are type-checked up front:** every entry needs integer `product_id > 0` and `product_qty > 0`; malformed lists get `"Each item needs a valid product_id and a positive whole product_qty."` before any stock is touched.
 
 **Phone rules:**
 - Either `country_code` + local `tlf_num` (`"041469996703"`) **or** a full international `tlf_num` (`"+5841469996703"`) — with `country_code` omitted in the latter case.

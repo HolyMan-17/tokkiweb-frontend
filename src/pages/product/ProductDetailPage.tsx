@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
@@ -15,7 +15,7 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, [id]);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, [id]);
   const products = data ?? [];
 
   const [quantity, setQuantity] = useState(1);

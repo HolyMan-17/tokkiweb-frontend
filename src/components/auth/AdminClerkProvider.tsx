@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { ClerkProvider, useUser } from '@clerk/react';
+import { ClerkProvider, useUser, useAuth } from '@clerk/react';
 import { ui } from '@clerk/ui';
 import { ADMIN_DEV_BYPASS, CLERK_PUBLISHABLE_KEY, ROLES } from '../../lib/auth';
 import type { AppRole } from '../../lib/auth';
@@ -23,9 +23,10 @@ function roleFromMetadata(
 }
 
 // Reads Clerk and forwards the result into our context. Only rendered inside
-// <ClerkProvider>, so useUser() is always safe here.
+// <ClerkProvider>, so useUser()/useAuth() are always safe here.
 function ClerkBridge({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
   return (
     <AdminAuthContext.Provider
       value={{
@@ -33,6 +34,7 @@ function ClerkBridge({ children }: { children: ReactNode }) {
         isLoaded,
         isSignedIn: isSignedIn ?? false,
         role: isSignedIn ? roleFromMetadata(user?.publicMetadata) : 'none',
+        getAdminToken: getToken,
       }}
     >
       {children}

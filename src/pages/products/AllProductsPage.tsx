@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
@@ -39,7 +39,7 @@ const CLEAR_SVG = (
 // whole inventory with the same search / stock / sort controls as category
 // pages (styles are shared via CategoryPage.css).
 export default function AllProductsPage() {
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allProducts = useMemo(() => data ?? [], [data]);
 
   const [query, setQuery] = useState('');

@@ -25,9 +25,9 @@ export function ProductCard({ product }: { product: Product }) {
     >
       <div className="card-frame">
         <div className="card-img-wrap">
-          {product.product_image ? (
+          {product.product_image_url ? (
             <img
-              src={product.product_image}
+              src={product.product_image_url}
               alt={product.product_name}
               loading="lazy"
               className="card-img"

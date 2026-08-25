@@ -1,9 +1,18 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { fetchProducts, saveProducts } from '../../../store/localStore';
+import {
+  fetchAllProducts,
+  createProduct,
+  updateProduct,
+  archiveProduct,
+  uploadProductImage,
+  removeProductImage,
+} from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
+import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import type { Product } from '../../../types';
 import { formatPrice, CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
+import { sanitizeTextInput, normalizeTextInput } from '../../../utils/productText';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -34,14 +43,9 @@ const EMPTY_FORM: ProductFormState = {
   category: 'Otros',
 };
 
-// Sanitize text: strip control chars, collapse whitespace, trim.
-function sanitizeText(value: string): string {
-  return value
-    // eslint-disable-next-line no-control-regex
-    .replace(/[\u0000-\u001F\u007F]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+// Must match the backend's multer config (src/middleware/upload.js)
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 // Price: allow digits + at most one decimal point + up to 2 decimals.
 function sanitizePrice(value: string): string {
@@ -87,14 +91,22 @@ function validateForm(form: ProductFormState): FormErrors {
 }
 
 export default function ProductManagementPage() {
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
+  const { getAdminToken } = useAdminAuth();
+  // Stable auth handle for API calls (Bearer via Clerk when mounted)
+  const auth = useMemo(
+    () => (getAdminToken ? { getToken: getAdminToken } : undefined),
+    [getAdminToken],
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('Todos');
   const [stock, setStock] = useState<StockFilter>('all');
-  const [imagePreview, setImagePreview] = useState<string>('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string>('');
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<ProductFormState>(EMPTY_FORM);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
@@ -120,9 +132,17 @@ export default function ProductManagementPage() {
     });
   }, [products, search, category, stock]);
 
+  const revokeBlobPreview = () => {
+    setPreviewUrl(current => {
+      if (current.startsWith('blob:')) URL.revokeObjectURL(current);
+      return '';
+    });
+  };
+
   const openAddModal = () => {
     setEditingProduct(null);
-    setImagePreview('');
+    setImageFile(null);
+    revokeBlobPreview();
     setForm(EMPTY_FORM);
     setErrors({});
     setTouched({});
@@ -131,7 +151,8 @@ export default function ProductManagementPage() {
 
   const openEditModal = (product: Product) => {
     setEditingProduct(product);
-    setImagePreview(product.product_image ?? '');
+    setImageFile(null);
+    setPreviewUrl(product.product_image_url ?? '');
     setForm({
       product_name: product.product_name,
       product_price: product.product_price,
@@ -147,7 +168,8 @@ export default function ProductManagementPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    setImagePreview('');
+    setImageFile(null);
+    revokeBlobPreview();
     setForm(EMPTY_FORM);
     setErrors({});
     setTouched({});
@@ -156,7 +178,9 @@ export default function ProductManagementPage() {
   const handleFieldChange = (field: keyof ProductFormState, raw: string) => {
     let value = raw;
     if (field === 'product_name' || field === 'product_description') {
-      value = sanitizeText(value);
+      // Light touch while typing — whitespace stays intact so multi-word
+      // names like "Peluche de Naruto" can be typed; normalized on blur/save.
+      value = sanitizeTextInput(value);
     } else if (field === 'product_price') {
       value = sanitizePrice(value);
     } else if (field === 'qty_available') {
@@ -167,71 +191,118 @@ export default function ProductManagementPage() {
   };
 
   const handleBlur = (field: keyof ProductFormState) => {
+    if (field === 'product_name' || field === 'product_description') {
+      setForm(prev => ({ ...prev, [field]: normalizeTextInput(prev[field]) }));
+    }
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) return;
-    if (file.size > 3 * 1024 * 1024) {
+    // Same rules the backend enforces (multer + magic-byte check)
+    if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+      showToast('Formato no soportado. Usa JPG, PNG o WEBP.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
       setImageErrorOpen(true);
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setImagePreview(String(reader.result));
-    reader.readAsDataURL(file);
+    if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+    setImageFile(file);
+    setPreviewUrl(URL.createObjectURL(file));
   };
 
-  const handleSave = (e: React.FormEvent<HTMLFormElement>) => {
+  // "Quitar" — clears an unsaved selection, or DELETEs a persisted image.
+  const handleRemoveImage = async () => {
+    if (imageFile) {
+      if (previewUrl.startsWith('blob:')) URL.revokeObjectURL(previewUrl);
+      setImageFile(null);
+      setPreviewUrl(editingProduct?.product_image_url ?? '');
+      return;
+    }
+    if (!editingProduct?.product_image_url || !auth) return;
+    const result = await removeProductImage(editingProduct.product_id, auth);
+    if (!result.ok) {
+      showToast(result.message);
+      return;
+    }
+    setPreviewUrl('');
+    showToast('Imagen eliminada');
+    retry();
+  };
+
+  const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    const nextErrors = validateForm(form);
+    // Normalize text fields (collapse/trim) before validating or persisting.
+    const normalized: ProductFormState = {
+      ...form,
+      product_name: normalizeTextInput(form.product_name),
+      product_description: normalizeTextInput(form.product_description),
+    };
+    const nextErrors = validateForm(normalized);
     setErrors(nextErrors);
     setTouched({ product_name: true, product_price: true, qty_available: true });
     if (Object.keys(nextErrors).length > 0) return;
-
-    const qty = Number(form.qty_available);
-    const productData: Product = {
-      product_id: editingProduct?.product_id ?? Date.now(),
-      product_name: form.product_name,
-      product_price: form.product_price,
-      product_description: form.product_description,
-      qty_available: qty,
-      in_stock: qty > 0,
-      category: form.category,
-      product_image: imagePreview || undefined,
-    };
-
-    try {
-      if (editingProduct) {
-        saveProducts(products.map(p =>
-          p.product_id === editingProduct.product_id ? productData : p
-        ));
-      } else {
-        saveProducts([...products, productData]);
-      }
-    } catch {
-      showToast('No se pudo guardar el producto.');
+    if (!auth) {
+      showToast('El panel necesita Clerk configurado para escribir en la tienda.');
       return;
     }
-    closeModal();
-    showToast(editingProduct ? 'Producto actualizado' : 'Producto agregado');
+    setForm(normalized);
+    setSaving(true);
+
+    try {
+      const payload = {
+        product_name: normalized.product_name,
+        product_price: Number(normalized.product_price),
+        product_description: normalized.product_description,
+        category: normalized.category,
+        qty_available: Number(normalized.qty_available),
+      };
+
+      // Create (or update) the row first — images need a real product_id.
+      const saved = editingProduct
+        ? await updateProduct(editingProduct.product_id, payload, auth)
+        : await createProduct(payload, auth);
+      if (!saved.ok) {
+        showToast(saved.message);
+        return;
+      }
+
+      // New photo pending? Push it as multipart (backend re-encodes to WebP).
+      if (imageFile) {
+        const uploaded = await uploadProductImage(saved.data.product_id, imageFile, auth);
+        if (!uploaded.ok) {
+          showToast(`Producto guardado, pero la imagen falló: ${uploaded.message}`);
+          closeModal();
+          retry();
+          return;
+        }
+      }
+
+      closeModal();
+      retry();
+      showToast(editingProduct ? 'Producto actualizado' : 'Producto agregado');
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleArchive = (productId: number) => {
     setArchiveTarget(products.find(p => p.product_id === productId) ?? null);
   };
 
-  const confirmArchive = () => {
-    if (!archiveTarget) return;
-    try {
-      saveProducts(products.filter(p => p.product_id !== archiveTarget.product_id));
-    } catch {
-      showToast('No se pudo archivar el producto.');
-      setArchiveTarget(null);
+  const confirmArchive = async () => {
+    if (!archiveTarget || !auth) return;
+    const result = await archiveProduct(archiveTarget.product_id, auth);
+    setArchiveTarget(null);
+    if (!result.ok) {
+      showToast(result.message);
       return;
     }
-    setArchiveTarget(null);
+    retry();
     showToast('Producto archivado');
   };
 
@@ -373,8 +444,8 @@ export default function ProductManagementPage() {
               style={{ animationDelay: `${Math.min(index, 12) * 0.03}s` }}
             >
               <div className="product-thumb">
-                {product.product_image ? (
-                  <img src={product.product_image} alt={product.product_name} loading="lazy" />
+                {product.product_image_url ? (
+                  <img src={product.product_image_url} alt={product.product_name} loading="lazy" />
                 ) : (
                   <span className="product-thumb-letter">
                     {product.product_name.charAt(0)}
@@ -429,16 +500,16 @@ export default function ProductManagementPage() {
             <form onSubmit={handleSave} className="modal-body" noValidate>
               <div className="form-group">
                 <label className="form-label">Foto del Producto</label>
-                <div className={`image-uploader ${imagePreview ? 'has-image' : ''}`}>
-                  {imagePreview ? (
+                <div className={`image-uploader ${previewUrl ? 'has-image' : ''}`}>
+                  {previewUrl ? (
                     <>
-                      <img src={imagePreview} alt="Vista previa del producto" className="image-uploader-preview" />
+                      <img src={previewUrl} alt="Vista previa del producto" className="image-uploader-preview" />
                       <div className="image-uploader-overlay">
                         <label className="image-uploader-btn">
                           Cambiar
-                          <input type="file" accept="image/*" onChange={handleImageChange} hidden />
+                          <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} hidden />
                         </label>
-                        <button type="button" className="image-uploader-btn image-uploader-remove" onClick={() => setImagePreview('')}>
+                        <button type="button" className="image-uploader-btn image-uploader-remove" onClick={handleRemoveImage}>
                           Quitar
                         </button>
                       </div>
@@ -452,8 +523,8 @@ export default function ProductManagementPage() {
                         <path d="M21 15l-5-5L5 21" />
                       </svg>
                       <span>Subir foto</span>
-                      <small>PNG, JPG, WEBP… (máx. 3 MB)</small>
-                      <input type="file" accept="image/*" onChange={handleImageChange} hidden />
+                      <small>JPG, PNG, WEBP (máx. 5 MB)</small>
+                      <input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleImageChange} hidden />
                     </label>
                   )}
                 </div>
@@ -542,8 +613,12 @@ export default function ProductManagementPage() {
               </div>
 
               <div className="modal-actions">
-                <button type="button" className="btn btn-outline" onClick={closeModal}>Cancelar</button>
-                <button type="submit" className="btn btn-primary">Guardar</button>
+                <button type="button" className="btn btn-outline" onClick={closeModal} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="submit" className="btn btn-primary" disabled={saving}>
+                  {saving ? 'Guardando…' : 'Guardar'}
+                </button>
               </div>
             </form>
           </div>
@@ -575,7 +650,7 @@ export default function ProductManagementPage() {
         open={imageErrorOpen}
         variant="warning"
         title="Imagen muy pesada"
-        message="La imagen no puede superar los 3 MB. Prueba con una más liviana."
+        message="La imagen no puede superar los 5 MB. Prueba con una más liviana."
         confirmLabel="Entendido"
         onConfirm={() => setImageErrorOpen(false)}
         onCancel={() => setImageErrorOpen(false)}

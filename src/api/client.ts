@@ -14,10 +14,14 @@ type ApiOptions = RequestInit & {
  * – Normalises the `success/data/message` envelope
  *   (handles `row` / `updated_row` product quirks)
  */
+export type ApiResult<T> =
+  | { ok: true; data: T; message?: string }
+  | { ok: false; message: string };
+
 export async function api<T = unknown>(
   path: string,
   options: ApiOptions = {},
-): Promise<{ ok: true; data: T; message?: string } | { ok: false; message: string }> {
+): Promise<ApiResult<T>> {
   const { getToken, ...fetchOptions } = options;
   const url = `${BASE}${path}`;
 
@@ -25,6 +29,10 @@ export async function api<T = unknown>(
     'Content-Type': 'application/json',
     ...(fetchOptions.headers as Record<string, string> | undefined),
   };
+
+  if (fetchOptions.body instanceof FormData) {
+    delete headers['Content-Type'];
+  }
 
   const token = await getToken?.();
   if (token) {

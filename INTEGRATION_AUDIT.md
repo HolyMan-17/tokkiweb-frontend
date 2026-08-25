@@ -49,11 +49,12 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Known caveat:** backend accepts any string ≤100 chars (no allow-list validation). A product written outside the admin UI with an unexpected value would get no storefront carousel (still visible under "Todos" / `/productos`). Low risk: admin form is a closed `<select>` over `CATEGORIES`.
 - **Status:** ✅
 
-### A5. Product images unsupported by backend; uploader stores base64 in localStorage
-- **Where:** `src/pages/admin/products/ProductManagementPage.tsx:169-180` (`handleImageChange`), Product form save
-- **Problem:** Admin uploads images as base64 DataURLs persisted into localStorage (~3 MB each → quota bomb). The backend contract has no image field or upload endpoint at all.
-- **Fix (decision needed):** either hide/remove the uploader until the backend supports image storage (recommended pre-integration), or add an upload endpoint/multipart support to the contract.
-- **Status:** ☐
+### A5. Product images wired to the backend implementation ✅
+- **Where:** `src/api/products.ts` (new), `src/pages/admin/products/ProductManagementPage.tsx`, `src/types/index.ts`
+- **Backend contract honored exactly:** multipart `POST /products/:id/image` (field `"image"`, max **5 MB**, jpeg/png/webp), idempotent `DELETE /products/:id/image`, `product_image_url` rendered directly, Bearer auth via Clerk `getToken`.
+- **Resolution (2026-08-25):** new `src/api/products.ts` client (8 unit tests) covering list/create/update/archive/image-upload/image-delete incl. FormData boundary handling and error surfacing; `AdminAuthContext` extended with `getAdminToken`; admin form rewritten — File + object-URL preview (no more base64/localStorage), save chains create/update → upload, "Quitar" DELETEs persisted images, client-side limits mirror backend's; storefront browse pages + dashboard now read real API products (`fetchAllProducts` throwing-loader pattern paired with useAsync/ErrorState); cart persistence relaxed to structural validation so API-backed snapshots survive reloads; removed dead `localStore.fetchProducts`.
+- **Runtime requirements:** backend running on `localhost:3000` (Vite proxy); **admin writes require Clerk** (`VITE_CLERK_PUBLISHABLE_KEY` + owner/tech session) — dev-bypass mode gets 401 by design since the backend has no bypass.
+- **Status:** ✅
 
 ### A6. Zero loading/error states across the flow
 - **Where:** every page reads synchronously via `useProducts()` / `useOrders()`
@@ -103,10 +104,9 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Status:** ☐
 
 ### B6. `item_count` semantics ambiguity
-- **Where:** `src/store/localStore.ts` (`toSummary` sums units) vs contract `OrderSummary.item_count`
-- **Problem:** Local sim counts total units; the contract doesn't define whether it's lines or units. Admin UI copy says "artículos".
-- **Fix:** confirm with backend which value `item_count` carries and align.
-- **Status:** ☐
+- **Where:** `src/store/localStore.ts` (`toSummary`) vs backend `c_orders.js`
+- **Resolution:** ✅ **Defined by backend code (2026-08-25): LINES not units** — orders list uses `COUNT(o_i.product_id)` (one row per distinct product). Local sim summed quantities (units) and disagreed; fixed `toSummary` to `items.length` with a regression test (`localStore.test.ts`). Example: 2× hoodie + 3× pins → `item_count = 2`.
+- **Status:** ✅
 
 ---
 
@@ -167,3 +167,5 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 | 2026-08-25 | C9 | Test infra landed: Vitest 4 + Testing Library (jsdom, threads pool for Windows worker timeouts), `pnpm test`/`pnpm test:run`, TDD workflow codified in AGENTS.md. 9 behavior tests passing (checkout cédula, admin order detail). Phone-helper + envelope-normalization unit tests still pending. |
 | 2026-08-25 | C10 | Admin OrderDetailPage now displays cédula + "Entrega y pago" (delivery/payment labels from constants slugs). OrdersDashboardPage list chips still pending. |
 | 2026-08-25 | C8 | SEO + link-preview tags shipped in `index.html` (description, canonical, OG, Twitter card). New `VITE_PUBLIC_SITE_URL` env var (`.env.example`) — set it in Vercel before launch. Static tests guard the tags. Test infra hardened: jsdom `localStorage` shim in setup, single-worker config (`maxWorkers: 1`, `fileParallelism: false`) to dodge flaky Windows worker spawns. Suite: 14/14 green, lint + build clean. |
+| 2026-08-25 | Bugfix | Admin product form could not type multi-word names ("Peluche de Naruto"): per-keystroke `.trim()` ate trailing spaces before the next word landed. Fix: two-phase sanitizing — light strip (control chars + 80-char cap) while typing via `sanitizeTextInput`, whitespace collapse/trim on blur & save via `normalizeTextInput` (`src/utils/productText.ts`, unit-tested). Also closed B6 (item_count = LINES, aligned with backend COUNT + regression test). Backend untouched. |
+| 2026-08-25 | A5 ✅ | Image upload wired to the exact backend implementation: new products API client (multipart "image" field, 5 MB cap, WebP pipeline untouched server-side), Clerk Bearer via getAdminToken in auth context, admin form on real CRUD + upload/delete-image with object-URL previews, storefront reads live API products. First real wire-up slice complete — products domain now authoritative from Postgres. |
