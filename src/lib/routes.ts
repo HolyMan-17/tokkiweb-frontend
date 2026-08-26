@@ -12,7 +12,8 @@ export const ROUTES = {
   product: (id: number) => `/products/${id}`,
   cart: '/cart',
   checkout: '/checkout',
-  confirmation: '/confirmation',
+  confirmation: (orderId?: number | string) =>
+    orderId != null ? `/confirmation/${orderId}` : '/confirmation',
 } as const;
 
 // ─── Admin panel (hidden path) ─────────────────────────────

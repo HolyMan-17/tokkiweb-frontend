@@ -156,15 +156,16 @@ src/
 - Returns a discriminated union: `{ ok: true; data: T }` | `{ ok: false; message: string }`.
 - Vite proxies `/api` → `http://localhost:3000` (see `vite.config.ts`).
 
-### Current State (localStorage flow)
+### Current State (backend wired)
 
-The full shop flow runs on `src/store/localStore.ts` — a localStorage-backed data layer seeded from `src/mock/data.ts` on first run. Products, orders, and the cart all persist and stay in sync across pages (via `useSyncExternalStore`). Backend integration is **not yet wired**. When connecting pages to the real API:
-1. Replace `useProducts()` / `useOrders()` / `createOrder()` / `setOrderStatus()` / `saveProducts()` calls with `useEffect` + `api()` calls
-2. Add loading states (`<LoadingSpinner />`) and error handling
-3. Pass real API response data via `navigate('/path', { state: { ... } })` where needed (e.g. checkout → confirmation)
-4. Keep `localStore.ts` only as long as the mock flow is needed — delete it (and the mock seed) once the API is live
+Products AND orders are live from the backend API. Each domain has a thin client mirroring the contract 1:1 — `src/api/products.ts`, `src/api/orders.ts` — built on `api()` (`src/api/client.ts`, `ApiResult<T>` union). Admin mutations attach a Clerk Bearer token via `getAdminToken` (AdminAuthContext). Pages load through `useAsync` + thrown-error loaders (`fetchAllProducts`, `fetchOrderSummaries`, `fetchOrderDetail`) and render `<LoadingSpinner>` / `<ErrorState>` / NotFoundError states. Checkout POSTs the order (client incl. cédula, delivery_type, payment_method, items), re-validates cart stock against the live catalog before submitting (blocking `<StockNotice>` review), and navigates to `/confirmation/:orderId`, which fetches by id (refresh-safe).
 
-To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_v1` from localStorage.
+What still runs locally:
+- **Cart** (`src/context/CartContext.tsx`) persists product snapshots to localStorage (`tokki_cart_v1`) — reconciled against the live catalog on cart mount and pre-submit.
+- **Product cache in admin forms** — `src/store/localStore.ts` is slimmed to products cache + cart persistence; its order code paths are deleted. Remove the remainder once nothing references it.
+- Mock seed data (`src/mock/data.ts`) is products-only now; keep for tests.
+
+Remaining before launch (see `INTEGRATION_AUDIT.md`): A1 (harden `api/client.ts`: try/catch + `VITE_API_URL`), A2 (Vercel `/api` rewrite to backend URL), B2 ("Consultar pedido"), B5 (archived products decision), C5–C7 polish.
 
 ---
 

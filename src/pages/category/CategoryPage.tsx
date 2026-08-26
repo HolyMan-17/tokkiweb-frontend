@@ -9,6 +9,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { getCategoryIcon } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
+import { matchesSearch } from '../../utils/productSearch';
 import { ROUTES } from '../../lib/routes';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
@@ -54,10 +55,9 @@ export default function CategoryPage() {
   const filtered = useMemo(() => {
     let result = [...allProducts];
 
-    // Search filter
+    // Search filter (name + description)
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      result = result.filter(p => p.product_name.toLowerCase().includes(q));
+      result = result.filter(p => matchesSearch(p, query));
     }
 
     // Stock filter
@@ -143,7 +143,7 @@ export default function CategoryPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder={`Buscar en ${category.name}...`}
+            placeholder={`Buscar por nombre o descripción en ${category.name}...`}
             value={query}
             onChange={e => setQuery(e.target.value)}
           />

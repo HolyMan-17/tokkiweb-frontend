@@ -15,6 +15,7 @@ import ProductDetailPage from './pages/product/ProductDetailPage';
 import CartPage from './pages/cart/CartPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import OrderConfirmationPage from './pages/confirmation/OrderConfirmationPage';
+import NotFoundPage from './pages/not-found/NotFoundPage';
 
 // Admin Pages (lazy — keeps the heavy recharts/admin bundle off the storefront)
 const AdminDashboardPage = lazy(() => import('./pages/admin/dashboard/AdminDashboardPage'));
@@ -33,6 +34,11 @@ const RequireRole = lazy(() => import('./components/auth/RequireRole'));
 const AdminClerkProvider = lazy(() => import('./components/auth/AdminClerkProvider'));
 
 import './App.css';
+// EAGER: the Suspense fallbacks below use .auth-gate--loading, whose styles
+// live in AuthGate.css — normally bundled with the LAZY RequireRole/Layout
+// chunks. Without this import the fallbacks render as raw top-left text on
+// first visit (chunk still downloading).
+import './components/auth/AuthGate.css';
 
 // The admin panel lives under a hidden path (security-by-obscurity layer).
 // Real access control is enforced by Clerk roles below.
@@ -91,7 +97,7 @@ function App() {
             <Route path="/products/:id" element={<ProductDetailPage />} />
             <Route path={ROUTES.cart} element={<CartPage />} />
             <Route path={ROUTES.checkout} element={<CheckoutPage />} />
-            <Route path={ROUTES.confirmation} element={<OrderConfirmationPage />} />
+            <Route path="/confirmation/:orderId" element={<OrderConfirmationPage />} />
           </Route>
 
           {/* Admin — hidden path, guarded by Clerk. Owner + tech only.
@@ -160,7 +166,17 @@ function App() {
           <Route path="/admin" element={<Navigate to={ADMIN_PATH} replace />} />
           <Route path="/admin/*" element={<Navigate to={ADMIN_PATH} replace />} />
 
-          <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
+          {/* Unknown URLs keep their address and get a branded dead-end
+              (broken links stay visible/correctable instead of silently
+              bouncing home). */}
+          <Route
+            path="*"
+            element={
+              <ErrorBoundary sectionName="la página">
+                <NotFoundPage />
+              </ErrorBoundary>
+            }
+          />
         </Routes>
       </CartProvider>
     </AuthProvider>

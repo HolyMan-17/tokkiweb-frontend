@@ -93,6 +93,13 @@
   border-color: var(--color-danger);
 }
 
+/* Focus management moves focus programmatically, so keyboard users always
+   get a clearly visible ring on whichever action is focused. */
+.confirm-dialog .btn:focus-visible {
+  outline: 2.5px solid var(--p5);
+  outline-offset: 2px;
+}
+
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .confirm-dialog {

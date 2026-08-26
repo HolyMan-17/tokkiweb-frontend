@@ -1,25 +1,18 @@
+import { useMemo } from 'react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
 import type { PieSectorShapeProps } from 'recharts';
 import { Link } from 'react-router-dom';
-import { fetchOrderSummaries } from '../../../store/localStore';
+import { fetchOrderSummaries } from '../../../api/orders';
 import { fetchAllProducts } from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
+import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ErrorState from '../../../components/ui/ErrorState';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
+import { computeSalesByDay } from '../../../utils/salesByDay';
 import './AdminDashboardPage.css';
-
-const MOCK_SALES_DATA = [
-  { day: 'Lun', sales: 12 },
-  { day: 'Mar', sales: 8.5 },
-  { day: 'Mié', sales: 15 },
-  { day: 'Jue', sales: 22 },
-  { day: 'Vie', sales: 18 },
-  { day: 'Sáb', sales: 30 },
-  { day: 'Dom', sales: 9 },
-];
 
 const PIE_COLORS = {
   pending: '#e8a44d', // var(--color-warning)
@@ -61,11 +54,19 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
 }
 
 export default function AdminDashboardPage() {
+  const { getAdminToken } = useAdminAuth();
+  // Stable auth handle for API calls (Bearer via Clerk when mounted)
+  const auth = useMemo(
+    () => (getAdminToken ? { getToken: getAdminToken } : undefined),
+    [getAdminToken],
+  );
   const { data, isLoading, isError, retry } = useAsync(async () => {
-    // Orders still come from the local sim; products now live in the API.
-    const [orders, products] = await Promise.all([fetchOrderSummaries(), fetchAllProducts()]);
+    const [orders, products] = await Promise.all([
+      fetchOrderSummaries(auth),
+      fetchAllProducts(),
+    ]);
     return [orders, products] as const;
-  }, []);
+  }, [auth]);
   const [orders, products] = data ?? [[], []];
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
@@ -77,6 +78,8 @@ export default function AdminDashboardPage() {
   const totalSales = orders
     .filter(o => o.status === 'approved')
     .reduce((s, o) => s + Number(o.total_amount), 0);
+
+  const salesByDay = computeSalesByDay(orders);
 
   const pieData = [
     { name: 'Pendientes', value: pendingCount, color: PIE_COLORS.pending },
@@ -170,13 +173,13 @@ export default function AdminDashboardPage() {
         <h2 className="section-title">Ventas por Día</h2>
         <div className="chart-container">
           <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={MOCK_SALES_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <BarChart data={salesByDay} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
+              <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
               <YAxis hide />
               <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--pink-50)' }} />
               <Bar
-                dataKey="sales"
+                dataKey="total"
                 fill="var(--color-primary)"
                 radius={[8, 8, 0, 0]}
                 maxBarSize={40}

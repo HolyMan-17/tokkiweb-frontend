@@ -15,8 +15,17 @@ type ApiOptions = RequestInit & {
  *   (handles `row` / `updated_row` product quirks)
  */
 export type ApiResult<T> =
-  | { ok: true; data: T; message?: string }
-  | { ok: false; message: string };
+  | { ok: true; data: T; message?: string; status?: number }
+  | { ok: false; message: string; status?: number };
+
+/** Thrown by page-facing loaders when the backend answers 404 — screens map
+ *  it to their "not found" view instead of the generic error state. */
+export class NotFoundError extends Error {
+  constructor(message = 'Recurso no encontrado') {
+    super(message);
+    this.name = 'NotFoundError';
+  }
+}
 
 export async function api<T = unknown>(
   path: string,
@@ -48,11 +57,11 @@ export async function api<T = unknown>(
     json.success === true || json.success === 'true';
 
   if (!success) {
-    return { ok: false, message: json.message ?? 'Unknown error' };
+    return { ok: false, message: json.message ?? 'Unknown error', status: res.status };
   }
 
   // Normalise data (handle `row` / `updated_row` quirks)
   const data = (json.data ?? json.row ?? json.updated_row) as T;
 
-  return { ok: true, data, message: json.message };
+  return { ok: true, data, message: json.message, status: res.status };
 }

@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchOrderDetail, setOrderStatus, NotFoundError } from '../../../store/localStore';
+import {
+  fetchOrderDetail,
+  approveOrder,
+  cancelOrder,
+  NotFoundError,
+} from '../../../api/orders';
 import { useAsync } from '../../../hooks/useAsync';
+import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import { formatPrice, formatDateTime, DELIVERY_TYPES, PAYMENT_METHODS } from '../../../constants';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
@@ -24,19 +30,43 @@ export default function OrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const { getAdminToken } = useAdminAuth();
+  // Stable auth handle for API calls (Bearer via Clerk when mounted)
+  const auth = useMemo(
+    () => (getAdminToken ? { getToken: getAdminToken } : undefined),
+    [getAdminToken],
+  );
   const { data: order, isLoading, isError, error, retry } = useAsync(
     () => fetchOrderDetail(Number(id)),
     [id]
   );
 
-  const confirmAction = () => {
-    if (!order || !pendingAction) return;
+  const confirmAction = async () => {
+    if (!order || !pendingAction || isProcessing) return;
+    setIsProcessing(true);
+    const action = pendingAction;
     try {
-      setOrderStatus(order.order_id, pendingAction === 'approve' ? 'approved' : 'canceled');
+      const result =
+        action === 'approve'
+          ? await approveOrder(order.order_id, auth)
+          : await cancelOrder(order.order_id, auth);
+      if (!result.ok) {
+        // E.g. "Order has already been processed." / "…only be canceled while
+        // pending." — surface the backend message and refresh the real state.
+        setToast(result.message);
+      } else {
+        setToast(action === 'approve' ? 'Pedido aprobado.' : 'Pedido cancelado.');
+      }
     } catch (err) {
       console.error('No se pudo actualizar el estado del pedido', err);
+      setToast('No se pudo actualizar el pedido. Inténtalo de nuevo.');
+    } finally {
+      setIsProcessing(false);
+      setPendingAction(null);
+      retry();
     }
-    setPendingAction(null);
   };
 
   if (isLoading) {
@@ -171,6 +201,12 @@ export default function OrderDetailPage() {
           </div>
         )}
       </div>
+
+      {toast && (
+        <div className="order-detail-toast" role="alert">
+          {toast}
+        </div>
+      )}
 
       {pendingAction && (
         <ConfirmDialog

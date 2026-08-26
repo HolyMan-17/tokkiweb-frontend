@@ -1,8 +1,14 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchOrderSummaries } from '../../../store/localStore';
+import { fetchOrderSummaries } from '../../../api/orders';
 import { useAsync } from '../../../hooks/useAsync';
-import { formatPrice, formatDate } from '../../../constants';
+import { useAdminAuth } from '../../../components/auth/useAdminAuth';
+import {
+  formatPrice,
+  formatDate,
+  DELIVERY_TYPES,
+  PAYMENT_METHODS,
+} from '../../../constants';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -11,9 +17,26 @@ import './OrdersDashboardPage.css';
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'canceled';
 
+function deliveryLabel(slug: string): string {
+  return DELIVERY_TYPES.find(d => d.value === slug)?.label ?? slug;
+}
+
+function paymentLabel(slug: string): string {
+  return PAYMENT_METHODS.find(m => m.value === slug)?.label ?? slug;
+}
+
 export default function OrdersDashboardPage() {
   const [filter, setFilter] = useState<FilterStatus>('all');
-  const { data, isLoading, isError, retry } = useAsync(fetchOrderSummaries, []);
+  const { getAdminToken } = useAdminAuth();
+  // Stable auth handle for API calls (Bearer via Clerk when mounted)
+  const auth = useMemo(
+    () => (getAdminToken ? { getToken: getAdminToken } : undefined),
+    [getAdminToken],
+  );
+  const { data, isLoading, isError, retry } = useAsync(
+    () => fetchOrderSummaries(auth),
+    [auth],
+  );
   const orders = data ?? [];
 
   const filteredOrders = orders.filter((order) => {
@@ -80,6 +103,20 @@ export default function OrdersDashboardPage() {
                 <span className="order-id">#{order.order_id}</span>
                 <StatusBadge status={order.status} />
               </div>
+              {(order.delivery_type || order.payment_method) && (
+                <div className="order-card-chips">
+                  {order.delivery_type && (
+                    <span className="order-chip" title="Entrega">
+                      {deliveryLabel(order.delivery_type)}
+                    </span>
+                  )}
+                  {order.payment_method && (
+                    <span className="order-chip order-chip--payment" title="Pago">
+                      {paymentLabel(order.payment_method)}
+                    </span>
+                  )}
+                </div>
+              )}
               <div className="order-card-body">
                 <p className="customer-name">{order.name} {order.last_name}</p>
                 <p className="order-total">{formatPrice(order.total_amount)}</p>

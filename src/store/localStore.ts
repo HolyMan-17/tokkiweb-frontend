@@ -1,14 +1,14 @@
-// ─── LocalStorage store — test harness for the full shop flow ──────────────
-// Simulates a backend using localStorage so the entire flow can be tested
-// before wiring the real API. Seeded from the mock data on first run; every
-// mutation persists and notifies subscribers so all pages stay in sync.
+// ─── LocalStorage store — products cache + cart persistence ────────────────
+// The orders domain now talks to the real backend via src/api/orders.ts.
+// What remains here: the product catalog cache (seeded from the mock data on
+// first run) and the cart lines, both persisted to localStorage with
+// subscriber notifications so all pages stay in sync.
 
 import { useSyncExternalStore } from 'react';
-import { MOCK_PRODUCTS, MOCK_ORDERS, MOCK_ORDER_DETAIL } from '../mock/data';
-import type { Product, OrderDetail, OrderSummary, CartItem } from '../types';
+import { MOCK_PRODUCTS } from '../mock/data';
+import type { Product, CartItem } from '../types';
 
 const PRODUCTS_KEY = 'tokki_products_v1';
-const ORDERS_KEY = 'tokki_orders_v1';
 const CART_KEY = 'tokki_cart_v1';
 
 // ─── Subscriptions ─────────────────────────────────────────
@@ -46,67 +46,10 @@ function write(key: string, value: unknown) {
 
 // ─── In-memory cache (referentially stable between mutations) ──
 let productsCache: Product[] | null = null;
-let ordersCache: OrderDetail[] | null = null;
-
-function toSummary(o: OrderDetail): OrderSummary {
-  return {
-    order_id: o.order_id,
-    name: o.client.name,
-    last_name: o.client.last_name,
-    cedula: o.client.cedula,
-    tlf_num: o.client.tlf_num,
-    total_amount: o.total_amount,
-    status: o.status,
-    // LINES not units — matches backend COUNT(o_i.product_id) (see B6).
-    item_count: o.items.length,
-    created_at: o.created_at,
-  };
-}
-
-// Seed orders as full OrderDetail records. Order 1 reuses the rich mock
-// detail; the rest get plausible line items derived from the product list.
-function seedOrders(): OrderDetail[] {
-  // Plausible delivery/payment combos for the mock orders (cycled by index).
-  const seedDelivery = ['envio_nacional', 'delivery', 'retiro_tienda'] as const;
-  const seedPayment: Record<(typeof seedDelivery)[number], string> = {
-    envio_nacional: 'pago_movil',
-    delivery: 'zelle',
-    retiro_tienda: 'cash',
-  };
-  return MOCK_ORDERS.map((o, idx) => {
-    if (o.order_id === MOCK_ORDER_DETAIL.order_id) {
-      return { ...MOCK_ORDER_DETAIL, items: [...MOCK_ORDER_DETAIL.items] };
-    }
-    const items = Array.from({ length: Math.max(1, o.item_count) }, (_, i) => {
-      const p = MOCK_PRODUCTS[i % MOCK_PRODUCTS.length];
-      return {
-        product_name: p.product_name,
-        product_qty: 1,
-        product_price: p.product_price,
-        product_total: p.product_price,
-      };
-    });
-    const total = items.reduce((s, it) => s + Number(it.product_total), 0);
-    const deliveryType = seedDelivery[idx % seedDelivery.length];
-    return {
-      order_id: o.order_id,
-      status: o.status,
-      client: { name: o.name, last_name: o.last_name, tlf_num: o.tlf_num },
-      delivery_type: deliveryType,
-      payment_method: seedPayment[deliveryType],
-      total_amount: total.toFixed(2),
-      created_at: o.created_at,
-      items,
-    };
-  });
-}
 
 function ensureSeeded() {
   if (localStorage.getItem(PRODUCTS_KEY) === null) {
     write(PRODUCTS_KEY, MOCK_PRODUCTS);
-  }
-  if (localStorage.getItem(ORDERS_KEY) === null) {
-    write(ORDERS_KEY, seedOrders());
   }
 }
 
@@ -118,21 +61,9 @@ function loadProducts(): Product[] {
   return productsCache;
 }
 
-function loadOrders(): OrderDetail[] {
-  ensureSeeded();
-  if (ordersCache === null) {
-    ordersCache = read(ORDERS_KEY, seedOrders());
-  }
-  return ordersCache;
-}
-
 // ─── React hooks ───────────────────────────────────────────
 export function useProducts(): Product[] {
   return useSyncExternalStore(subscribe, loadProducts, loadProducts);
-}
-
-export function useOrders(): OrderDetail[] {
-  return useSyncExternalStore(subscribe, loadOrders, loadOrders);
 }
 
 // ─── Product mutations ─────────────────────────────────────
@@ -144,69 +75,6 @@ export function saveProducts(next: Product[]) {
 
 export function getProducts(): Product[] {
   return loadProducts();
-}
-
-// ─── Order mutations ───────────────────────────────────────
-export function setOrderStatus(orderId: number, status: OrderDetail['status']) {
-  const orders = loadOrders();
-  const next = orders.map(o => (o.order_id === orderId ? { ...o, status } : o));
-  ordersCache = next;
-  write(ORDERS_KEY, next);
-  notify();
-}
-
-export function getOrder(orderId: number): OrderDetail | undefined {
-  return loadOrders().find(o => o.order_id === orderId);
-}
-
-export function getOrders(): OrderDetail[] {
-  return loadOrders();
-}
-
-// Creates a pending order from the cart, decrements stock, and persists both.
-export function createOrder(input: {
-  client: { name: string; last_name: string; cedula?: string; tlf_num: string };
-  delivery_type: string;
-  payment_method: string;
-  items: CartItem[];
-}): OrderDetail {
-  const products = loadProducts();
-  const orders = loadOrders();
-
-  const orderItems = input.items.map(({ product, quantity }) => ({
-    product_name: product.product_name,
-    product_qty: quantity,
-    product_price: product.product_price,
-    product_total: (Number(product.product_price) * quantity).toFixed(2),
-  }));
-
-  const total = orderItems.reduce((s, i) => s + Number(i.product_total), 0);
-  const maxId = orders.reduce((max, o) => Math.max(max, o.order_id), 0);
-
-  const order: OrderDetail = {
-    order_id: maxId + 1,
-    status: 'pending',
-    client: input.client,
-    delivery_type: input.delivery_type,
-    payment_method: input.payment_method,
-    total_amount: total.toFixed(2),
-    created_at: new Date().toISOString(),
-    items: orderItems,
-  };
-
-  const nextProducts = products.map(p => {
-    const line = input.items.find(i => i.product.product_id === p.product_id);
-    if (!line) return p;
-    const qty_available = Math.max(0, p.qty_available - line.quantity);
-    return { ...p, qty_available, in_stock: qty_available > 0 };
-  });
-
-  ordersCache = [order, ...orders];
-  productsCache = nextProducts;
-  write(ORDERS_KEY, ordersCache);
-  write(PRODUCTS_KEY, productsCache);
-  notify();
-  return order;
 }
 
 // ─── Cart persistence ──────────────────────────────────────
@@ -233,48 +101,4 @@ export function loadCart(): CartItem[] {
 
 export function saveCart(items: CartItem[]) {
   write(CART_KEY, items);
-}
-
-export function toOrderSummary(o: OrderDetail): OrderSummary {
-  return toSummary(o);
-}
-
-// ─── Async facade (API-shaped reads) ───────────────────────
-// Mirrors the future network calls so screens exercise their real loading /
-// error paths today. When wiring the backend, replace each body with an
-// `api()` call — signatures stay identical. `NotFoundError` maps to the
-// backend's 404s (missing product / order).
-const SIMULATED_LATENCY_MS = 350;
-
-function delay(ms = SIMULATED_LATENCY_MS): Promise<void> {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-export class NotFoundError extends Error {
-  constructor(message = 'Recurso no encontrado') {
-    super(message);
-    this.name = 'NotFoundError';
-  }
-}
-
-export async function fetchOrderSummaries(): Promise<OrderSummary[]> {
-  await delay();
-  return loadOrders().map(toSummary);
-}
-
-export async function fetchOrderDetail(orderId: number): Promise<OrderDetail> {
-  await delay();
-  const order = getOrder(orderId);
-  if (!order) throw new NotFoundError(`El pedido #${orderId} no existe.`);
-  return order;
-}
-
-// Test-only reset: wipes persisted keys and the in-memory caches so each test
-// starts from a clean slate (the caches otherwise shadow direct localStorage
-// writes made inside tests).
-export function resetStoreForTests() {
-  productsCache = null;
-  ordersCache = null;
-  localStorage.removeItem(PRODUCTS_KEY);
-  localStorage.removeItem(ORDERS_KEY);
 }

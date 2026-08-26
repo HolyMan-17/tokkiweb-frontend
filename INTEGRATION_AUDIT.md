@@ -65,9 +65,9 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 ### A7. `cedula` not in the backend order contract (NEW 2026-08-25)
 - **Where:** checkout form (`CheckoutPage.tsx`), `OrderDetail` / `CheckoutPayload` types, admin `OrderDetailPage`
-- **Problem:** The client form now collects cédula (`V-` / `E-` / `J-` + digits) and the frontend persists/surfaces it locally, but `POST /api/orders` and the clients schema don't accept or store it yet.
-- **Fix:** backend adds `cedula VARCHAR(12)` (combined form `"V-12345678"`) to the client/order record + accepts/returns it in order endpoints; sync `API_CONTRACT.md`. Frontend is already sending it — no further changes expected at wire-up if the field round-trips.
-- **Status:** ☐ *(backend action)*
+- **Problem:** The client form collects cédula (`V-` / `E-` / `J-` + digits) and the frontend persists/surfaces it, but `POST /api/orders` and the clients schema didn't accept or store it.
+- **Resolution:** ✅ (2026-08-25) Backend contract now documents cédula end-to-end (`FRONTEND_REQUIREMENTS.md` §4.2): sent as optional `client_info.cedula`, backend normalizes lenient input (`v12345678` → `"V-12345678"`), empty/absent stores NULL, invalid → 400, duplicate owner → 409; returned on order detail. Frontend sends it verbatim at wire-up — no changes needed.
+- **Status:** ✅
 
 ---
 
@@ -77,7 +77,8 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 - **Where:** `src/pages/confirmation/OrderConfirmationPage.tsx`
 - **Problem:** Depends entirely on router state passed from checkout. Refreshing `/confirmation` shows "¡Pedido confirmado!" with order id "—" and a hardcoded "Pendiente" badge regardless of real status.
 - **Fix:** change route to `/confirmation/:orderId` and fetch `GET /api/orders/:order_id` after wiring; derive the badge from actual status.
-- **Status:** ☐
+- **Resolution:** ✅ (2026-08-25) Route is `/confirmation/:orderId`; `ROUTES.confirmation(orderId?)` helper updated everywhere. Page fetches by id (works on refresh), keeps router-state fast-path, real `<StatusBadge>` from `order.status`, LoadingSpinner/NotFoundError/ErrorState handled. 5 tests.
+- **Status:** ✅
 
 ### B2. FR-7 unmet: customers cannot check order status
 - **Where:** requirement `FRONTEND_REQUIREMENTS.md` §2.1 FR-7; no storefront page exists
@@ -87,15 +88,17 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 ### B3. Cart never re-validates against current stock
 - **Where:** `src/store/localStore.ts` (`loadCart` filters deleted products but doesn't clamp quantities), `src/context/CartContext.tsx` (clamps against the *snapshot* stored in each item)
-- **Problem:** Cart persists product snapshots. If stock drops between sessions/orders, users can attempt to buy more than `qty_available`. Checkout would fail server-side with "Requested quantity is not available" with no friendly recovery path.
-- **Fix:** on cart mount and before checkout, reconcile each line against fresh product data: clamp quantity, drop out-of-stock lines (with notice).
-- **Status:** ☐
+- **Problem:** Cart persists product snapshots. If stock drops between sessions/orders, users can attempt to buy more than `qty_available`. Checkout would fail server-side with "Requested quantity is not available in the stock." with no friendly recovery path.
+- **Resolution:** ✅ (2026-08-25) New `reconcileStock(products)` action in CartContext: clamps quantities to live `qty_available`, drops deleted/out-of-stock lines, returns a change list. Runs best-effort on CartPage mount and **blocking** before checkout submit (order not created until the user reviews the `<StockNotice>` banner and resubmits). 12 tests across CartContext/CartPage/CheckoutPage.
+- **Follow-up:** reconciliation adjusts quantity only — price snapshots are not refreshed (natural next step if prices can drift).
+- **Status:** ✅
 
 ### B4. Dashboard bar chart uses fake data
-- **Where:** `src/pages/admin/dashboard/AdminDashboardPage.tsx:10-18` (`MOCK_SALES_DATA`)
-- **Problem:** Weekly sales chart is hardcoded. Pie chart + stat cards are already computed from real orders.
-- **Fix:** compute sales-by-day from approved orders client-side (no new endpoint needed for a small shop).
-- **Status:** ☐
+- **Where:** `src/pages/admin/dashboard/AdminDashboardPage.tsx`
+- **Problem:** Weekly sales chart was hardcoded (`MOCK_SALES_DATA`). Pie chart + stat cards already computed from real orders.
+- **Resolution:** ✅ (2026-08-25) `MOCK_SALES_DATA` deleted; new pure util `computeSalesByDay(orders, today?, days=7)` in `src/utils/salesByDay.ts` sums approved-only orders into a rolling zero-filled 7-day window with `es-VE` labels; injectable `today` for deterministic tests. 6 unit tests + page test.
+- **Note:** day bucketing uses browser-local timezone — revisit if `created_at` UTC handling matters post-API.
+- **Status:** ✅
 
 ### B5. Archived products are unrecoverable
 - **Where:** `src/pages/admin/products/ProductManagementPage.tsx` (`confirmArchive` = hard delete locally); backend `DELETE /api/products/:id` soft-deletes but `GET /api/products` hides archived forever
@@ -112,19 +115,24 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 ## 🟡 C. Minor bugs & polish
 
-- ☐ **C1.** Toast timer leak — `ProductDetailPage.tsx:36` `setTimeout` not cleared on unmount (Checkout & Products do this correctly via refs).
-- ☐ **C2.** Search inconsistency — category page searches name only; `/productos` searches name + description. Pick one behavior (name+description recommended).
-- ☐ **C3.** `ConfirmDialog` lacks focus trap / Escape-to-close / focus restore (a11y).
-- ☐ **C4.** Duplicated inline SVGs (cart, gear) between `Header.tsx` and `CatalogTopNav.tsx` — extract shared icon module.
+- ✅ **C1.** Toast timer leak — `ProductDetailPage.tsx` `setTimeout` not cleared on unmount.
+  - **Resolution (2026-08-25):** ref + clearTimeout cleanup copied from CheckoutPage's pattern; also clears any pending timer on re-trigger. 3 tests incl. a leak assertion via `vi.getTimerCount()` (failed pre-fix).
+- ✅ **C2.** Search inconsistency — category page searched name only; `/productos` name + description.
+  - **Resolution (2026-08-25):** shared `matchesSearch(product, query)` in `src/utils/productSearch.ts` — case/diacritic-insensitive substring on name OR description; used by both pages; placeholders updated ("Buscar por nombre o descripción…"). 6 unit tests + CategoryPage behavior test.
+- ✅ **C3.** `ConfirmDialog` lacked focus trap / Escape-to-close / focus restore (a11y).
+  - **Resolution (2026-08-25):** full focus management, zero new deps — Tab/Shift+Tab trap, Escape→onCancel, focus snapshot/restore on open/close/unmount, initial focus always on the safe/cancel action (never destructive), `:focus-visible` outline added. API unchanged; consumers untouched. 8 tests.
+- ✅ **C4.** Duplicated inline SVGs (cart, gear) between `Header.tsx` and `CatalogTopNav.tsx`.
+  - **Resolution (2026-08-25):** extracted to `src/components/ui/icons.tsx` (`CartIcon`, `GearIcon`) — byte-identical markup, typed `{ size? }`. 4 tests incl. collision guard. Header's other 5 single-use icons intentionally left inline.
 - ☐ **C5.** Canceling an order locally doesn't restore stock (backend does) — demo-only divergence; remember when comparing behaviors after wiring.
 - ☐ **C6.** Dev Tools page displays `VITE_API_URL` but client hardcodes `/api` — misleading until A1 lands.
-- ☐ **C7.** No branded 404 — silent redirect home. Optional.
+- ✅ **C7.** No branded 404 — silent redirect home.
+  - **Resolution (2026-08-25):** New `NotFoundPage` (`src/pages/not-found/`) — bunny gif, giant "404", Spanish copy, "Volver a la tienda" link; unknown URLs now KEEP their address (broken links stay correctable) instead of silently bouncing home. Also fixed the unstyled top-left "Cargando…" text seen during first-visit chunk loads: `AuthGate.css` was only bundled with LAZY chunks, so Suspense/RequireRole fallbacks rendered raw — it is now imported eagerly in App.tsx. 5 tests (page + App-level route assertions).
 - ✅ **C8.** `index.html` missing meta description / Open Graph tags — matters for Instagram/TikTok link previews.
   - **Resolution (2026-08-25):** Full SEO + preview set added to `index.html` — Spanish meta description, canonical URL, Open Graph (`og:title/description/type/url/image/alt/locale`, `og:locale es_VE`) and Twitter `summary_large_image` card. Absolute URLs are injected at build time via `%VITE_PUBLIC_SITE_URL%` (new env var, documented in `.env.example`; **must be set in Vercel before launch** or previews render broken). Favicon switched to `favicon.svg` with PNG fallback. Guarded by static contract tests (`src/test/indexHtml.test.ts`). TODO (cosmetic): dedicated 1200×630 OG image — currently reuses `tokki_logo.png` (~1.3 MB).
-- 🔄 **C9.** No automated tests at all. At minimum, unit-test phone helpers + envelope normalization before integration.
-  - **Update (2026-08-25):** Vitest + Testing Library now set up (jsdom, `pnpm test` / `pnpm test:run`, setup in `src/test/setup.ts`; TDD mandated in AGENTS.md). First suites shipped: checkout cédula behavior (4 tests) + admin order detail full-data rendering (5 tests). Still missing: phone helper + `api()` envelope normalization unit tests — do these next per the original suggestion.
-- 🔄 **C10.** Admin order pages don't display `delivery_type` / `payment_method` (`OrdersDashboardPage` / admin `OrderDetailPage`). Once orders carry these fields via the API, surface them (e.g. chip in detail header). Backend jest suite also currently broken (pre-existing ESM config issue) — fix before relying on its tests.
-  - **Update (2026-08-25):** Admin `OrderDetailPage` now shows cédula (client card) + a dedicated "Entrega y pago" card with human-readable labels resolved from `DELIVERY_TYPES` / `PAYMENT_METHODS`. Remaining: surface chips in the `OrdersDashboardPage` list rows.
+- ✅ **C9.** No automated tests at all. At minimum, unit-test phone helpers + envelope normalization before integration.
+  - **Update (2026-08-25):** Vitest + Testing Library fully set up (TDD mandated in AGENTS.md). Suite grew 9 → **129 tests / 19 files**: checkout cédula + stock reconciliation, admin order detail + actions, confirmation refresh, icons, ConfirmDialog a11y, productSearch, salesByDay, productText, index.html tags, phone helpers, api() envelope. Original minimum (phone + envelope) delivered — no production bugs found.
+- ✅ **C10.** Admin order pages don't display `delivery_type` / `payment_method`.
+  - **Resolution (2026-08-25):** OrderDetailPage shows cédula + "Entrega y pago" card; OrdersDashboardPage rows now carry delivery/payment chips (pink pills, label resolvers from constants slugs, degrade gracefully when absent on summaries). Backend jest suite still broken (separate repo issue).
 
 ---
 
@@ -141,12 +149,11 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 
 ## Suggested order of attack
 
-1. **A2** prod proxy (needs backend public URL — coordinate)
-2. **A1** harden `api/client.ts`
-3. **A5 / B5 / B6** remaining contract decisions with backend team (blocking questions)
-4. **A3** stop losing checkout fields
-5. **A6 + B1–B4** wire-up page by page (loading/error states included)
-6. C-items opportunistically
+1. ~~**A2** prod proxy~~ (needs backend public URL — coordinate) — still open
+2. **A1** harden `api/client.ts` — still open (network-failure try/catch + `VITE_API_URL`)
+3. **B2 / B5** remaining product decisions with backend team
+4. ~~**A3** stop losing checkout fields~~ ✅ · ~~**A6 + B1–B4** wire-up~~ ✅ (orders domain wired 2026-08-25)
+5. C-items: only **C5–C6** remain (C7 done; C9 done; C10 done)
 
 ---
 
@@ -169,3 +176,9 @@ Full codebase scan performed before wiring the real backend API (`FRONTEND_REQUI
 | 2026-08-25 | C8 | SEO + link-preview tags shipped in `index.html` (description, canonical, OG, Twitter card). New `VITE_PUBLIC_SITE_URL` env var (`.env.example`) — set it in Vercel before launch. Static tests guard the tags. Test infra hardened: jsdom `localStorage` shim in setup, single-worker config (`maxWorkers: 1`, `fileParallelism: false`) to dodge flaky Windows worker spawns. Suite: 14/14 green, lint + build clean. |
 | 2026-08-25 | Bugfix | Admin product form could not type multi-word names ("Peluche de Naruto"): per-keystroke `.trim()` ate trailing spaces before the next word landed. Fix: two-phase sanitizing — light strip (control chars + 80-char cap) while typing via `sanitizeTextInput`, whitespace collapse/trim on blur & save via `normalizeTextInput` (`src/utils/productText.ts`, unit-tested). Also closed B6 (item_count = LINES, aligned with backend COUNT + regression test). Backend untouched. |
 | 2026-08-25 | A5 ✅ | Image upload wired to the exact backend implementation: new products API client (multipart "image" field, 5 MB cap, WebP pipeline untouched server-side), Clerk Bearer via getAdminToken in auth context, admin form on real CRUD + upload/delete-image with object-URL previews, storefront reads live API products. First real wire-up slice complete — products domain now authoritative from Postgres. |
+| 2026-08-25 | B1 | Confirmation page: `/confirmation/:orderId` route + `ROUTES.confirmation(orderId?)` helper; page fetches by id on refresh (state fast-path kept), real StatusBadge from `order.status`, NotFound/ErrorState handled. 5 tests. |
+| 2026-08-25 | B3 | Cart stock re-validation: `reconcileStock(products)` clamps quantities/drops dead lines against live catalog; runs on CartPage mount (best-effort) and blocking before checkout submit with `<StockNotice>` review banner. 12 tests. Follow-up: price snapshots not refreshed. |
+| 2026-08-25 | B4 | Dashboard chart de-faked: `computeSalesByDay()` pure util (approved-only, rolling 7-day zero-filled window, es-VE labels, injectable today); `MOCK_SALES_DATA` deleted. 6 unit tests + page test. Timezone note for post-API. |
+| 2026-08-25 | **ORDERS WIRED** | **Second wire-up slice complete — orders domain now live from the API.** New `src/api/orders.ts` (createOrder/listOrders/getOrderDetail/approveOrder/cancelOrder, 13 contract tests): POST body verbatim per §4.2 (E.164 tlf_num, no country_code, cedula optional), empty-list quirk → [], 404 → NotFoundError, admin calls carry Clerk Bearer via getAdminToken. Checkout POSTs and navigates to confirmation by id; confirmation/admin detail/dashboard all fetch real data; approve/cancel hit PATCH endpoints with "already processed" handling; C10 chips shipped in OrdersDashboardPage rows. localStore slimmed to products cache + cart persistence; MOCK_ORDERS/MOCK_ORDER_DETAIL deleted; order tests migrated from localStorage seeding to mocked API. Suite at close: **19 files / 129 tests green, build ✓, lint ✓**. Remaining before launch: A1, A2, B2, B5, C5–C7. |
+| 2026-08-25 | C9 | Phone helpers (`normalizePhoneNumber`/`validatePhoneNumber`/`getCountryHint`) + `api()` envelope normalization fully unit-tested (39 tests across `phone.test.ts` / `client.test.ts` incl. FormData multipart regression guard). No production bugs found; A1 hardening still open by design. |
+| 2026-08-25 | C1–C4 | Polish batch: C1 toast timer leak fixed in ProductDetailPage (leak asserted via getTimerCount, failed-first); C2 search unified to name+description via shared diacritic-insensitive `matchesSearch`; C3 ConfirmDialog focus trap/Escape/focus-restore/variant-safe initial focus (8 tests, no deps); C4 cart/gear SVGs extracted to `ui/icons.tsx` byte-identical (4 tests). |

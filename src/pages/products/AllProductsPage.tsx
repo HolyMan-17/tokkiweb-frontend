@@ -8,6 +8,7 @@ import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { ROUTES } from '../../lib/routes';
+import { matchesSearch } from '../../utils/productSearch';
 import sparklesImg from '../../assets/sparkles.gif';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
@@ -51,11 +52,7 @@ export default function AllProductsPage() {
 
     // Search filter (name + description)
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      result = result.filter(p =>
-        p.product_name.toLowerCase().includes(q) ||
-        p.product_description.toLowerCase().includes(q),
-      );
+      result = result.filter(p => matchesSearch(p, query));
     }
 
     // Stock filter
@@ -127,7 +124,7 @@ export default function AllProductsPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder="Buscar en todo el catálogo..."
+            placeholder="Buscar por nombre o descripción..."
             value={query}
             onChange={e => setQuery(e.target.value)}
           />

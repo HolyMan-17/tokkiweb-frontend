@@ -15,12 +15,16 @@ export interface OrderSummary {
   order_id: number;
   name: string;
   last_name: string;
-  cedula?: string;              // "V-12345678" | "E-…" | "J-…" (optional until backend ships it)
+  cedula?: string;              // "V-12345678" | "E-…" (backend normalizes; null for legacy clients)
   tlf_num: string;
   total_amount: string;
   status: 'pending' | 'approved' | 'canceled';
   item_count: number;
   created_at: string;
+  // Present on newer backends — powers the delivery/payment chips (C10).
+  // Optional so older payloads degrade to no chips instead of crashing.
+  delivery_type?: string;
+  payment_method?: string;
 }
 
 export interface OrderItem {
@@ -53,7 +57,9 @@ export interface CheckoutPayload {
     name: string;
     last_name: string;
     cedula?: string;
-    country_code: string;
+    // Omit when `tlf_num` already carries the full international number
+    // ("+5841469996703"); required when sending a local number instead.
+    country_code?: string;
     tlf_num: string;
   };
   delivery_type: string;
@@ -61,9 +67,31 @@ export interface CheckoutPayload {
   items: { product_id: number; product_qty: number }[];
 }
 
+// ─── Order creation response (POST /orders 201) ───────────
+export interface CreatedOrderItem {
+  id: number;
+  name: string;
+  ordered_qty: number;
+  price: string;
+}
+
+export interface CreatedOrder {
+  order_id: number;
+  delivery_type: string;
+  payment_method: string;
+  total_amount: string;
+  items: CreatedOrderItem[];
+}
+
+// ─── Approve response (PATCH /orders/:id/approve) ─────────
+export interface ApproveResult {
+  order_id: number;
+  status: 'approved';
+}
+
 // ─── API envelope ──────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
-  success: boolean | string;  // backend sometimes sends string "true"/"false"
+  success: boolean | string;  // always boolean today; union kept as legacy tolerance
   data?: T;
   row?: T;                    // create product quirk
   updated_row?: T;            // update product quirk

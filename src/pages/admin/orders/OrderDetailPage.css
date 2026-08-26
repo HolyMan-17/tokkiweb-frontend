@@ -4,6 +4,26 @@
   gap: var(--space-sm);
 }
 
+/* Branded toast for approve/cancel feedback */
+.order-detail-toast {
+  position: fixed;
+  left: 50%;
+  bottom: var(--space-lg);
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  max-width: min(90vw, 26rem);
+  padding: var(--space-sm) var(--space-md);
+  border-radius: var(--radius-full);
+  background-color: var(--color-text);
+  color: var(--color-surface);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  box-shadow: 0 6px 18px rgba(230, 139, 190, 0.45);
+}
+
 /* Header */
 .detail-header {
   display: flex;

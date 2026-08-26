@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './CheckoutPage.css';
-import { useCart } from '../../context/CartContext';
-import { createOrder } from '../../store/localStore';
+import { useCart, type StockAdjustment } from '../../context/CartContext';
+import { createOrder } from '../../api/orders';
+import { fetchAllProducts } from '../../api/products';
+import StockNotice from '../../components/ui/StockNotice';
 import {
   formatPrice, COUNTRY_CODES, DELIVERY_TYPES, getPaymentMethods,
   normalizePhoneNumber, validatePhoneNumber, getCountryHint,
@@ -23,7 +25,7 @@ interface CheckoutFormState {
 const CEDULA_TYPES = ['V-', 'E-', 'J-'];
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, reconcileStock } = useCart();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<CheckoutFormState>({
@@ -40,6 +42,7 @@ export default function CheckoutPage() {
   const [cedulaError, setCedulaError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [stockChanges, setStockChanges] = useState<StockAdjustment[]>([]);
   const toastTimer = useRef<number | null>(null);
 
   const showToast = (message: string) => {
@@ -108,7 +111,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.lastName || !formData.cedula || !formData.phone) {
       showToast('Por favor completa todos los campos requeridos.');
@@ -131,25 +134,51 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Create the order in the local store, then hand it to the confirmation
-    // page via router state so it can render the real order id + total.
+    // Reconcile against fresh stock BEFORE creating the order. If anything
+    // changed, block the submission and let the user review the adjustments.
+    try {
+      const products = await fetchAllProducts();
+      const changes = reconcileStock(products);
+      if (changes.length > 0) {
+        setStockChanges(changes);
+        showToast('Ajustamos tu carrito según el stock actual. Revísalo antes de continuar.');
+        return;
+      }
+    } catch {
+      showToast('No pudimos verificar el stock. Inténtalo de nuevo.');
+      return;
+    }
+
+    // Create the order on the backend, then hand the id to the confirmation
+    // page (it fetches the fresh detail by id — no router state needed).
     try {
       setIsSubmitting(true);
       const tlf_num = `${selectedCountry.code}${normalizePhoneNumber(selectedCountry, formData.phone)}`;
-      const order = createOrder({
-        client: {
+      const result = await createOrder({
+        client_info: {
           name: formData.name.trim(),
           last_name: formData.lastName.trim(),
           cedula: `${formData.cedulaType}${formData.cedula}`,
+          // tlf_num already carries the full international number (§4.2):
+          // country_code stays omitted so the backend normalizes to E.164.
           tlf_num,
         },
         delivery_type: formData.deliveryType,
         payment_method: formData.paymentMethod,
-        items,
+        items: items.map(item => ({
+          product_id: item.product.product_id,
+          product_qty: item.quantity,
+        })),
       });
 
+      if (!result.ok) {
+        showToast(result.message);
+        setIsSubmitting(false);
+        return;
+      }
+
       clearCart();
-      navigate(ROUTES.confirmation, { state: { order } });
+      navigate(ROUTES.confirmation(result.data.order_id));
     } catch (error) {
       console.error('Error al crear el pedido:', error);
       showToast('No se pudo crear el pedido. Inténtalo de nuevo.');
@@ -183,6 +212,10 @@ export default function CheckoutPage() {
         <h1 className="page-title">Finalizar Compra</h1>
         <p className="page-subtitle">Completa tus datos para procesar el pedido</p>
       </div>
+
+      {stockChanges.length > 0 && (
+        <StockNotice changes={stockChanges} onDismiss={() => setStockChanges([])} />
+      )}
 
       <form onSubmit={handleSubmit} className="checkout-form stagger" noValidate>
         <section className="form-section card">

@@ -59,7 +59,7 @@ function toProduct(row: ProductRow): Product {
 export async function listProducts(): Promise<ApiResult<Product[]>> {
   const result = await api<ProductRow[]>('/products');
   if (!result.ok) return result;
-  return { ok: true, data: result.data?.map(toProduct) ?? [], message: result.message };
+  return { ok: true, data: result.data?.map(toProduct) ?? [], message: result.message, status: result.status };
 }
 
 /** Page-facing loader: rows or a thrown Error — pairs with useAsync +

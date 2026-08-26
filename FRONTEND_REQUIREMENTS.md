@@ -1,6 +1,6 @@
 # Tokki Shop Frontend — Functional Requirements & API Contract
 
-**Version:** 1.1.0
+**Version:** 1.2.0
 **Backend base URL (dev):** `http://localhost:3000`
 **Frontend calls:** `/api/...` (Vite dev server proxies `/api` → `localhost:3000`)
 
@@ -96,14 +96,17 @@ interface Product {
   product_name: string;
   product_price: string;        // numeric strings from PG
   product_description: string;
+  category: string;             // display name, matches CATEGORIES[i].name
   qty_available: number;
   in_stock: boolean;
+  product_image_url?: string | null; // absolute/relative URL; null = no image
 }
 
 interface OrderSummary {
   order_id: number;
   name: string;
   last_name: string;
+  cedula?: string | null;       // "V-12345678"; absent/null for legacy clients
   tlf_num: string;
   total_amount: string;
   status: 'pending' | 'approved' | 'canceled';
@@ -121,7 +124,7 @@ interface OrderItem {
 interface OrderDetail {
   order_id: number;
   status: 'pending' | 'approved' | 'canceled';
-  client: { name: string; last_name: string; tlf_num: string };
+  client: { name: string; last_name: string; cedula?: string | null; tlf_num: string };
   total_amount: string;
   created_at: string;
   items: OrderItem[];
@@ -174,8 +177,7 @@ Optional query param: `?category=<name>` — exact, case-sensitive match against
 
 **Images:** every product payload carries `product_image_url` — an absolute URL (or `null` when no image). Render it directly in `<img src>`; never build image URLs yourself. Files are WebP, ≤1600px wide.
 
-Empty result: `{ "success": "true", "message": "There's no registered products." }`
-> ⚠️ Note: `success` is the **string** `"true"` in the empty case (backend quirk). Check `data`/`message` presence rather than the `success` type.
+Empty result: `{ "success": true, "message": "There's no registered products." }`
 
 #### `GET /api/products/:product_id` — Single product
 `200` → `{ success: true, data: { ...Product } }` (includes `category`)
@@ -207,8 +209,7 @@ Body (all optional, at least one):
 ```
 `200` → `{ success: true, updated_row: { product_id, product_name, product_price, product_description, category, qty_available, in_stock } }`
 `400` → `{ success: false, message: "At least 1 product field needs to be updated." }`, `"A valid product category is required."`, `"product_price must be a positive number."`, `"Product quantity must be a whole number."`, or `"Product quantity can't be negative."` (invalid values are rejected, never silently ignored)
-`401` → `{ success: false, message: "Product is archived." }`
-`404` → `{ success: false, message: "Product was not found." }`
+`404` → `{ success: false, message: "Product was not found." }` (missing) or `"Product is archived."`
 
 #### `DELETE /api/products/:product_id` — Archive product (admin)
 Soft-delete: sets `is_archived = true`, `qty_available = 0`, `in_stock = false` (the stored image file is removed server-side too).
@@ -250,10 +251,11 @@ Body:
     "name": "Jane",
     "last_name": "Doe",
     "country_code": "+58",
-    "tlf_num": "041469996703"
+    "tlf_num": "041469996703",
+    "cedula": "V-12345678"
   },
   "delivery_type": "envio_nacional",
-  "payment_method": "credit_card",
+  "payment_method": "pago_movil",
   "items": [
     { "product_id": 1, "product_qty": 2 },
     { "product_id": 2, "product_qty": 1 }
@@ -262,6 +264,10 @@ Body:
 ```
 
 **Delivery types (backend-enforced):** `delivery_type` must be exactly one of `envio_nacional`, `delivery`, `retiro_tienda` (slugs). Map them to display labels in `DELIVERY_TYPES` — `"Envío Nacional"`, `"Delivery"`, `"Retiro en Tienda"` — the API only accepts the slugs; anything else returns `400`.
+
+**Cedula (optional):** send it in `client_info.cedula` when the customer provides their Venezuelan ID. Backend normalizes lenient input (`v12345678`, stray spaces) to `"V-12345678"`; empty/absent stores `NULL`; invalid → `400` `"Invalid cedula format."`; already owned by another client → `409` `"Resource already exists."`.
+
+**Payment methods:** the server currently accepts any non-empty string, but always send a `PAYMENT_METHODS` slug (`pago_movil`, `binance`, `zelle`, `paypal`, `cash`) — an allowlist constraint is planned backend-side.
 
 **Items are type-checked up front:** every entry needs integer `product_id > 0` and `product_qty > 0`; malformed lists get `"Each item needs a valid product_id and a positive whole product_qty."` before any stock is touched.
 
@@ -277,7 +283,7 @@ Body:
   "data": {
     "order_id": 5,
     "delivery_type": "envio_nacional",
-    "payment_method": "credit_card",
+    "payment_method": "pago_movil",
     "total_amount": "99.98",
     "items": [
       { "id": 1, "name": "Tokki Hoodie", "ordered_qty": 2, "price": "49.99" }
@@ -299,6 +305,9 @@ Empty → `{ success: true, message: "No orders have been placed." }`
 #### `GET /api/orders/client/:client_id` — Client order history
 `200` → `{ success: true, data: OrderSummary[] }`
 Empty → `{ success: true, message: "No orders have been placed by this client." }`
+`404` → unknown `client_id`: `{ success: false, message: "Client doesn't exist." }`
+
+> Malformed integer path params (`:product_id`, `:order_id`, `:client_id`) are rejected up front with `400` `"Invalid ID format."` on every endpoint.
 
 #### `GET /api/orders/:order_id` — Single order detail
 `200`:
@@ -308,7 +317,7 @@ Empty → `{ success: true, message: "No orders have been placed by this client.
   "data": {
     "order_id": 3,
     "status": "pending",
-    "client": { "name": "Jane", "last_name": "Doe", "tlf_num": "+5841469996703" },
+    "client": { "name": "Jane", "last_name": "Doe", "cedula": "V-12345678", "tlf_num": "+5841469996703" },
     "total_amount": "74.98",
     "created_at": "2026-08-04T12:00:00.000Z",
     "items": [

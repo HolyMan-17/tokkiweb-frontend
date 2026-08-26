@@ -1,18 +1,49 @@
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './CartPage.css';
-import { useCart } from '../../context/CartContext';
+import { useCart, type StockAdjustment } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
+import StockNotice from '../../components/ui/StockNotice';
+import { fetchAllProducts } from '../../api/products';
 import cartImg from '../../assets/cart.avif';
 
 export default function CartPage() {
-  const { items, total, removeItem, updateQuantity } = useCart();
+  const { items, total, removeItem, updateQuantity, reconcileStock } = useCart();
   const navigate = useNavigate();
+  const [stockChanges, setStockChanges] = useState<StockAdjustment[]>([]);
+  // reconcileStock changes identity whenever items change — keep the effect
+  // one-shot per mount by always calling the latest via a ref.
+  const reconcileRef = useRef(reconcileStock);
+  useEffect(() => {
+    reconcileRef.current = reconcileStock;
+  }, [reconcileStock]);
+
+  // Reconcile the persisted snapshots against fresh catalog data on mount.
+  // Best-effort: if the API is unreachable we keep the cart as-is (checkout
+  // re-checks before submitting and blocks there).
+  useEffect(() => {
+    let cancelled = false;
+    fetchAllProducts()
+      .then(products => {
+        if (!cancelled) setStockChanges(reconcileRef.current(products));
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const notice =
+    stockChanges.length > 0 ? (
+      <StockNotice changes={stockChanges} />
+    ) : null;
 
   if (items.length === 0) {
     return (
       <div className="page cart-empty-state animate-fadeIn">
+        {notice}
         <div className="empty-icon animate-scaleIn">
           <img src={cartImg} alt="Carrito vacío" width={300} height={319} />
         </div>
@@ -31,6 +62,8 @@ export default function CartPage() {
         <h1 className="page-title">Mi Carrito</h1>
         <p className="page-subtitle">{items.length} {items.length === 1 ? 'artículo' : 'artículos'}</p>
       </div>
+
+      {notice}
 
       <div className="cart-items stagger">
         {items.map(item => (

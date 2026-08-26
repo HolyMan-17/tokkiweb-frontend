@@ -91,6 +91,31 @@
   align-items: center;
 }
 
+/* C10 — compact delivery/payment pills per order row */
+.order-card-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-xs, 0.25rem) var(--space-sm);
+}
+
+.order-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem var(--space-sm);
+  border-radius: var(--radius-full);
+  background-color: var(--p1);
+  border: 2px solid var(--p2);
+  color: var(--color-text-secondary);
+  font-family: var(--font-body);
+  font-size: var(--text-sm);
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.order-chip--payment {
+  background-color: #ffffff;
+}
+
 .customer-name {
   margin: 0;
   font-weight: 600;

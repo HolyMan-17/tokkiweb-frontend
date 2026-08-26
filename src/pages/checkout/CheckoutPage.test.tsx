@@ -1,15 +1,28 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import CheckoutPage from './CheckoutPage';
 import { CartProvider } from '../../context/CartContext';
+import { fetchAllProducts } from '../../api/products';
+import { createOrder } from '../../api/orders';
 import { MOCK_PRODUCTS } from '../../mock/data';
 
-function seedCart() {
+vi.mock('../../api/products', () => ({
+  fetchAllProducts: vi.fn(),
+}));
+
+vi.mock('../../api/orders', () => ({
+  createOrder: vi.fn(),
+}));
+
+const mockFetchAllProducts = vi.mocked(fetchAllProducts);
+const mockCreateOrder = vi.mocked(createOrder);
+
+function seedCart(quantity: number) {
   window.localStorage.setItem(
     'tokki_cart_v1',
-    JSON.stringify([{ product: MOCK_PRODUCTS[0], quantity: 1 }]),
+    JSON.stringify([{ product: MOCK_PRODUCTS[0], quantity }]),
   );
 }
 
@@ -17,7 +30,11 @@ function renderPage() {
   return render(
     <MemoryRouter>
       <CartProvider>
-        <CheckoutPage />
+        <Routes>
+          <Route path="/" element={<CheckoutPage />} />
+          {/* Sonda de navegación: el checkout redirige aquí tras crear el pedido. */}
+          <Route path="/confirmation/:orderId" element={<div>PEDIDO CONFIRMADO</div>} />
+        </Routes>
       </CartProvider>
     </MemoryRouter>,
   );
@@ -27,13 +44,28 @@ async function fillValidForm(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Nombre'), 'María');
   await user.type(screen.getByLabelText('Apellido'), 'González');
   await user.type(screen.getByLabelText('Teléfono'), '4121234567');
+  await user.type(screen.getByLabelText('Cédula'), '26345678');
 }
 
-describe('CheckoutPage — campo Cédula', () => {
-  beforeEach(() => {
-    seedCart();
+beforeEach(() => {
+  window.localStorage.clear();
+  seedCart(1);
+  mockFetchAllProducts.mockReset();
+  mockCreateOrder.mockReset();
+  mockFetchAllProducts.mockResolvedValue([...MOCK_PRODUCTS]);
+  mockCreateOrder.mockResolvedValue({
+    ok: true,
+    data: {
+      order_id: 7,
+      delivery_type: 'envio_nacional',
+      payment_method: 'pago_movil',
+      total_amount: '3.50',
+      items: [{ id: 1, name: MOCK_PRODUCTS[0].product_name, ordered_qty: 1, price: '3.50' }],
+    },
   });
+});
 
+describe('CheckoutPage — campo Cédula', () => {
   it('muestra el campo cédula con un selector V-, E-, J-', () => {
     renderPage();
     const select = screen.getByLabelText(/tipo de cédula/i) as HTMLSelectElement;
@@ -45,7 +77,7 @@ describe('CheckoutPage — campo Cédula', () => {
   it('muestra la vista previa con una cédula válida', async () => {
     const user = userEvent.setup();
     renderPage();
-    await fillValidForm(user);
+    await user.clear(screen.getByLabelText('Cédula'));
     await user.type(screen.getByLabelText('Cédula'), '26345678');
     expect(screen.getByText('V-26345678')).toBeInTheDocument();
   });
@@ -54,10 +86,12 @@ describe('CheckoutPage — campo Cédula', () => {
     const user = userEvent.setup();
     renderPage();
     await fillValidForm(user);
+    await user.clear(screen.getByLabelText('Cédula'));
     await user.type(screen.getByLabelText('Cédula'), '123');
     await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
     expect(await screen.findByRole('alert')).toHaveTextContent(/cedula invalido/i);
     // El pedido no se creó: seguimos en el checkout.
+    expect(mockCreateOrder).not.toHaveBeenCalled();
     expect(screen.getByRole('button', { name: /confirmar pedido/i })).toBeInTheDocument();
   });
 
@@ -68,5 +102,90 @@ describe('CheckoutPage — campo Cédula', () => {
     await user.type(input, 'abc12x345y6789z');
     expect(input.value).toBe('123456789');
     expect(input.value).toMatch(/^\d*$/);
+  });
+});
+
+describe('CheckoutPage — reconciliación de stock antes de pagar', () => {
+  const p1 = MOCK_PRODUCTS[0];
+
+  function seedCartFor(quantity: number) {
+    window.localStorage.setItem(
+      'tokki_cart_v1',
+      JSON.stringify([{ product: p1, quantity }]),
+    );
+  }
+
+  it('bloquea el envío y muestra el aviso cuando el stock bajó', async () => {
+    seedCartFor(60);
+    mockFetchAllProducts.mockResolvedValue([{ ...p1, qty_available: 10 }]);
+    const user = userEvent.setup();
+    renderPage();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+    expect(await screen.findByText(/ahora tiene solo 10 disponibles/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ajustamos tu carrito:/i)).toBeInTheDocument();
+    // El pedido no se creó: el usuario debe revisar los ajustes primero.
+    expect(mockCreateOrder).not.toHaveBeenCalled();
+  });
+
+  it('tras confirmar los ajustes permite completar el pedido con las cantidades corregidas', async () => {
+    seedCartFor(60);
+    mockFetchAllProducts.mockResolvedValue([{ ...p1, qty_available: 10 }]);
+    const user = userEvent.setup();
+    renderPage();
+    await fillValidForm(user);
+    await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+    await screen.findByText(/ahora tiene solo 10 disponibles/i);
+
+    await user.click(screen.getByRole('button', { name: /entendido/i }));
+    await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+    expect(await screen.findByText('PEDIDO CONFIRMADO')).toBeInTheDocument();
+    expect(mockCreateOrder).toHaveBeenCalledTimes(1);
+    const payload = mockCreateOrder.mock.calls[0][0];
+    expect(payload.items[0]).toEqual({ product_id: p1.product_id, product_qty: 10 });
+    // El carrito quedó vacío tras confirmar la compra.
+    expect(JSON.parse(window.localStorage.getItem('tokki_cart_v1') ?? '[]')).toEqual([]);
+  });
+
+  it('no bloquea el envío cuando el stock sigue vigente y manda E.164 sin country_code', async () => {
+    seedCartFor(2);
+    const user = userEvent.setup();
+    renderPage();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+    expect(await screen.findByText('PEDIDO CONFIRMADO')).toBeInTheDocument();
+    expect(mockCreateOrder).toHaveBeenCalledTimes(1);
+    const payload = mockCreateOrder.mock.calls[0][0];
+    expect(payload.items).toEqual([{ product_id: p1.product_id, product_qty: 2 }]);
+    expect(payload.client_info.tlf_num).toBe('+584121234567');
+    expect(payload.client_info.country_code).toBeUndefined();
+    expect(payload.client_info.cedula).toBe('V-26345678');
+    expect(payload.delivery_type).toBe('envio_nacional');
+    expect(payload.payment_method).toBe('pago_movil');
+    expect(screen.queryByText(/Ajustamos tu carrito/i)).not.toBeInTheDocument();
+  });
+
+  it('muestra el mensaje del backend en el toast cuando el pedido es rechazado', async () => {
+    mockCreateOrder.mockResolvedValue({
+      ok: false,
+      message: 'Requested quantity is not available in the stock.',
+    });
+    const user = userEvent.setup();
+    renderPage();
+    await fillValidForm(user);
+
+    await user.click(screen.getByRole('button', { name: /confirmar pedido/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(
+      /Requested quantity is not available in the stock/,
+    );
+    // isSubmitting se reinicia: el botón vuelve a estar disponible.
+    expect(screen.getByRole('button', { name: /confirmar pedido/i })).toBeEnabled();
+    expect(screen.queryByText('PEDIDO CONFIRMADO')).not.toBeInTheDocument();
   });
 });
