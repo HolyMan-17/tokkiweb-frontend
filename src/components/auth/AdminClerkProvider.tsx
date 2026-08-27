@@ -49,7 +49,7 @@ function ClerkBridge({ children }: { children: ReactNode }) {
 }
 
 const DEV_FALLBACK_VALUE: AdminAuthValue = {
-  configured: false,
+  configured: true,
   isLoaded: true,
   isSignedIn: ADMIN_DEV_BYPASS,
   role: ADMIN_DEV_BYPASS ? ROLES.TECH : 'none',
@@ -60,10 +60,9 @@ interface AdminClerkProviderProps {
 }
 
 export function AdminClerkProvider({ children }: AdminClerkProviderProps) {
-  // No Clerk key → fall back to the dev bypass so the panel stays usable
-  // during local development. Never reached in production (this provider is
-  // only mounted on admin routes, and prod always has a key).
-  if (!CLERK_PUBLISHABLE_KEY) {
+  // No Clerk key or dev bypass enabled → fall back to the dev bypass so the panel stays usable
+  // during local development / testing without hitting a login wall.
+  if (!CLERK_PUBLISHABLE_KEY || ADMIN_DEV_BYPASS) {
     return (
       <AdminAuthContext.Provider value={DEV_FALLBACK_VALUE}>
         {children}

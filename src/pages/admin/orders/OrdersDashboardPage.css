@@ -111,6 +111,8 @@
 
 .orders-search-wrapper {
   position: relative;
+  display: flex;
+  align-items: center;
   width: 100%;
 }
 
@@ -121,19 +123,41 @@
   transform: translateY(-50%);
   color: var(--color-text-muted);
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
 }
 
 .orders-search-input {
-  padding-left: 40px;
-  padding-right: 36px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 38px 10px 40px;
   border-radius: var(--radius-full);
   background-color: var(--color-surface);
   border: 2px solid var(--p2);
   font-family: var(--font-body);
   font-size: var(--text-sm);
+  color: var(--color-text);
+  box-sizing: border-box;
+  outline: none;
+  appearance: none;
+  -webkit-appearance: none;
   transition: border-color var(--duration-fast) var(--ease-out),
               box-shadow var(--duration-fast) var(--ease-out),
               background-color var(--duration-fast) var(--ease-out);
+}
+
+.orders-search-input::-webkit-search-cancel-button,
+.orders-search-input::-webkit-search-decoration,
+.orders-search-input::-webkit-search-results-button,
+.orders-search-input::-webkit-search-results-decoration {
+  display: none;
+  -webkit-appearance: none;
+}
+
+.orders-search-input::placeholder {
+  color: var(--color-text-muted);
 }
 
 .orders-search-input:focus {
@@ -147,13 +171,14 @@
   right: 12px;
   top: 50%;
   transform: translateY(-50%);
-  width: 22px;
-  height: 22px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--radius-full);
   border: none;
-  background: var(--p2);
+  background: var(--pink-100);
   color: var(--color-text-secondary);
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: 1.1rem;
   font-weight: 700;
   line-height: 1;
   display: flex;
@@ -161,16 +186,19 @@
   justify-content: center;
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out),
-              transform var(--duration-fast) var(--ease-spring);
+              transform var(--duration-fast) var(--ease-spring),
+              color var(--duration-fast) var(--ease-out);
+  z-index: 1;
 }
 
 .orders-search-clear:hover {
-  background: var(--p3);
+  background: var(--pink-200);
+  color: var(--color-text);
   transform: translateY(-50%) scale(1.1);
 }
 
 .orders-search-clear:active {
-  transform: translateY(-50%) scale(0.9);
+  transform: translateY(-50%) scale(0.95);
 }
 
 .filter-tabs-container {
@@ -434,11 +462,13 @@
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
+    flex-wrap: wrap;
     gap: var(--space-md);
   }
 
   .orders-search-wrapper {
-    max-width: 380px;
+    flex: 1 1 340px;
+    max-width: 480px;
   }
 
   .orders-list {

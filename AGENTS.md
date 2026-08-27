@@ -206,10 +206,52 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`) and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **31 test files / 231 tests green**).
+- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **31 Vitest test files / 231 tests green** + **4 Playwright E2E suites green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
 - Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
+
+### Playwright E2E & Visual Testing Environment
+
+Playwright is configured for browser rendering, layout spacing, accessibility, and visual verification:
+
+- **Config File**: `playwright.config.ts`
+- **Spec Directory**: `e2e/*.spec.ts` (isolated from Vitest via `exclude: ['**/e2e/**', ...]` in `vite.config.ts`).
+- **Dedicated Port**: `5199` with `--strictPort` (prevents port collisions with local development servers on `5173`/`5174`).
+- **WebServer Hook**:
+  ```ts
+  webServer: {
+    command: 'pnpm dev --port 5199 --host 127.0.0.1 --strictPort',
+    url: 'http://127.0.0.1:5199',
+    reuseExistingServer: !process.env.CI,
+    timeout: 30 * 1000,
+    env: {
+      VITE_ADMIN_DEV_BYPASS: 'true',
+    },
+  }
+  ```
+- **In-Memory Auth Bypass Rule (CRITICAL for Agents)**:
+  - When testing admin flows with Playwright, pass `VITE_ADMIN_DEV_BYPASS: 'true'` **strictly in-memory** via `webServer.env` or inline environment variables.
+  - **NEVER** write or leave `VITE_ADMIN_DEV_BYPASS=true` in persistent `.env` or `.env.local` files on disk.
+  - `AdminClerkProvider` and `Header` automatically honor the bypass flag without mounting `@clerk/*` during automated test runs.
+- **API Mocking Pattern**:
+  Mock backend endpoints within test specs using `page.route`:
+  ```ts
+  await page.route('**/api/orders', async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        success: true,
+        data: [...],
+      }),
+    });
+  });
+  ```
+- **Commands**:
+  - Run all E2E tests: `pnpm test:e2e` (or `npx playwright test`)
+  - Install browser binaries: `npx playwright install chromium`
+- **Output Artifacts**: Screenshots and traces go to `test-results/` and `playwright-report/` (both ignored in `.gitignore`).
 
 ---
 

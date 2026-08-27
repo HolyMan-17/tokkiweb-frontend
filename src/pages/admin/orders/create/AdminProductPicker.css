@@ -44,7 +44,17 @@
   outline: none;
   min-height: 50px;
   box-sizing: border-box;
+  appearance: none;
+  -webkit-appearance: none;
   transition: all var(--duration-fast) var(--ease-out);
+}
+
+.pos-search-input::-webkit-search-cancel-button,
+.pos-search-input::-webkit-search-decoration,
+.pos-search-input::-webkit-search-results-button,
+.pos-search-input::-webkit-search-results-decoration {
+  display: none;
+  -webkit-appearance: none;
 }
 
 .pos-search-input::placeholder {

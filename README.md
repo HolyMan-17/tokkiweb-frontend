@@ -20,7 +20,7 @@ cp .env.example .env.local   # add VITE_CLERK_PUBLISHABLE_KEY (admin only)
 pnpm dev                     # http://localhost:5173 (proxies /api → :3000)
 ```
 
-Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run`, `pnpm doctor`, `pnpm preview`.
+Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run` (Vitest), `pnpm test:e2e` (Playwright), `pnpm doctor`, `pnpm preview`.
 
 ## Current state (live API backend wired)
 

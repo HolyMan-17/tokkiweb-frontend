@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
-import { ROLES, CLERK_PUBLISHABLE_KEY } from '../../lib/auth';
+import { ROLES, CLERK_PUBLISHABLE_KEY, ADMIN_DEV_BYPASS } from '../../lib/auth';
 import { ROUTES, ADMIN_ROUTES } from '../../lib/routes';
 import { useAdminAuth } from '../auth/useAdminAuth';
 import { CartIcon, GearIcon } from '../ui/icons';
@@ -118,7 +118,7 @@ export function Header({ variant = 'customer' }: HeaderProps) {
               <Link to={ROUTES.home} className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {LOGOUT_SVG}
               </Link>
-              {clerkConfigured && (
+              {clerkConfigured && !ADMIN_DEV_BYPASS && (
                 <span className="nav-user">
                   <Suspense fallback={null}><AdminUserButton /></Suspense>
                 </span>

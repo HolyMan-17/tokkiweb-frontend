@@ -77,6 +77,7 @@ export default defineConfig({
     globals: true,
     setupFiles: './src/test/setup.ts',
     css: false,
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.{idea,git,cache,output,temp}/**'],
     // Forks workers time out on some Windows setups; threads are faster to spawn.
     pool: 'threads',
     // Worker spawns on this machine are slow/flaky (Defender scans) — keep

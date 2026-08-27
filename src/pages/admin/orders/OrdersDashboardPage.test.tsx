@@ -138,12 +138,20 @@ describe('OrdersDashboardPage — listado vía API', () => {
 
     await screen.findByText('María González');
     const searchInput = screen.getByLabelText(/buscar pedidos/i);
+    expect(searchInput).toHaveClass('orders-search-input');
+    expect(searchInput).not.toHaveClass('form-input');
+
     await user.type(searchInput, '26345678');
 
     expect(screen.getByText('María González')).toBeInTheDocument();
     expect(screen.queryByText('Sofía Hernández')).not.toBeInTheDocument();
 
-    await user.clear(searchInput);
+    // Clear button functionality
+    const clearBtn = screen.getByRole('button', { name: /limpiar búsqueda/i });
+    expect(clearBtn).toBeInTheDocument();
+    await user.click(clearBtn);
+
+    expect(searchInput).toHaveValue('');
     expect(screen.getByText('Sofía Hernández')).toBeInTheDocument();
   });
 
