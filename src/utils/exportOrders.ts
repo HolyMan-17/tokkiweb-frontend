@@ -18,12 +18,19 @@ export function getOrderStatusLabel(status?: string | null): string {
 
 /**
  * Escapes a single CSV value according to standard RFC 4180 rules.
+ * Neutralizes spreadsheet formula injection (CWE-1236) if string starts with =, +, @, \t, \r.
  * If the value contains commas, quotes, or line breaks, it is wrapped in double quotes
  * and any internal double quotes are escaped as two double quotes ("").
  */
 export function escapeCsvField(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return '';
-  const str = String(value);
+  let str = String(value);
+
+  // Neutralize CSV formula injection for spreadsheet programs
+  if (/^[=+@\t\r]/.test(str) || (/^-/.test(str) && isNaN(Number(str)))) {
+    str = `'${str}`;
+  }
+
   if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }

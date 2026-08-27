@@ -77,6 +77,14 @@ describe('exportOrders utility', () => {
       expect(escapeCsvField('Línea 1\nLínea 2')).toBe('"Línea 1\nLínea 2"');
     });
 
+    it('neutraliza inyección de fórmulas CSV (=, +, @, -, tab)', () => {
+      expect(escapeCsvField('=cmd|"/C calc"!A0')).toBe(`"'=cmd|""/C calc""!A0"`);
+      expect(escapeCsvField('+12345678')).toBe(`'+12345678`);
+      expect(escapeCsvField('@admin')).toBe(`'@admin`);
+      expect(escapeCsvField('-malicious')).toBe(`'-malicious`);
+      expect(escapeCsvField(-15.5)).toBe('-15.5');
+    });
+
     it('maneja null o undefined devolviendo string vacío', () => {
       expect(escapeCsvField(null)).toBe('');
       expect(escapeCsvField(undefined)).toBe('');
