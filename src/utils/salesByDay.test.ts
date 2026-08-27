@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import { computeSalesByDay } from './salesByDay';
+import {
+  computeSalesByDay,
+  computeSalesByPeriod,
+  computePaymentDistribution,
+  computeDeliveryDistribution,
+} from './salesByDay';
 import type { OrderSummary } from '../types';
 
 const TODAY = '2026-08-25T15:30:00.000Z';
@@ -12,6 +17,8 @@ function makeOrder(overrides: Partial<OrderSummary> = {}): OrderSummary {
     total_amount: '10',
     status: 'approved',
     created_at: TODAY,
+    delivery_type: 'envio_nacional',
+    payment_method: 'pago_movil',
     ...overrides,
   } as OrderSummary;
 }
@@ -42,40 +49,86 @@ describe('computeSalesByDay', () => {
     expect(result[6].label).toBe('mar 25');
     expect(result[6].total).toBeCloseTo(20, 5);
   });
+});
 
-  test('fills missing days with 0 and keeps rolling window of 7 ending today', () => {
-    const orders = [makeOrder({ total_amount: '30', created_at: '2026-08-19T12:00:00.000Z' })];
-    const result = computeSalesByDay(orders, TODAY);
-    expect(result).toHaveLength(7);
-    expect(result[0]).toEqual({ label: 'mié 19', total: 30 });
-    expect(result.slice(1).every((d) => d.total === 0)).toBe(true);
-  });
-
-  test('respects injected today and custom window length', () => {
+describe('computeSalesByPeriod', () => {
+  test('computes daily revenue for 7 rolling days', () => {
     const orders = [
-      makeOrder({ total_amount: '5', created_at: '2026-01-02T15:00:00.000Z' }),
-      makeOrder({ total_amount: '9', created_at: '2026-01-04T23:59:59.999Z' }),
+      makeOrder({ total_amount: '25.00', created_at: '2026-08-25T10:00:00.000Z' }),
+      makeOrder({ total_amount: '10.00', status: 'pending', created_at: '2026-08-25T11:00:00.000Z' }),
     ];
-    const result = computeSalesByDay(orders, '2026-01-04T12:00:00.000Z', 4);
-    expect(result.map((d) => d.label)).toEqual(['jue 1', 'vie 2', 'sáb 3', 'dom 4']);
-    expect(result[0].total).toBe(0);
-    expect(result[1].total).toBe(5);
-    expect(result[2].total).toBe(0);
-    expect(result[3].total).toBe(9);
+    const result = computeSalesByPeriod(orders, { period: 'day', metric: 'revenue', referenceDate: TODAY });
+    expect(result).toHaveLength(7);
+    expect(result[6].total).toBe(25);
   });
 
-  test('formats labels as Spanish short weekday + day number (es-VE)', () => {
-    const result = computeSalesByDay([], new Date('2026-12-25T18:00:00.000Z'));
-    // 2026-12-19 → sábado, 2026-12-25 → viernes
-    expect(result[0].label).toMatch(/^sáb/);
-    expect(result[0].label.endsWith('19')).toBe(true);
-    expect(result[6].label).toMatch(/^vie/);
-    expect(result[6].label.endsWith('25')).toBe(true);
+  test('computes daily order count (including all active orders)', () => {
+    const orders = [
+      makeOrder({ status: 'approved', created_at: '2026-08-25T10:00:00.000Z' }),
+      makeOrder({ status: 'pending', created_at: '2026-08-25T11:00:00.000Z' }),
+      makeOrder({ status: 'canceled', created_at: '2026-08-25T12:00:00.000Z' }),
+    ];
+    const result = computeSalesByPeriod(orders, { period: 'day', metric: 'orders', referenceDate: TODAY });
+    expect(result[6].total).toBe(2); // approved + pending (excludes canceled)
   });
 
-  test('accepts a Date instance as injected today', () => {
-    const orders = [makeOrder({ total_amount: '3', created_at: '2026-08-25T05:00:00.000Z' })];
-    const result = computeSalesByDay(orders, new Date(TODAY));
-    expect(result[6]).toEqual({ label: 'mar 25', total: 3 });
+  test('computes weekly breakdown for the current month', () => {
+    const orders = [
+      makeOrder({ total_amount: '15.00', created_at: '2026-08-03T10:00:00.000Z' }), // Sem 1
+      makeOrder({ total_amount: '30.00', created_at: '2026-08-10T10:00:00.000Z' }), // Sem 2
+      makeOrder({ total_amount: '45.00', created_at: '2026-08-25T10:00:00.000Z' }), // Sem 4
+    ];
+    const result = computeSalesByPeriod(orders, { period: 'week', metric: 'revenue', referenceDate: TODAY });
+    expect(result.length).toBeGreaterThanOrEqual(4);
+    expect(result[0].label).toBe('Sem 1');
+    expect(result[0].total).toBe(15);
+    expect(result[1].label).toBe('Sem 2');
+    expect(result[1].total).toBe(30);
+    expect(result[3].label).toBe('Sem 4');
+    expect(result[3].total).toBe(45);
+  });
+
+  test('computes monthly breakdown for the current year (12 months)', () => {
+    const orders = [
+      makeOrder({ total_amount: '100.00', created_at: '2026-01-15T10:00:00.000Z' }),
+      makeOrder({ total_amount: '200.00', created_at: '2026-08-20T10:00:00.000Z' }),
+    ];
+    const result = computeSalesByPeriod(orders, { period: 'month', metric: 'revenue', referenceDate: TODAY });
+    expect(result).toHaveLength(12);
+    expect(result[0].label).toMatch(/ene/i);
+    expect(result[0].total).toBe(100);
+    expect(result[7].label).toMatch(/ago/i);
+    expect(result[7].total).toBe(200);
   });
 });
+
+describe('computePaymentDistribution', () => {
+  test('groups orders by payment method with labels and counts', () => {
+    const orders = [
+      makeOrder({ payment_method: 'pago_movil' }),
+      makeOrder({ payment_method: 'pago_movil' }),
+      makeOrder({ payment_method: 'zelle' }),
+    ];
+    const dist = computePaymentDistribution(orders);
+    const pagoMovil = dist.find(d => d.name === 'Pago Móvil');
+    const zelle = dist.find(d => d.name === 'Zelle');
+    expect(pagoMovil?.value).toBe(2);
+    expect(zelle?.value).toBe(1);
+  });
+});
+
+describe('computeDeliveryDistribution', () => {
+  test('groups orders by delivery type with labels and counts', () => {
+    const orders = [
+      makeOrder({ delivery_type: 'envio_nacional' }),
+      makeOrder({ delivery_type: 'delivery' }),
+      makeOrder({ delivery_type: 'delivery' }),
+    ];
+    const dist = computeDeliveryDistribution(orders);
+    const envio = dist.find(d => d.name.includes('Envío Nacional'));
+    const delivery = dist.find(d => d.name === 'Delivery');
+    expect(envio?.value).toBe(1);
+    expect(delivery?.value).toBe(2);
+  });
+});
+

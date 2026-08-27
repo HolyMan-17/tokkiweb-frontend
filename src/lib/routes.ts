@@ -22,6 +22,7 @@ export const ADMIN_ROUTES = {
   signIn: `${ADMIN_PATH}/sign-in`,
   dev: `${ADMIN_PATH}/dev`,
   orders: `${ADMIN_PATH}/orders`,
+  createOrder: `${ADMIN_PATH}/orders/new`,
   orderDetail: (id: number) => `${ADMIN_PATH}/orders/${id}`,
   products: `${ADMIN_PATH}/products`,
 } as const;

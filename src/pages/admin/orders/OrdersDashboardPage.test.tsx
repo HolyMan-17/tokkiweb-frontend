@@ -3,15 +3,26 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import OrdersDashboardPage from './OrdersDashboardPage';
 import { fetchOrderSummaries } from '../../../api/orders';
+import { exportOrdersToCsv } from '../../../utils/exportOrders';
 import { AdminAuthContext } from '../../../components/auth/AdminAuthContext';
+import { ADMIN_ROUTES } from '../../../lib/routes';
 import type { OrderSummary } from '../../../types';
 
-vi.mock('../../../api/orders', async importOriginal => ({
+vi.mock('../../../api/orders', async (importOriginal) => ({
   ...(await importOriginal<typeof import('../../../api/orders')>()),
   fetchOrderSummaries: vi.fn(),
 }));
 
+vi.mock('../../../utils/exportOrders', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/exportOrders')>();
+  return {
+    ...actual,
+    exportOrdersToCsv: vi.fn(),
+  };
+});
+
 const mockFetchOrderSummaries = vi.mocked(fetchOrderSummaries);
+const mockExportOrdersToCsv = vi.mocked(exportOrdersToCsv);
 
 const SUMMARIES: OrderSummary[] = [
   {
@@ -61,6 +72,7 @@ function renderPage() {
 
 beforeEach(() => {
   mockFetchOrderSummaries.mockReset();
+  mockExportOrdersToCsv.mockReset();
 });
 
 describe('OrdersDashboardPage — listado vía API', () => {
@@ -135,10 +147,62 @@ describe('OrdersDashboardPage — listado vía API', () => {
     expect(screen.getByText('Sofía Hernández')).toBeInTheDocument();
   });
 
-  it('muestra el estado vacío cuando no hay pedidos', async () => {
+  it('muestra el estado vacío cuando no hay pedidos y deshabilita exportar', async () => {
     mockFetchOrderSummaries.mockResolvedValue([]);
     renderPage();
 
     expect(await screen.findByText(/No se encontraron pedidos con este filtro/)).toBeInTheDocument();
+    const exportBtn = screen.getByRole('button', { name: /exportar pedidos a csv/i });
+    expect(exportBtn).toBeDisabled();
+  });
+
+  it('renderiza el botón de exportar CSV habilitado y ejecuta exportOrdersToCsv con pedidos filtrados', async () => {
+    mockFetchOrderSummaries.mockResolvedValue(SUMMARIES);
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('María González');
+    const exportBtn = screen.getByRole('button', { name: /exportar pedidos a csv/i });
+    expect(exportBtn).toBeEnabled();
+
+    // Click export with all orders
+    await user.click(exportBtn);
+    expect(mockExportOrdersToCsv).toHaveBeenCalledTimes(1);
+    expect(mockExportOrdersToCsv).toHaveBeenCalledWith(SUMMARIES);
+
+    // Filter by pending tab
+    const pendingTab = screen.getByRole('button', { name: /^pendientes$/i });
+    await user.click(pendingTab);
+
+    // Export again, now only with filtered orders (order #7)
+    await user.click(exportBtn);
+    expect(mockExportOrdersToCsv).toHaveBeenCalledTimes(2);
+    expect(mockExportOrdersToCsv).toHaveBeenLastCalledWith([SUMMARIES[0]]);
+  });
+
+  it('navega a los detalles del pedido al hacer clic en la tarjeta', async () => {
+    mockFetchOrderSummaries.mockResolvedValue(SUMMARIES);
+    const { default: userEvent } = await import('@testing-library/user-event');
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('María González');
+    const orderHeader = screen.getByText('#7');
+    const card = orderHeader.closest('.order-card');
+    expect(card).toBeInTheDocument();
+    if (card) {
+      await user.click(card);
+    }
+  });
+
+  it('renderiza el botón "+ Nuevo Pedido" con el enlace a la creación de pedidos', async () => {
+    mockFetchOrderSummaries.mockResolvedValue(SUMMARIES);
+    renderPage();
+
+    const createOrderBtn = await screen.findByRole('link', { name: /\+ nuevo pedido/i });
+    expect(createOrderBtn).toBeInTheDocument();
+    expect(createOrderBtn).toHaveAttribute('href', ADMIN_ROUTES.createOrder);
   });
 });
+

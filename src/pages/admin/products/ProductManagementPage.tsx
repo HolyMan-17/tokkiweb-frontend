@@ -1,4 +1,5 @@
-import { useMemo, useState, useRef, useEffect } from 'react';
+import { useMemo, useState, useRef, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { fetchAllProducts, archiveProduct } from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
 import { useAdminAuth } from '../../../components/auth/useAdminAuth';
@@ -20,11 +21,17 @@ export default function ProductManagementPage() {
     () => (getAdminToken ? { getToken: getAdminToken } : undefined),
     [getAdminToken],
   );
+  const [searchParams, setSearchParams] = useSearchParams();
+  const stockParam = searchParams.get('stock');
+  const stock: StockFilter =
+    stockParam === 'low' || stockParam === 'in' || stockParam === 'out'
+      ? stockParam
+      : 'all';
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('Todos');
-  const [stock, setStock] = useState<StockFilter>('all');
   const [toast, setToast] = useState<string | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
   const [imageErrorOpen, setImageErrorOpen] = useState(false);
@@ -36,12 +43,25 @@ export default function ProductManagementPage() {
     toastTimer.current = window.setTimeout(() => setToast(null), 2500);
   };
 
+  const handleStockChange = useCallback((newStock: StockFilter) => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (newStock === 'all') {
+        next.delete('stock');
+      } else {
+        next.set('stock', newStock);
+      }
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return products.filter(p => {
       if (category !== 'Todos' && p.category !== category) return false;
-      if (stock === 'in' && p.qty_available <= 0) return false;
-      if (stock === 'out' && p.qty_available > 0) return false;
+      if (stock === 'in' && (p.qty_available <= 0 || !p.in_stock)) return false;
+      if (stock === 'low' && !(p.qty_available > 0 && p.qty_available <= 3)) return false;
+      if (stock === 'out' && !(p.qty_available === 0 || !p.in_stock)) return false;
       if (q && !p.product_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -87,7 +107,7 @@ export default function ProductManagementPage() {
   const clearFilters = () => {
     setSearch('');
     setCategory('Todos');
-    setStock('all');
+    handleStockChange('all');
   };
 
   const hasActiveFilters = search.trim() !== '' || category !== 'Todos' || stock !== 'all';
@@ -133,7 +153,7 @@ export default function ProductManagementPage() {
         totalCount={products.length}
         onSearchChange={setSearch}
         onCategoryChange={setCategory}
-        onStockChange={setStock}
+        onStockChange={handleStockChange}
       />
 
       <ProductAdminGrid

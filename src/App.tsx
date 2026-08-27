@@ -21,6 +21,7 @@ import NotFoundPage from './pages/not-found/NotFoundPage';
 const AdminDashboardPage = lazy(() => import('./pages/admin/dashboard/AdminDashboardPage'));
 const OrdersDashboardPage = lazy(() => import('./pages/admin/orders/OrdersDashboardPage'));
 const AdminOrderDetailPage = lazy(() => import('./pages/admin/orders/OrderDetailPage'));
+const AdminCreateOrderPage = lazy(() => import('./pages/admin/orders/create/AdminCreateOrderPage'));
 const ProductManagementPage = lazy(() => import('./pages/admin/products/ProductManagementPage'));
 const DevToolsPage = lazy(() => import('./pages/admin/devtools/DevToolsPage'));
 const AdminSignInPage = lazy(() => import('./pages/admin/signin/AdminSignInPage'));
@@ -121,6 +122,7 @@ function App() {
           >
             <Route index element={<AdminDashboardPage />} />
             <Route path="orders" element={<OrdersDashboardPage />} />
+            <Route path="orders/new" element={<AdminCreateOrderPage />} />
             <Route path="orders/:id" element={<AdminOrderDetailPage />} />
             <Route path="products" element={<ProductManagementPage />} />
           </Route>

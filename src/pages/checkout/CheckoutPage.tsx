@@ -189,7 +189,17 @@ export default function CheckoutPage() {
       clearCart();
       const confirmationKey = result.data.order_token || result.data.order_id;
       navigate(ROUTES.confirmation(confirmationKey), {
-        state: { order: result.data },
+        state: {
+          order: {
+            ...result.data,
+            client: {
+              name: formData.name.trim(),
+              last_name: formData.lastName.trim(),
+              cedula: `${formData.cedulaType}-${formData.cedula}`,
+              tlf_num,
+            },
+          },
+        },
       });
     } catch (error) {
       console.error('Error al crear el pedido:', error);

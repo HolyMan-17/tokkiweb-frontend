@@ -104,8 +104,9 @@ src/
 │   ├── checkout/          # CheckoutPage (country-aware phone validation)
 │   ├── confirmation/      # OrderConfirmationPage (reads order via state)
 │   └── admin/
-│       ├── dashboard/     # AdminDashboardPage (recharts: bar + pie)
+│       ├── dashboard/     # AdminDashboardPage (recharts: bar + pie, top products)
 │       ├── orders/        # OrdersDashboardPage, OrderDetailPage
+│       │   └── create/    # AdminCreateOrderPage, AdminProductPicker (POS order creator)
 │       ├── products/      # ProductManagementPage (CRUD modal + filters)
 │       ├── devtools/      # DevToolsPage (tech role only)
 │       └── signin/        # AdminSignInPage (Clerk, branded)
@@ -162,7 +163,9 @@ Products AND orders are live from the backend API. Each domain has a thin client
 
 - **Checkout Submission:** POSTs `CreateOrderPayload` / `CheckoutPayload` (client info with mandatory cédula `V-12345678`, `delivery_type`, `payment_method`, `items`), re-validates cart stock against the live catalog before submitting (blocking `<StockNotice>` review), and navigates to `/confirmation/:orderToken` using the unguessable `order_token` UUID returned by `POST /orders`.
 - **Order Confirmation:** Reads `orderToken` from route params and loads receipt via `fetchOrderReceipt(orderToken)` (`GET /api/orders/receipt/:token`, public/unauthenticated), supporting page refresh and fallback router state.
-- **Admin Orders:** `fetchOrderDetail(orderId, auth)` accesses `GET /api/orders/:id` with Clerk Bearer auth. Orders list and detail view display customer Cédula, contact phone, delivery/payment chips, and direct WhatsApp chat links (`getWhatsAppLink()`).
+- **Admin Orders & Detail:** `fetchOrderDetail(orderId, auth)` accesses `GET /api/orders/:id` with Clerk Bearer auth. Orders list features accessible full-card touch navigation to order details, Cédula/Phone display, delivery/payment chips, and direct one-click WhatsApp chat links (`getWhatsAppLink()`). Includes RFC 4180 UTF-8 BOM CSV export (`exportOrdersToCsv`).
+- **Admin In-Store Order Creation (POS Mode):** Accessible at `/tokki-admin/orders/new` (`ADMIN_ROUTES.createOrder`). Features POS product catalog picker (`AdminProductPicker`) with real-time search, category filter chips, and stock limits; one-tap walk-in customer autofill (`⚡ Cliente en Mostrador`); full input sanitization and validation for names, cédula format (`V-12345678`), and phone numbers; delivery & payment method selectors; auto-approval option for immediate counter payment (`approveOrder`); and instant redirection to `OrderDetailPage`. Modularized with `CustomerFormCard`, `OrderSummaryCard`, and `useAdminOrderCreator` (100/100 React Doctor score).
+- **Admin Dashboard Analytics:** Interactive timeframe filters (`Días`, `Semanas`, `Meses`), metric toggle (`Ingresos ($)` vs `Pedidos (#)`), and distribution breakdown (`Por Estado`, `Por Pago`, `Por Entrega`). Highlights top best-selling products (`topProducts.ts`) and direct link to low stock items (`/tokki-admin/products?stock=low`).
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
 - **Cart:** (`src/context/CartContext.tsx`) persists product snapshots to localStorage (`tokki_cart_v1`) — reconciled against the live catalog on cart mount and pre-submit.
@@ -181,7 +184,7 @@ All agents working on this codebase **must** adhere to the following skills and 
 - **No AI Slop / Generic Boilerplate:** No generic grey shadows, no bootstrap badges, no Tailwind/CSS-in-JS.
 
 ### 2. `react-doctor` Skill & ESLint Rules
-- **React Diagnostics:** Run `pnpm doctor` (or `npx react-doctor@latest`) before finishing frontend work to prevent performance, accessibility, and architectural regressions.
+- **React Diagnostics:** Run `pnpm doctor` (or `npx react-doctor@latest`) before finishing frontend work to prevent performance, accessibility, and architectural regressions (Target score: **100 / 100 Great**).
 - **ESLint & Hooks:** Run `pnpm lint` (`eslint-plugin-react-hooks` flat config). Never suppress hook dependencies without explicit justification.
 - **Component Hygiene:**
   - Hoist pure functions, validators, and static lookup maps to module scope.
@@ -203,7 +206,7 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`) and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **23 test files / 159 tests green**).
+- Run the full test suite (`pnpm test:run`) and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **31 test files / 231 tests green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
 - Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.

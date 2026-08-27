@@ -57,11 +57,13 @@ Two distinct audiences:
 
 | Req | Description |
 |-----|-------------|
-| FR-8 | **Orders dashboard** — list all orders (buyer name, phone, total, status, item count, date), newest first. |
+| FR-8 | **Orders dashboard** — list all orders (buyer name, phone, total, status, item count, date), newest first, with one-tap card navigation to details and direct WhatsApp chat links. |
 | FR-9 | **Order detail** — drill into a single order: header + client + line items with line totals. |
 | FR-10 | **Approve order** — move a `pending` order to `approved`. |
 | FR-11 | **Cancel order** — cancel a `pending` order (restores stock on the backend). |
 | FR-12 | **Product management** — create, edit (name/price/description/quantity), and archive products. |
+| FR-13 | **In-Store & Manual Order Creator (POS)** — create orders directly from the admin panel (`/tokki-admin/orders/new`) for physical store or WhatsApp sales with live catalog search, category filters, quick-fill walk-in customer preset (`⚡ Cliente en Mostrador`), and instant auto-approval. |
+| FR-14 | **Order Export** — download currently filtered orders as an RFC 4180 CSV file with UTF-8 BOM encoding for clean opening in Microsoft Excel. |
 
 ### 2.3 UI/UX considerations
 

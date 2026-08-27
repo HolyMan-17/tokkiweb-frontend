@@ -2,7 +2,7 @@ import { CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
 import sparklesGif from '../../../assets/sparkles.gif';
 
-export type StockFilter = 'all' | 'in' | 'out';
+export type StockFilter = 'all' | 'in' | 'low' | 'out';
 
 interface ProductFilterToolbarProps {
   search: string;
@@ -52,6 +52,7 @@ export function ProductFilterToolbar({
         />
         {search && (
           <button
+            type="button"
             className="search-clear"
             onClick={() => onSearchChange('')}
             aria-label="Limpiar búsqueda"
@@ -63,6 +64,7 @@ export function ProductFilterToolbar({
 
       <div className="category-chips" role="tablist" aria-label="Filtrar por categoría">
         <button
+          type="button"
           className={`chip ${category === 'Todos' ? 'chip-active' : ''}`}
           onClick={() => onCategoryChange('Todos')}
           role="tab"
@@ -74,6 +76,7 @@ export function ProductFilterToolbar({
         {CATEGORIES.map((cat) => (
           <button
             key={cat.name}
+            type="button"
             className={`chip ${category === cat.name ? 'chip-active' : ''}`}
             onClick={() => onCategoryChange(cat.name)}
             role="tab"
@@ -88,18 +91,28 @@ export function ProductFilterToolbar({
       <div className="toolbar-bottom">
         <div className="stock-toggle" aria-label="Filtrar por stock">
           <button
+            type="button"
             className={`stock-pill ${stock === 'all' ? 'stock-pill-active' : ''}`}
             onClick={() => onStockChange('all')}
           >
             Todos
           </button>
           <button
+            type="button"
             className={`stock-pill ${stock === 'in' ? 'stock-pill-active' : ''}`}
             onClick={() => onStockChange('in')}
           >
             En stock
           </button>
           <button
+            type="button"
+            className={`stock-pill stock-pill-low ${stock === 'low' ? 'stock-pill-active stock-pill-low-active' : ''}`}
+            onClick={() => onStockChange('low')}
+          >
+            Bajo stock (≤3)
+          </button>
+          <button
+            type="button"
             className={`stock-pill ${stock === 'out' ? 'stock-pill-active' : ''}`}
             onClick={() => onStockChange('out')}
           >

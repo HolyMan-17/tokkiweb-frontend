@@ -126,4 +126,25 @@ describe('OrderConfirmationPage — confirmación por token de recibo', () => {
     expect(await screen.findByText('Cancelado')).toBeInTheDocument();
     expect(screen.queryByText('Pendiente')).not.toBeInTheDocument();
   });
+
+  it('muestra el botón de WhatsApp con el enlace y mensaje de recibo al +584122698243', async () => {
+    mockFetchOrderReceipt.mockResolvedValue(ORDER);
+    renderAt('/confirmation/550e8400-e29b-41d4-a716-446655440000');
+
+    const whatsappBtn = await screen.findByRole('link', { name: /whatsapp/i });
+    expect(whatsappBtn).toBeInTheDocument();
+    expect(whatsappBtn).toHaveAttribute('target', '_blank');
+    expect(whatsappBtn).toHaveAttribute('rel', 'noopener noreferrer');
+
+    const href = whatsappBtn.getAttribute('href') || '';
+    expect(href).toContain('https://wa.me/584122698243?text=');
+    const decoded = decodeURIComponent(href);
+    expect(decoded).toContain('Hola! Mi nombre es María González y he hecho una orden con de los siguientes articulos:');
+    expect(decoded).toContain('==============================');
+    expect(decoded).toContain('TOKKI SHOP');
+    expect(decoded).toContain('RECIBO DE ORDEN');
+    expect(decoded).toContain('Pedido: #42');
+    expect(decoded).toContain('- 2x Bálsamo de Fresa - $7.00');
+    expect(decoded).toContain('TOTAL: $18.50');
+  });
 });

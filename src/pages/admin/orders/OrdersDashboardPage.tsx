@@ -10,6 +10,7 @@ import {
   getPaymentLabel,
 } from '../../../constants';
 import { getWhatsAppLink } from '../../../utils/whatsapp';
+import { exportOrdersToCsv } from '../../../utils/exportOrders';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -31,37 +32,47 @@ export default function OrdersDashboardPage() {
     () => fetchOrderSummaries(auth),
     [auth],
   );
-  const orders = data ?? [];
+  const orders = useMemo(() => data ?? [], [data]);
 
-  const filteredOrders = orders.filter((order) => {
-    if (filter !== 'all' && order.status !== filter) return false;
-    if (!searchQuery.trim()) return true;
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      if (filter !== 'all' && order.status !== filter) return false;
+      if (!searchQuery.trim()) return true;
 
-    const q = searchQuery.toLowerCase().trim();
-    const fullName = `${order.name} ${order.last_name}`.toLowerCase();
-    const idStr = String(order.order_id);
-    const cedulaRaw = (order.cedula ?? '').toLowerCase();
-    const cedulaDigits = cedulaRaw.replace(/[-]/g, '');
-    const queryDigits = q.replace(/[-]/g, '');
-    const phoneRaw = (order.tlf_num ?? '').toLowerCase();
-    const phoneDigits = phoneRaw.replace(/\D/g, '');
-    const queryPhoneDigits = q.replace(/\D/g, '');
+      const q = searchQuery.toLowerCase().trim();
+      const fullName = `${order.name} ${order.last_name}`.toLowerCase();
+      const idStr = String(order.order_id);
+      const cedulaRaw = (order.cedula ?? '').toLowerCase();
+      const cedulaDigits = cedulaRaw.replace(/[-]/g, '');
+      const queryDigits = q.replace(/[-]/g, '');
+      const phoneRaw = (order.tlf_num ?? '').toLowerCase();
+      const phoneDigits = phoneRaw.replace(/\D/g, '');
+      const queryPhoneDigits = q.replace(/\D/g, '');
 
-    return (
-      fullName.includes(q) ||
-      idStr.includes(q) ||
-      cedulaRaw.includes(q) ||
-      (queryDigits.length > 0 && cedulaDigits.includes(queryDigits)) ||
-      phoneRaw.includes(q) ||
-      (queryPhoneDigits.length > 0 && phoneDigits.includes(queryPhoneDigits))
-    );
-  });
+      return (
+        fullName.includes(q) ||
+        idStr.includes(q) ||
+        cedulaRaw.includes(q) ||
+        (queryDigits.length > 0 && cedulaDigits.includes(queryDigits)) ||
+        phoneRaw.includes(q) ||
+        (queryPhoneDigits.length > 0 && phoneDigits.includes(queryPhoneDigits))
+      );
+    });
+  }, [orders, filter, searchQuery]);
 
   if (isLoading || isError) {
     return (
       <div className="page orders-dashboard">
-        <header className="page-header">
+        <header className="page-header orders-page-header">
           <h1 className="page-title">Pedidos <span>({filteredOrders.length})</span></h1>
+          <div className="orders-header-actions">
+            <Link
+              to={ADMIN_ROUTES.createOrder}
+              className="btn btn-create-order"
+            >
+              + Nuevo Pedido
+            </Link>
+          </div>
         </header>
         {isError ? <ErrorState onRetry={retry} /> : <LoadingSpinner fullPage />}
       </div>
@@ -70,8 +81,27 @@ export default function OrdersDashboardPage() {
 
   return (
     <div className="page orders-dashboard">
-      <header className="page-header">
+      <header className="page-header orders-page-header">
         <h1 className="page-title">Pedidos <span>({filteredOrders.length})</span></h1>
+        <div className="orders-header-actions">
+          <Link
+            to={ADMIN_ROUTES.createOrder}
+            className="btn btn-create-order"
+          >
+            + Nuevo Pedido
+          </Link>
+          <button
+            type="button"
+            className="btn btn-export-csv"
+            onClick={() => exportOrdersToCsv(filteredOrders)}
+            disabled={filteredOrders.length === 0}
+            title={filteredOrders.length === 0 ? 'No hay pedidos para exportar' : 'Exportar pedidos a CSV'}
+            aria-label="Exportar pedidos a CSV"
+          >
+            <span className="export-icon" aria-hidden="true">📥</span>
+            Exportar CSV
+          </button>
+        </div>
       </header>
 
       <div className="orders-toolbar">
@@ -141,7 +171,7 @@ export default function OrdersDashboardPage() {
               <div className="order-card-header">
                 <Link 
                   to={ADMIN_ROUTES.orderDetail(order.order_id)}
-                  className="order-id"
+                  className="order-id order-card-stretched-link"
                 >
                   #{order.order_id}
                 </Link>
@@ -199,6 +229,8 @@ export default function OrdersDashboardPage() {
                       target="_blank"
                       rel="noopener noreferrer"
                       className="order-card-whatsapp-btn"
+                      onClick={(e) => e.stopPropagation()}
+                      onKeyDown={(e) => e.stopPropagation()}
                       title={`Escribir a ${order.name} por WhatsApp`}
                       aria-label={`Contactar a ${order.name} por WhatsApp`}
                     >
@@ -227,4 +259,3 @@ export default function OrdersDashboardPage() {
     </div>
   );
 }
-

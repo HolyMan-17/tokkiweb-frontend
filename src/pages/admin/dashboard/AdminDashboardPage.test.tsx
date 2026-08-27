@@ -92,10 +92,34 @@ describe('AdminDashboardPage — resumen vía API', () => {
     renderPage();
 
     expect(await screen.findByText('Pedidos Recientes')).toBeInTheDocument();
+    expect(screen.getByAltText('Tokki Bunny')).toBeInTheDocument();
     expect(screen.getByText('#7')).toBeInTheDocument();
     expect(screen.getByText('Aprobado')).toBeInTheDocument();
+    expect(screen.getByText('Alertas Stock')).toBeInTheDocument();
+    expect(screen.getByText('Ventas Totales')).toBeInTheDocument();
     // 1 aprobado de 2 pedidos totales; 1 producto en stock.
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+  });
+
+  it('renderiza la tarjeta de Productos Destacados / Top Inventario con medallas y links de edición', async () => {
+    renderPage();
+
+    expect(await screen.findByText('Productos Destacados / Top Inventario')).toBeInTheDocument();
+    expect(screen.getByText('Bálsamo de Fresa')).toBeInTheDocument();
+    expect(screen.getByText('🥇 #1')).toBeInTheDocument();
+    expect(screen.getByText('10 en stock')).toBeInTheDocument();
+
+    const editLinks = screen.getAllByRole('link', { name: /Editar Bálsamo de Fresa/i });
+    expect(editLinks.length).toBeGreaterThan(0);
+    expect(editLinks[0]).toHaveAttribute('href', '/tokki-admin/products');
+  });
+
+  it('conecta la tarjeta de Alertas Stock con la ruta /tokki-admin/products?stock=low', async () => {
+    renderPage();
+
+    await screen.findByText('Alertas Stock');
+    const stockAlertLink = screen.getByRole('link', { name: /Ver alertas de stock/i });
+    expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=low');
   });
 
   it('pide el listado de pedidos con el token de admin', async () => {

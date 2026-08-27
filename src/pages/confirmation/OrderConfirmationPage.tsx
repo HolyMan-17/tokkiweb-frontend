@@ -9,7 +9,8 @@ import { formatPrice } from '../../constants';
 import { ROUTES } from '../../lib/routes';
 import { fetchOrderReceipt, NotFoundError } from '../../api/orders';
 import { useAsync } from '../../hooks/useAsync';
-import type { CreatedOrder, OrderDetail } from '../../types';
+import { getCustomerOrderWhatsAppLink } from '../../utils/whatsapp';
+import type { CreatedOrder, CreatedOrderItem, OrderDetail, OrderItem } from '../../types';
 
 export default function OrderConfirmationPage() {
   const { clearCart } = useCart();
@@ -19,13 +20,24 @@ export default function OrderConfirmationPage() {
 
   // Fast-path: the order created at checkout arrives via router state.
   // On refresh the state is gone, so we also fetch it by token from the API.
-  const stateOrder = (location.state as { order?: OrderDetail | CreatedOrder } | null)?.order;
+  const rawStateOrder = (location.state as {
+    order?: OrderDetail | (CreatedOrder & { client?: { name: string; last_name: string; cedula?: string; tlf_num?: string } });
+  } | null)?.order;
+
   const { data, isLoading, isError, error, retry } = useAsync(
     () => fetchOrderReceipt(String(orderToken)),
     [orderToken],
   );
 
-  const order = stateOrder ?? data;
+  const order = (rawStateOrder || data)
+    ? ({
+        ...(data ?? {}),
+        ...(rawStateOrder ?? {}),
+        client: (rawStateOrder && 'client' in rawStateOrder && rawStateOrder.client)
+          ? rawStateOrder.client
+          : (data && 'client' in data ? data.client : undefined),
+      } as OrderDetail)
+    : null;
 
   useEffect(() => {
     // Clear the cart once the order has been captured.
@@ -69,6 +81,7 @@ export default function OrderConfirmationPage() {
   if (!order) return null;
 
   const orderStatus = order.status || 'pending';
+  const whatsappLink = getCustomerOrderWhatsAppLink(order);
 
   return (
     <div className="page confirmation-page animate-fadeIn text-center">
@@ -95,7 +108,7 @@ export default function OrderConfirmationPage() {
         <div className="order-summary-card card stagger mt-lg text-left">
           <h2 className="section-title">Resumen</h2>
           <div className="summary-list">
-            {order.items.map((item) => {
+            {(order.items as Array<OrderItem | CreatedOrderItem>).map((item) => {
               const name = 'product_name' in item ? item.product_name : item.name;
               const qty = 'product_qty' in item ? item.product_qty : item.ordered_qty;
               const total = 'product_total' in item
@@ -118,9 +131,33 @@ export default function OrderConfirmationPage() {
         </div>
       )}
 
-      <button className="btn btn-primary btn-lg btn-block mt-xl" onClick={() => navigate(ROUTES.home)}>
-        Volver al inicio
-      </button>
+      <div className="confirmation-actions mt-xl">
+        <a
+          href={whatsappLink}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn btn-whatsapp btn-lg btn-block"
+        >
+          <svg
+            width="22"
+            height="22"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
+          </svg>
+          Confirmar por WhatsApp
+        </a>
+
+        <button className="btn btn-outline btn-lg btn-block" onClick={() => navigate(ROUTES.home)}>
+          Volver al inicio
+        </button>
+      </div>
     </div>
   );
 }

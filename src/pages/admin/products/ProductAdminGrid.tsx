@@ -60,7 +60,13 @@ export function ProductAdminGrid({
             <div className="product-details">
               <span className="product-price">{formatPrice(product.product_price)}</span>
               <span
-                className={`stock-badge ${product.qty_available > 0 ? 'in-stock' : 'out-of-stock'}`}
+                className={`stock-badge ${
+                  product.qty_available > 0
+                    ? product.qty_available <= 3
+                      ? 'low-stock'
+                      : 'in-stock'
+                    : 'out-of-stock'
+                }`}
               >
                 Stock: {product.qty_available}
               </span>

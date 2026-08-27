@@ -27,12 +27,14 @@ Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run`, `pnpm doctor`, 
 The shop is fully wired to the live PostgreSQL backend API (`/api/products`, `/api/orders`, `/api/orders/receipt/:token`):
 - **Storefront & Catalog:** autorouted category carousels and whole-inventory browser loading live products.
 - **Cart & Checkout:** persistent cart with live pre-submit stock reconciliation, country-aware phone validation, mandatory Cédula (`V` / `E` / `J` / `G` + 6-9 digits), and unguessable `order_token` UUID confirmation redirection.
-- **Admin Panel:** Clerk Bearer authenticated product CRUD with multi-part WebP image uploads and order management with live Cédula/Phone display, one-click WhatsApp chat links, and instant approval/cancellation.
+- **Admin Panel:** Clerk Bearer authenticated product CRUD with multi-part WebP image uploads; order management with accessible full-card touch navigation, live Cédula/Phone display, one-click WhatsApp chat links, instant approval/cancellation, and UTF-8 BOM CSV export (`tokki_pedidos_YYYY-MM-DD.csv`).
+- **POS / Manual Order Creation:** `/tokki-admin/orders/new` allows store owners to record in-person physical store sales, WhatsApp orders, or direct deliveries with a live POS catalog picker, quick-fill walk-in customer preset (`⚡ Cliente en Mostrador`), and auto-approval workflow.
+- **Dashboard Analytics:** interactive timeframe criteria (`Días`, `Semanas`, `Meses`), metric toggle (`Ingresos` vs `Pedidos`), distribution donut chart, top best-selling products ranking, and low stock quick-filter alerts (`?stock=low`).
 
 ## Layout & routing
 
 - Customer storefront: `/` (catalog), `/categorias/:slug`, `/productos` (all products), `/products/:id`, `/cart`, `/checkout`, `/confirmation/:orderToken`
-- Admin panel (hidden path): `/tokki-admin` — dashboard, orders, products, dev tools; guarded by Clerk roles
+- Admin panel (hidden path): `/tokki-admin` — dashboard, orders (`/tokki-admin/orders`), create order (`/tokki-admin/orders/new`), order detail (`/tokki-admin/orders/:id`), products (`/tokki-admin/products`), dev tools; guarded by Clerk roles
 - All paths live in `src/lib/routes.ts` — never hardcode route strings
 - Admin pages are lazy-loaded; deployed to Vercel with SPA and reverse-proxy `/api` rewrites (`vercel.json`)
 
