@@ -5,7 +5,7 @@ import sparklesImg from '../../assets/sparkles.gif';
 import tokkiLogo from '../../assets/tokki_logo.avif';
 import cherryBlossom from '../../assets/cherry_blossom.gif';
 import branchCherry from '../../assets/branch_cherry.gif';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
@@ -34,6 +34,22 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 // shrinks the synchronous layout pass that measures every track on mount.
 const MAX_CARDS_PER_CAROUSEL = 16;
 
+// Compute a card width so an exact whole number of cards fits the
+// visible track width on every screen, and fill the row precisely.
+// All layout reads happen BEFORE any style write (no forced reflow).
+function computeCardWidth(track: HTMLDivElement): number {
+  const styles = getComputedStyle(track);
+  const available =
+    track.clientWidth -
+    (parseFloat(styles.paddingLeft) || 0) -
+    (parseFloat(styles.paddingRight) || 0);
+  const gap = parseFloat(styles.columnGap) || parseFloat(styles.gap) || 12;
+  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+  const minWidth = isDesktop ? 210 : 148;
+  const n = Math.max(2, Math.floor((available + gap) / (minWidth + gap)));
+  return (available - (n - 1) * gap) / n;
+}
+
 function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   title: string;
   emoji: React.ReactNode;
@@ -43,22 +59,6 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
-
-  // Compute a card width so an exact whole number of cards fits the
-  // visible track width on every screen, and fill the row precisely.
-  // All layout reads happen BEFORE any style write (no forced reflow).
-  const computeCardWidth = (track: HTMLDivElement): number => {
-    const styles = getComputedStyle(track);
-    const available =
-      track.clientWidth -
-      (parseFloat(styles.paddingLeft) || 0) -
-      (parseFloat(styles.paddingRight) || 0);
-    const gap = parseFloat(styles.columnGap) || parseFloat(styles.gap) || 12;
-    const isDesktop = window.matchMedia('(min-width: 768px)').matches;
-    const minWidth = isDesktop ? 210 : 148;
-    const n = Math.max(2, Math.floor((available + gap) / (minWidth + gap)));
-    return (available - (n - 1) * gap) / n;
-  };
 
   // Read layout (scroll position/width), then update arrow state. Called from
   // scroll events — throttled with rAF so reads never follow a write in the
@@ -231,7 +231,7 @@ function SocialCircles() {
 const SCROLL_KEY = 'tokki_catalog_scroll';
 
 export default function CatalogPage() {
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
   const grouped = useMemo(() => groupByCategory(products), [products]);
 

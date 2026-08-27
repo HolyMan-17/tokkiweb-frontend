@@ -85,6 +85,14 @@
   font-weight: 700;
 }
 
+.form-hint {
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
 .phone-input-group {
   display: flex;
   gap: var(--space-sm);
@@ -111,8 +119,14 @@
 }
 
 .cedula-select {
-  width: 84px;
-  max-width: 84px;
+  width: 80px;
+  max-width: 80px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: var(--text-base);
+  text-align: center;
+  padding-left: 14px;
+  padding-right: 28px;
 }
 
 .phone-number {

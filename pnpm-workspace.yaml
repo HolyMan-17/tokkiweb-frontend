@@ -1,5 +1,6 @@
 allowBuilds:
-  '@clerk/shared': set this to true or false
+  '@clerk/shared': false
   bufferutil: false
   core-js: false
+  msgpackr-extract: false
   utf-8-validate: false

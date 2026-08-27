@@ -1,11 +1,16 @@
 {
   "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "$BACKEND_URL/api/:path*"
+    },
     { "source": "/", "destination": "/index.html" },
+    { "source": "/productos", "destination": "/index.html" },
     { "source": "/categorias/:slug", "destination": "/index.html" },
     { "source": "/products/:id", "destination": "/index.html" },
     { "source": "/cart", "destination": "/index.html" },
     { "source": "/checkout", "destination": "/index.html" },
-    { "source": "/confirmation", "destination": "/index.html" },
+    { "source": "/confirmation/:orderId", "destination": "/index.html" },
     { "source": "/tokki-admin", "destination": "/index.html" },
     { "source": "/tokki-admin/orders", "destination": "/index.html" },
     { "source": "/tokki-admin/orders/:id", "destination": "/index.html" },

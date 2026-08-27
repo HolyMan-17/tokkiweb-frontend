@@ -19,6 +19,10 @@ export function slugify(text: string): string {
     .replace(/\s+/g, '-');
 }
 
+// ─── Cédula Types ──────────────────────────────────────────
+export const CEDULA_TYPES = ['V', 'E', 'J', 'G'] as const;
+export type CedulaType = (typeof CEDULA_TYPES)[number];
+
 // ─── Delivery options ──────────────────────────────────────
 // Canonical values — enforced at backend level too, so these exact strings
 // are part of the API contract (do not rename without syncing both sides).
@@ -49,6 +53,30 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
 // "Retiro en Tienda"; every other method is always offered.
 export function getPaymentMethods(deliveryType: string): PaymentMethod[] {
   return PAYMENT_METHODS.filter(m => m.onlyFor === undefined || m.onlyFor === deliveryType);
+}
+
+export function getDeliveryLabel(slug?: string | null): string {
+  if (!slug || !slug.trim()) return 'No especificado';
+  const raw = slug.trim();
+  const normalized = raw.toLowerCase().replace(/[-_]/g, '');
+  const match = DELIVERY_TYPES.find(d => {
+    const dVal = d.value.toLowerCase().replace(/[-_]/g, '');
+    const dLabel = d.label.toLowerCase().replace(/[-_]/g, '');
+    return dVal === normalized || dLabel === normalized || raw.toLowerCase() === d.value.toLowerCase() || raw.toLowerCase() === d.label.toLowerCase();
+  });
+  return match?.label ?? raw;
+}
+
+export function getPaymentLabel(slug?: string | null): string {
+  if (!slug || !slug.trim()) return 'No especificado';
+  const raw = slug.trim();
+  const normalized = raw.toLowerCase().replace(/[-_]/g, '');
+  const match = PAYMENT_METHODS.find(m => {
+    const mVal = m.value.toLowerCase().replace(/[-_]/g, '');
+    const mLabel = m.label.toLowerCase().replace(/[-_]/g, '');
+    return mVal === normalized || mLabel === normalized || raw.toLowerCase() === m.value.toLowerCase() || raw.toLowerCase() === m.label.toLowerCase();
+  });
+  return match?.label ?? raw;
 }
 
 // ─── Country codes (full international list) ───────────────

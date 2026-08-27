@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
@@ -9,6 +9,7 @@ import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { getCategoryIcon } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
+import { matchesSearch } from '../../utils/productSearch';
 import { ROUTES } from '../../lib/routes';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
@@ -38,7 +39,7 @@ const CLEAR_SVG = (
 
 export default function CategoryPage() {
   const { slug } = useParams();
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allStoreProducts = useMemo(() => data ?? [], [data]);
 
   const category = CATEGORIES.find(c => slugify(c.name) === slug);
@@ -54,10 +55,9 @@ export default function CategoryPage() {
   const filtered = useMemo(() => {
     let result = [...allProducts];
 
-    // Search filter
+    // Search filter (name + description)
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      result = result.filter(p => p.product_name.toLowerCase().includes(q));
+      result = result.filter(p => matchesSearch(p, query));
     }
 
     // Stock filter
@@ -143,9 +143,10 @@ export default function CategoryPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder={`Buscar en ${category.name}...`}
+            placeholder={`Buscar por nombre o descripción en ${category.name}...`}
             value={query}
             onChange={e => setQuery(e.target.value)}
+            aria-label={`Buscar por nombre o descripción en ${category.name}`}
           />
           {query && (
             <button
@@ -179,6 +180,7 @@ export default function CategoryPage() {
             className="sort-select"
             value={sort}
             onChange={e => setSort(e.target.value as SortOption)}
+            aria-label="Ordenar productos"
           >
             {SORT_OPTIONS.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>

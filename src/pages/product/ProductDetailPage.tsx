@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
@@ -15,11 +15,18 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, [id]);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, [id]);
   const products = data ?? [];
 
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
+  const toastTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    };
+  }, []);
 
   const product = products.find(p => p.product_id === Number(id));
 
@@ -45,7 +52,8 @@ export default function ProductDetailPage() {
   const handleAddToCart = () => {
     addItem(product, quantity);
     setShowToast(true);
-    setTimeout(() => setShowToast(false), 3000);
+    if (toastTimer.current) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setShowToast(false), 3000);
   };
 
   return (

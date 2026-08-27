@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
-import { fetchProducts } from '../../store/localStore';
+import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { ROUTES } from '../../lib/routes';
+import { matchesSearch } from '../../utils/productSearch';
 import sparklesImg from '../../assets/sparkles.gif';
 
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
@@ -39,7 +40,7 @@ const CLEAR_SVG = (
 // whole inventory with the same search / stock / sort controls as category
 // pages (styles are shared via CategoryPage.css).
 export default function AllProductsPage() {
-  const { data, isLoading, isError, retry } = useAsync(fetchProducts, []);
+  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allProducts = useMemo(() => data ?? [], [data]);
 
   const [query, setQuery] = useState('');
@@ -51,11 +52,7 @@ export default function AllProductsPage() {
 
     // Search filter (name + description)
     if (query.trim()) {
-      const q = query.trim().toLowerCase();
-      result = result.filter(p =>
-        p.product_name.toLowerCase().includes(q) ||
-        p.product_description.toLowerCase().includes(q),
-      );
+      result = result.filter(p => matchesSearch(p, query));
     }
 
     // Stock filter
@@ -127,9 +124,10 @@ export default function AllProductsPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder="Buscar en todo el catálogo..."
+            placeholder="Buscar por nombre o descripción..."
             value={query}
             onChange={e => setQuery(e.target.value)}
+            aria-label="Buscar por nombre o descripción"
           />
           {query && (
             <button

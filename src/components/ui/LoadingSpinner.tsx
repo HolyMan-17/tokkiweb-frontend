@@ -4,18 +4,18 @@ interface LoadingSpinnerProps {
   fullPage?: boolean;
 }
 
+const SPINNER_ELEMENT = (
+  <div className="spinner-container">
+    <div className="spinner"></div>
+  </div>
+);
+
 export function LoadingSpinner({ fullPage = false }: LoadingSpinnerProps) {
-  const spinner = (
-    <div className="spinner-container">
-      <div className="spinner"></div>
-    </div>
-  );
-  
   if (fullPage) {
-    return <div className="spinner-full-page">{spinner}</div>;
+    return <div className="spinner-full-page">{SPINNER_ELEMENT}</div>;
   }
-  
-  return spinner;
+
+  return SPINNER_ELEMENT;
 }
 
 export default LoadingSpinner;

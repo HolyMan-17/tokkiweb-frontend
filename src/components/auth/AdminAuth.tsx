@@ -18,18 +18,18 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const DEFAULT_AUTH_VALUE: AdminAuthValue = {
+  configured: Boolean(CLERK_PUBLISHABLE_KEY),
+  isLoaded: true,
+  // Storefront never resolves Clerk. The dev bypass keeps the admin panel
+  // usable in local development without a Clerk key.
+  isSignedIn: ADMIN_DEV_BYPASS,
+  role: ADMIN_DEV_BYPASS ? ROLES.TECH : 'none',
+};
+
 export function AuthProvider({ children }: AuthProviderProps) {
-  const configured = Boolean(CLERK_PUBLISHABLE_KEY);
-  const value: AdminAuthValue = {
-    configured,
-    isLoaded: true,
-    // Storefront never resolves Clerk. The dev bypass keeps the admin panel
-    // usable in local development without a Clerk key.
-    isSignedIn: ADMIN_DEV_BYPASS,
-    role: ADMIN_DEV_BYPASS ? ROLES.TECH : 'none',
-  };
   return (
-    <AdminAuthContext.Provider value={value}>
+    <AdminAuthContext.Provider value={DEFAULT_AUTH_VALUE}>
       {children}
     </AdminAuthContext.Provider>
   );

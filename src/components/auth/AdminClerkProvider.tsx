@@ -1,5 +1,5 @@
-import type { ReactNode } from 'react';
-import { ClerkProvider, useUser } from '@clerk/react';
+import { useMemo, type ReactNode } from 'react';
+import { ClerkProvider, useUser, useAuth } from '@clerk/react';
 import { ui } from '@clerk/ui';
 import { ADMIN_DEV_BYPASS, CLERK_PUBLISHABLE_KEY, ROLES } from '../../lib/auth';
 import type { AppRole } from '../../lib/auth';
@@ -23,22 +23,37 @@ function roleFromMetadata(
 }
 
 // Reads Clerk and forwards the result into our context. Only rendered inside
-// <ClerkProvider>, so useUser() is always safe here.
+// <ClerkProvider>, so useUser()/useAuth() are always safe here.
 function ClerkBridge({ children }: { children: ReactNode }) {
   const { isLoaded, isSignedIn, user } = useUser();
+  const { getToken } = useAuth();
+  const role = isSignedIn ? roleFromMetadata(user?.publicMetadata) : 'none';
+  const signedIn = isSignedIn ?? false;
+
+  const value = useMemo<AdminAuthValue>(
+    () => ({
+      configured: true,
+      isLoaded,
+      isSignedIn: signedIn,
+      role,
+      getAdminToken: getToken,
+    }),
+    [isLoaded, signedIn, role, getToken],
+  );
+
   return (
-    <AdminAuthContext.Provider
-      value={{
-        configured: true,
-        isLoaded,
-        isSignedIn: isSignedIn ?? false,
-        role: isSignedIn ? roleFromMetadata(user?.publicMetadata) : 'none',
-      }}
-    >
+    <AdminAuthContext.Provider value={value}>
       {children}
     </AdminAuthContext.Provider>
   );
 }
+
+const DEV_FALLBACK_VALUE: AdminAuthValue = {
+  configured: false,
+  isLoaded: true,
+  isSignedIn: ADMIN_DEV_BYPASS,
+  role: ADMIN_DEV_BYPASS ? ROLES.TECH : 'none',
+};
 
 interface AdminClerkProviderProps {
   children: ReactNode;
@@ -49,14 +64,8 @@ export function AdminClerkProvider({ children }: AdminClerkProviderProps) {
   // during local development. Never reached in production (this provider is
   // only mounted on admin routes, and prod always has a key).
   if (!CLERK_PUBLISHABLE_KEY) {
-    const devValue: AdminAuthValue = {
-      configured: false,
-      isLoaded: true,
-      isSignedIn: ADMIN_DEV_BYPASS,
-      role: ADMIN_DEV_BYPASS ? ROLES.TECH : 'none',
-    };
     return (
-      <AdminAuthContext.Provider value={devValue}>
+      <AdminAuthContext.Provider value={DEV_FALLBACK_VALUE}>
         {children}
       </AdminAuthContext.Provider>
     );

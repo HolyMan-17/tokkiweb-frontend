@@ -1,69 +1,33 @@
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend, Sector } from 'recharts';
-import type { PieSectorShapeProps } from 'recharts';
+import { useMemo, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
-import { fetchOrderSummaries, fetchProducts } from '../../../store/localStore';
+import { fetchOrderSummaries } from '../../../api/orders';
+import { fetchAllProducts } from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
+import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ErrorState from '../../../components/ui/ErrorState';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
+import { computeSalesByDay } from '../../../utils/salesByDay';
 import './AdminDashboardPage.css';
 
-const MOCK_SALES_DATA = [
-  { day: 'Lun', sales: 12 },
-  { day: 'Mar', sales: 8.5 },
-  { day: 'Mié', sales: 15 },
-  { day: 'Jue', sales: 22 },
-  { day: 'Vie', sales: 18 },
-  { day: 'Sáb', sales: 30 },
-  { day: 'Dom', sales: 9 },
-];
-
-const PIE_COLORS = {
-  pending: '#e8a44d', // var(--color-warning)
-  approved: '#4caf80', // var(--color-success)
-  canceled: '#e06b6b' // var(--color-danger)
-};
-
-interface TooltipPayloadItem {
-  value?: number | string;
-  name?: string;
-}
-
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: TooltipPayloadItem[];
-}
-
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="chart-tooltip">
-        <p className="tooltip-value">{formatPrice(String(payload[0].value ?? 0))}</p>
-      </div>
-    );
-  }
-  return null;
-}
-
-function PieTooltip({ active, payload }: CustomTooltipProps) {
-  if (active && payload && payload.length) {
-    return (
-      <div className="chart-tooltip">
-        <p className="tooltip-label">{payload[0].name}</p>
-        <p className="tooltip-value">{payload[0].value} pedidos</p>
-      </div>
-    );
-  }
-  return null;
-}
+const DashboardCharts = lazy(() => import('./DashboardCharts'));
 
 export default function AdminDashboardPage() {
-  const { data, isLoading, isError, retry } = useAsync(
-    () => Promise.all([fetchOrderSummaries(), fetchProducts()]),
-    []
+  const { getAdminToken } = useAdminAuth();
+  // Stable auth handle for API calls (Bearer via Clerk when mounted)
+  const auth = useMemo(
+    () => (getAdminToken ? { getToken: getAdminToken } : undefined),
+    [getAdminToken],
   );
+  const { data, isLoading, isError, retry } = useAsync(async () => {
+    const [orders, products] = await Promise.all([
+      fetchOrderSummaries(auth),
+      fetchAllProducts(),
+    ]);
+    return [orders, products] as const;
+  }, [auth]);
   const [orders, products] = data ?? [[], []];
 
   const pendingCount = orders.filter(o => o.status === 'pending').length;
@@ -76,29 +40,7 @@ export default function AdminDashboardPage() {
     .filter(o => o.status === 'approved')
     .reduce((s, o) => s + Number(o.total_amount), 0);
 
-  const pieData = [
-    { name: 'Pendientes', value: pendingCount, color: PIE_COLORS.pending },
-    { name: 'Aprobados', value: approvedCount, color: PIE_COLORS.approved },
-    { name: 'Cancelados', value: canceledCount, color: PIE_COLORS.canceled },
-  ];
-
-  const renderSlice = (props: PieSectorShapeProps) => {
-    const { cx = 0, cy = 0, innerRadius = 0, outerRadius = 0, startAngle = 0, endAngle = 0, cornerRadius = 0, fill, isActive } = props;
-    return (
-      <Sector
-        cx={cx}
-        cy={cy}
-        innerRadius={innerRadius}
-        outerRadius={outerRadius}
-        startAngle={startAngle}
-        endAngle={endAngle}
-        cornerRadius={cornerRadius}
-        fill={fill}
-        className={isActive ? 'pie-sector pie-sector--active' : 'pie-sector'}
-      />
-    );
-  };
-
+  const salesByDay = computeSalesByDay(orders);
   const recentOrders = orders.slice(0, 3);
 
   if (isLoading || isError) {
@@ -164,58 +106,14 @@ export default function AdminDashboardPage() {
         </div>
       </section>
 
-      <section className="dashboard-section chart-card card animate-slideUp">
-        <h2 className="section-title">Ventas por Día</h2>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={200}>
-            <BarChart data={MOCK_SALES_DATA} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
-              <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }} dy={10} />
-              <YAxis hide />
-              <Tooltip content={<CustomTooltip />} cursor={{ fill: 'var(--pink-50)' }} />
-              <Bar
-                dataKey="sales"
-                fill="var(--color-primary)"
-                radius={[8, 8, 0, 0]}
-                maxBarSize={40}
-                activeBar={{ fill: 'var(--pink-400)', stroke: 'var(--pink-500)', strokeWidth: 2 }}
-              />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
-
-      <section className="dashboard-section chart-card card animate-slideUp">
-        <h2 className="section-title">Estado de Pedidos</h2>
-        <div className="chart-container">
-          <ResponsiveContainer width="100%" height={200}>
-            <PieChart>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius={60}
-                outerRadius={80}
-                paddingAngle={5}
-                cornerRadius={6}
-                dataKey="value"
-                shape={renderSlice}
-              >
-                {pieData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.color} stroke="none" />
-                ))}
-              </Pie>
-              <Tooltip content={<PieTooltip />} />
-              <Legend 
-                verticalAlign="bottom" 
-                height={36} 
-                iconType="circle"
-                wrapperStyle={{ fontSize: '14px', color: 'var(--color-text-secondary)' }}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-        </div>
-      </section>
+      <Suspense fallback={<LoadingSpinner />}>
+        <DashboardCharts
+          salesByDay={salesByDay}
+          pendingCount={pendingCount}
+          approvedCount={approvedCount}
+          canceledCount={canceledCount}
+        />
+      </Suspense>
 
       <section className="dashboard-section recent-orders card animate-slideUp">
         <div className="section-header">

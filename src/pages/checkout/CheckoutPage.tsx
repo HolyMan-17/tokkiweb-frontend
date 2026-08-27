@@ -1,13 +1,19 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import './CheckoutPage.css';
-import { useCart } from '../../context/CartContext';
-import { createOrder } from '../../store/localStore';
+import { useCart, type StockAdjustment } from '../../context/CartContext';
+import { createOrder } from '../../api/orders';
+import { fetchAllProducts } from '../../api/products';
+import StockNotice from '../../components/ui/StockNotice';
 import {
-  formatPrice, COUNTRY_CODES, DELIVERY_TYPES, getPaymentMethods,
-  normalizePhoneNumber, validatePhoneNumber, getCountryHint,
+  COUNTRY_CODES, DELIVERY_TYPES, getPaymentMethods,
+  normalizePhoneNumber, validatePhoneNumber, CEDULA_TYPES,
 } from '../../constants';
 import { ROUTES } from '../../lib/routes';
+import CheckoutContactSection from './CheckoutContactSection';
+import CheckoutDeliverySection from './CheckoutDeliverySection';
+import CheckoutPaymentSection from './CheckoutPaymentSection';
+import CheckoutSummarySection from './CheckoutSummarySection';
 
 interface CheckoutFormState {
   name: string;
@@ -20,10 +26,25 @@ interface CheckoutFormState {
   paymentMethod: string;
 }
 
-const CEDULA_TYPES = ['V-', 'E-', 'J-'];
+const CEDULA_REGEX = /^(?:[VEJG]-?)?\d{6,9}$/i;
+
+const sanitizeName = (value: string) =>
+  value
+    .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .slice(0, 60);
+
+const validateCedula = (type: string, value: string) => {
+  if (!value) return 'La cédula de identidad es requerida (ej. V-12345678)';
+  const formatted = `${type}-${value}`;
+  if (!CEDULA_REGEX.test(formatted) || value.length < 6 || value.length > 9) {
+    return 'La cédula de identidad es requerida (ej. V-12345678)';
+  }
+  return '';
+};
 
 export default function CheckoutPage() {
-  const { items, total, clearCart } = useCart();
+  const { items, total, clearCart, reconcileStock } = useCart();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState<CheckoutFormState>({
@@ -40,6 +61,7 @@ export default function CheckoutPage() {
   const [cedulaError, setCedulaError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [stockChanges, setStockChanges] = useState<StockAdjustment[]>([]);
   const toastTimer = useRef<number | null>(null);
 
   const showToast = (message: string) => {
@@ -59,18 +81,6 @@ export default function CheckoutPage() {
 
   // Efectivo only applies to "Retiro en Tienda" — the list adapts live.
   const paymentOptions = getPaymentMethods(formData.deliveryType);
-
-  const sanitizeName = (value: string) =>
-    value
-      .replace(/[^A-Za-zÁÉÍÓÚÜÑáéíóúüñ' -]/g, '')
-      .replace(/\s{2,}/g, ' ')
-      .slice(0, 60);
-
-  const validateCedula = (value: string) => {
-    if (!value) return 'Ingresa tu número de cédula.';
-    if (value.length < 5 || value.length > 9) return 'La cédula debe tener entre 5 y 9 dígitos.';
-    return '';
-  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -104,24 +114,27 @@ export default function CheckoutPage() {
       setPhoneError(validatePhoneNumber(selectedCountry, sanitized));
     }
     if (name === 'cedula') {
-      setCedulaError(validateCedula(sanitized));
+      setCedulaError(validateCedula(formData.cedulaType, sanitized));
+    }
+    if (name === 'cedulaType') {
+      setCedulaError(validateCedula(value, formData.cedula));
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.lastName || !formData.cedula || !formData.phone) {
+    if (!formData.name || !formData.lastName || !formData.phone) {
       showToast('Por favor completa todos los campos requeridos.');
+      return;
+    }
+    const cedulaErrorMsg = validateCedula(formData.cedulaType, formData.cedula);
+    if (cedulaErrorMsg) {
+      setCedulaError(cedulaErrorMsg);
+      showToast(cedulaErrorMsg);
       return;
     }
     if (!/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.name) || !/[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]/.test(formData.lastName)) {
       showToast('Ingresa un nombre válido.');
-      return;
-    }
-    const cedulaErrorMsg = validateCedula(formData.cedula);
-    if (cedulaErrorMsg) {
-      setCedulaError(cedulaErrorMsg);
-      showToast('Numero de cedula invalido');
       return;
     }
     const phoneErrorMsg = validatePhoneNumber(selectedCountry, formData.phone);
@@ -131,30 +144,58 @@ export default function CheckoutPage() {
       return;
     }
 
-    // Create the order in the local store, then hand it to the confirmation
-    // page via router state so it can render the real order id + total.
+    // Reconcile against fresh stock BEFORE creating the order. If anything
+    // changed, block the submission and let the user review the adjustments.
     try {
-      setIsSubmitting(true);
+      const products = await fetchAllProducts();
+      const changes = reconcileStock(products);
+      if (changes.length > 0) {
+        setStockChanges(changes);
+        showToast('Ajustamos tu carrito según el stock actual. Revísalo antes de continuar.');
+        return;
+      }
+    } catch {
+      showToast('No pudimos verificar el stock. Inténtalo de nuevo.');
+      return;
+    }
+
+    // Create the order on the backend, then hand the id to the confirmation
+    // page (it fetches the fresh detail by id — no router state needed).
+    setIsSubmitting(true);
+    try {
       const tlf_num = `${selectedCountry.code}${normalizePhoneNumber(selectedCountry, formData.phone)}`;
-      const order = createOrder({
-        client: {
+      const result = await createOrder({
+        client_info: {
           name: formData.name.trim(),
           last_name: formData.lastName.trim(),
-          cedula: `${formData.cedulaType}${formData.cedula}`,
+          cedula: `${formData.cedulaType}-${formData.cedula}`,
+          // tlf_num already carries the full international number (§4.2):
+          // country_code stays omitted so the backend normalizes to E.164.
           tlf_num,
         },
         delivery_type: formData.deliveryType,
         payment_method: formData.paymentMethod,
-        items,
+        items: items.map(item => ({
+          product_id: item.product.product_id,
+          product_qty: item.quantity,
+        })),
       });
 
+      if (!result.ok) {
+        showToast(result.message);
+        return;
+      }
+
       clearCart();
-      navigate(ROUTES.confirmation, { state: { order } });
+      const confirmationKey = result.data.order_token || result.data.order_id;
+      navigate(ROUTES.confirmation(confirmationKey), {
+        state: { order: result.data },
+      });
     } catch (error) {
       console.error('Error al crear el pedido:', error);
       showToast('No se pudo crear el pedido. Inténtalo de nuevo.');
+    } finally {
       setIsSubmitting(false);
-      return;
     }
   };
 
@@ -184,176 +225,34 @@ export default function CheckoutPage() {
         <p className="page-subtitle">Completa tus datos para procesar el pedido</p>
       </div>
 
+      {stockChanges.length > 0 && (
+        <StockNotice changes={stockChanges} onDismiss={() => setStockChanges([])} />
+      )}
+
       <form onSubmit={handleSubmit} className="checkout-form stagger" noValidate>
-        <section className="form-section card">
-          <h2 className="section-title">Información de contacto</h2>
-          
-          <div className="form-group mb-md">
-            <label className="form-label" htmlFor="name">Nombre</label>
-            <input 
-              type="text" 
-              id="name" 
-              name="name" 
-              className="form-input" 
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Ej. María"
-              maxLength={60}
-              autoComplete="given-name"
-              required
-            />
-          </div>
+        <CheckoutContactSection
+          formData={formData}
+          cedulaError={cedulaError}
+          phoneError={phoneError}
+          selectedCountry={selectedCountry}
+          onChange={handleInputChange}
+        />
 
-          <div className="form-group mb-md">
-            <label className="form-label" htmlFor="lastName">Apellido</label>
-            <input 
-              type="text" 
-              id="lastName" 
-              name="lastName" 
-              className="form-input" 
-              value={formData.lastName}
-              onChange={handleInputChange}
-              placeholder="Ej. Pérez"
-              maxLength={60}
-              autoComplete="family-name"
-              required
-            />
-          </div>
+        <CheckoutDeliverySection
+          deliveryType={formData.deliveryType}
+          onChange={handleInputChange}
+        />
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="cedula">Cédula</label>
-            <div className="phone-input-group">
-              <select
-                name="cedulaType"
-                id="cedulaType"
-                className="form-select phone-select cedula-select"
-                value={formData.cedulaType}
-                onChange={handleInputChange}
-                aria-label="Tipo de cédula"
-              >
-                {CEDULA_TYPES.map(t => (
-                  <option key={t} value={t}>{t}</option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                name="cedula"
-                id="cedula"
-                className={`form-input phone-number ${cedulaError ? 'form-input-error' : ''}`}
-                value={formData.cedula}
-                onChange={handleInputChange}
-                placeholder="Ej. 12345678"
-                inputMode="numeric"
-                maxLength={9}
-                aria-invalid={cedulaError ? 'true' : 'false'}
-                required
-              />
-            </div>
-            {formData.cedula && !cedulaError && (
-              <p className="phone-preview" role="status">
-                {formData.cedulaType}{formData.cedula}
-              </p>
-            )}
-          </div>
+        <CheckoutPaymentSection
+          paymentMethod={formData.paymentMethod}
+          paymentOptions={paymentOptions}
+          onChange={handleInputChange}
+        />
 
-          <div className="form-group">
-            <label className="form-label" htmlFor="phone">Teléfono</label>
-            <div className="phone-input-group">
-              <select 
-                name="countryCode" 
-                className="form-select phone-select" 
-                value={formData.countryCode}
-                onChange={handleInputChange}
-                autoComplete="country-code"
-              >
-                {COUNTRY_CODES.map(c => (
-                  <option key={`${c.short}-${c.code}`} value={c.code}>{c.short} ({c.code})</option>
-                ))}
-              </select>
-              <input
-                type="tel"
-                name="phone"
-                id="phone"
-                className={`form-input phone-number ${phoneError ? 'form-input-error' : ''}`} 
-                value={formData.phone}
-                onChange={handleInputChange}
-                placeholder={getCountryHint(selectedCountry)}
-                inputMode="tel"
-                maxLength={selectedCountry.digits + 1}
-                autoComplete="tel-national"
-                aria-invalid={phoneError ? 'true' : 'false'}
-                required
-              />
-            </div>
-            {formData.phone && (
-              <p className={`phone-preview ${phoneError ? 'phone-preview-error' : ''}`} role="status">
-                {selectedCountry.code} {normalizePhoneNumber(selectedCountry, formData.phone) || '· · ·'}
-              </p>
-            )}
-          </div>
-        </section>
-
-        <section className="form-section card">
-          <h2 className="section-title">Entrega</h2>
-          <div className="radio-cards">
-            {DELIVERY_TYPES.map(type => (
-              <label 
-                key={type.value} 
-                className={`radio-card ${formData.deliveryType === type.value ? 'selected' : ''}`}
-              >
-                <input 
-                  type="radio" 
-                  name="deliveryType" 
-                  value={type.value}
-                  checked={formData.deliveryType === type.value}
-                  onChange={handleInputChange}
-                  className="visually-hidden"
-                />
-                <span className="radio-label">{type.label}</span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className="form-section card">
-          <h2 className="section-title">Método de pago</h2>
-          <div className="radio-cards">
-            {paymentOptions.map(method => (
-              <label 
-                key={method.value} 
-                className={`radio-card ${formData.paymentMethod === method.value ? 'selected' : ''}`}
-              >
-                <input 
-                  type="radio" 
-                  name="paymentMethod" 
-                  value={method.value}
-                  checked={formData.paymentMethod === method.value}
-                  onChange={handleInputChange}
-                  className="visually-hidden"
-                />
-                <span className="radio-label">{method.label}</span>
-              </label>
-            ))}
-          </div>
-        </section>
-
-        <section className="form-section card">
-          <h2 className="section-title">Resumen del pedido</h2>
-          <div className="order-summary-items">
-            {items.map(item => (
-              <div key={item.product.product_id} className="summary-item">
-                <span className="summary-item-name">{item.quantity}x {item.product.product_name}</span>
-                <span className="summary-item-price">
-                  {formatPrice(Number(item.product.product_price) * item.quantity)}
-                </span>
-              </div>
-            ))}
-          </div>
-          <div className="summary-total mt-md">
-            <span>Total</span>
-            <span className="text-primary">{formatPrice(total)}</span>
-          </div>
-        </section>
+        <CheckoutSummarySection
+          items={items}
+          total={total}
+        />
 
         <button type="submit" className="btn btn-primary btn-lg btn-block mt-md" disabled={isSubmitting}>
           {isSubmitting ? 'Procesando…' : 'Confirmar pedido'}

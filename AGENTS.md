@@ -156,15 +156,39 @@ src/
 - Returns a discriminated union: `{ ok: true; data: T }` | `{ ok: false; message: string }`.
 - Vite proxies `/api` → `http://localhost:3000` (see `vite.config.ts`).
 
-### Current State (localStorage flow)
+### Current State (backend wired)
 
-The full shop flow runs on `src/store/localStore.ts` — a localStorage-backed data layer seeded from `src/mock/data.ts` on first run. Products, orders, and the cart all persist and stay in sync across pages (via `useSyncExternalStore`). Backend integration is **not yet wired**. When connecting pages to the real API:
-1. Replace `useProducts()` / `useOrders()` / `createOrder()` / `setOrderStatus()` / `saveProducts()` calls with `useEffect` + `api()` calls
-2. Add loading states (`<LoadingSpinner />`) and error handling
-3. Pass real API response data via `navigate('/path', { state: { ... } })` where needed (e.g. checkout → confirmation)
-4. Keep `localStore.ts` only as long as the mock flow is needed — delete it (and the mock seed) once the API is live
+Products AND orders are live from the backend API. Each domain has a thin client mirroring the contract 1:1 — `src/api/products.ts`, `src/api/orders.ts` — built on `api()` (`src/api/client.ts`, `ApiResult<T>` union). Admin mutations attach a Clerk Bearer token via `getAdminToken` (AdminAuthContext). Pages load through `useAsync` + thrown-error loaders (`fetchAllProducts`, `fetchOrderSummaries`, `fetchOrderDetail`, `fetchOrderReceipt`) and render `<LoadingSpinner>` / `<ErrorState>` / NotFoundError states.
 
-To reset demo data, clear `tokki_products_v1` / `tokki_orders_v1` / `tokki_cart_v1` from localStorage.
+- **Checkout Submission:** POSTs `CreateOrderPayload` / `CheckoutPayload` (client info with mandatory cédula `V-12345678`, `delivery_type`, `payment_method`, `items`), re-validates cart stock against the live catalog before submitting (blocking `<StockNotice>` review), and navigates to `/confirmation/:orderToken` using the unguessable `order_token` UUID returned by `POST /orders`.
+- **Order Confirmation:** Reads `orderToken` from route params and loads receipt via `fetchOrderReceipt(orderToken)` (`GET /api/orders/receipt/:token`, public/unauthenticated), supporting page refresh and fallback router state.
+- **Admin Orders:** `fetchOrderDetail(orderId, auth)` accesses `GET /api/orders/:id` with Clerk Bearer auth. Orders list and detail view display customer Cédula, contact phone, delivery/payment chips, and direct WhatsApp chat links (`getWhatsAppLink()`).
+- **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
+- **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
+- **Cart:** (`src/context/CartContext.tsx`) persists product snapshots to localStorage (`tokki_cart_v1`) — reconciled against the live catalog on cart mount and pre-submit.
+- **Product cache in admin forms:** `src/store/localStore.ts` is slimmed to products cache + cart persistence. Mock seed data (`src/mock/data.ts`) is products-only for test fixtures.
+
+---
+
+## Skills & Quality Rules (Mandatory for Frontend Work)
+
+All agents working on this codebase **must** adhere to the following skills and verification workflows:
+
+### 1. `frontend-design` Skill
+- **Sticker Sheet Aesthetic:** Pastel-pink scale (`--p1` to `--p5`), dark plum text (`#3d1a2e`), chunky `2–2.5px solid` borders, generous radius (cards `20px`, buttons `9999px`), pink-tinted drop shadows.
+- **Typography:** `DynaPuff` (display/buttons/prices/labels) paired with `Sour Gummy` (body/forms/inputs). Local `@fontsource/*` only — never Google Fonts or system fonts.
+- **Micro-Interactions & Spring Physics:** Hover effects use `cubic-bezier(.34, 1.56, .64, 1)`. Staggered reveals (`animationDelay`) for lists and cards.
+- **No AI Slop / Generic Boilerplate:** No generic grey shadows, no bootstrap badges, no Tailwind/CSS-in-JS.
+
+### 2. `react-doctor` Skill & ESLint Rules
+- **React Diagnostics:** Run `pnpm doctor` (or `npx react-doctor@latest`) before finishing frontend work to prevent performance, accessibility, and architectural regressions.
+- **ESLint & Hooks:** Run `pnpm lint` (`eslint-plugin-react-hooks` flat config). Never suppress hook dependencies without explicit justification.
+- **Component Hygiene:**
+  - Hoist pure functions, validators, and static lookup maps to module scope.
+  - Reset async loading state flags inside `try ... finally { setIsLoading(false); }`.
+  - Never nest interactive focusable controls (no buttons/anchors inside `role="button"` or `<Link>` containers).
+  - Memoize context provider values to prevent cascading re-renders.
+  - Avoid bare array index keys where unique object attributes exist.
 
 ---
 
@@ -179,9 +203,9 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test` / one-shot `pnpm test:run`) before declaring any task complete — all tests must pass.
+- Run the full test suite (`pnpm test:run`) and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **23 test files / 159 tests green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
-- Pure logic (validators, formatters, `localStore` mutations, sanitizers) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
+- Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
 
 ---
@@ -204,14 +228,12 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 
 To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.
 
-## Phone numbers (checkout)
+## Phone numbers & WhatsApp (checkout & admin)
 
-`COUNTRY_CODES` in `src/constants/index.ts` covers ~90 countries with per-country E.164 national digit counts, placeholder hints, and leading-zero normalization. Helpers:
-- `normalizePhoneNumber(country, raw)` — strips a leading "0" trunk prefix where the country drops it in E.164 (e.g. VE `0414…` → `414…`)
-- `validatePhoneNumber(country, raw)` — returns an empty string when valid, else a Spanish hint
-- `getCountryHint(country)` — placeholder from the digit count (or a custom hint)
-
-Checkout shows a live E.164 preview chip (green = valid, red = invalid) and blocks submission with a branded toast on invalid input.
+- `COUNTRY_CODES` in `src/constants/index.ts` covers ~90 countries with per-country E.164 national digit counts, placeholder hints, and leading-zero normalization.
+- Helpers: `normalizePhoneNumber(country, raw)`, `validatePhoneNumber(country, raw)`, `getCountryHint(country)`.
+- Checkout shows live E.164 preview chip and blocks submission with a branded toast on invalid input. Phone input includes guidance hint: `"Número para coordinar entrega y pago vía WhatsApp"`.
+- Admin links: `getWhatsAppLink(phone, orderId, customerName)` in `src/utils/whatsapp.ts` generates direct one-click WhatsApp chat links (`https://wa.me/<digits>?text=...`) for instant communication with buyers.
 
 ---
 
@@ -225,6 +247,7 @@ Checkout shows a live E.164 preview chip (green = valid, red = invalid) and bloc
 - Co-locate CSS with its component
 - Use `formatPrice()` and `formatDate()` from constants — never raw number formatting
 - Make layouts full-width and responsive; carousels edge-to-edge
+- Run `pnpm doctor`, `pnpm lint`, and `pnpm test:run` on every feature/fix
 - Preserve existing comments and docstrings unless directly modifying that code
 
 ### Don't
