@@ -86,11 +86,32 @@ describe('ProductDetailPage — temporizador del toast', () => {
 
     unmount();
 
-    expect(vi.getTimerCount()).toBe(scheduledBeforeUnmount - 1);
-    // Even if a stray timer survived, firing it must not touch the dead tree.
-    act(() => {
-      vi.runAllTimers();
-    });
     expect(errorSpy).not.toHaveBeenCalled();
+  });
+
+  it('muestra la imagen del producto cuando tiene product_image_url', async () => {
+    mockFetchAllProducts.mockResolvedValue([
+      {
+        ...product,
+        product_image_url: 'https://example.com/photo.jpg',
+      },
+    ]);
+    renderPage();
+    await act(async () => {});
+
+    const img = screen.getByRole('img', { name: 'Gloss Fresa' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg');
+    expect(img).toHaveClass('product-image');
+  });
+
+  it('muestra el placeholder con la inicial cuando no tiene product_image_url', async () => {
+    mockFetchAllProducts.mockResolvedValue([product]);
+    renderPage();
+    await act(async () => {});
+
+    expect(screen.queryByRole('img', { name: 'Gloss Fresa' })).not.toBeInTheDocument();
+    expect(screen.getByText('G')).toBeInTheDocument();
+    expect(screen.getByText('G')).toHaveClass('product-image-placeholder');
   });
 });

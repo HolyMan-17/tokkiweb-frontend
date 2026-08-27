@@ -1,3 +1,9 @@
+minimumReleaseAge: 10080
+minimumReleaseAgeExclude:
+  - '@testing-library/user-event'
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - semver@6.3.1
 allowBuilds:
   '@clerk/shared': false
   bufferutil: false

@@ -32,7 +32,7 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   // Latest onCancel without re-subscribing the document keydown listener.
   const onCancelRef = useRef(onCancel);
@@ -40,25 +40,44 @@ export function ConfirmDialog({
     onCancelRef.current = onCancel;
   }, [onCancel]);
 
-  // Focus lifecycle: snapshot whatever was focused right before the dialog
-  // opens, move focus INTO it (first focusable = the safe/cancel action —
-  // never the destructive confirm), and hand focus back when it closes or
-  // unmounts. Covers both `<ConfirmDialog open={…}>` consumers and ones that
-  // conditionally mount/unmount the component.
+  // Modal lifecycle & focus management:
+  // Open via showModal() for top-layer modal behavior, focus trapping, and backdrop.
+  // Snapshot previous focus before opening, move focus to the safe action (cancel),
+  // and restore focus when the dialog closes.
   useEffect(() => {
     if (!open) return undefined;
 
     previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
 
+    const dialog = dialogRef.current;
+    if (dialog) {
+      if (typeof dialog.showModal === 'function') {
+        if (!dialog.open) {
+          dialog.showModal();
+        }
+      } else {
+        dialog.setAttribute('open', '');
+      }
+    }
+
     const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(FOCUSABLE_SELECTOR);
     firstFocusable?.focus();
 
     return () => {
+      if (dialog) {
+        if (typeof dialog.close === 'function') {
+          if (dialog.open) {
+            dialog.close();
+          }
+        } else {
+          dialog.removeAttribute('open');
+        }
+      }
       previouslyFocusedRef.current?.focus();
     };
   }, [open]);
-  // Keyboard: Escape closes; Tab/Shift+Tab are trapped inside the dialog so
-  // keyboard users can't wander into the page behind the modal overlay.
+
+  // Keyboard: Escape closes; Tab/Shift+Tab trapping ensures consistent focus wrapping
   useEffect(() => {
     if (!open) return undefined;
 
@@ -81,8 +100,6 @@ export function ConfirmDialog({
       const inside = current instanceof HTMLElement && root.contains(current);
       const atEdge = event.shiftKey ? current === first : current === last;
 
-      // Intercept only at the wrap edges (or if focus escaped outside the
-      // dialog); otherwise let the native tab order continue inside.
       if (!inside || atEdge) {
         event.preventDefault();
         const target = event.shiftKey ? last : first;
@@ -113,32 +130,33 @@ export function ConfirmDialog({
     );
 
   return (
-    <div
+    <dialog
       ref={dialogRef}
-      className="confirm-overlay"
-      role="dialog"
-      aria-modal="true"
+      className="confirm-dialog animate-slideUp"
       aria-labelledby="confirm-title"
+      onCancel={(e) => {
+        e.preventDefault();
+        onCancelRef.current();
+      }}
     >
-      <div className="confirm-dialog animate-slideUp">
-        <div className={`confirm-icon confirm-icon--${variant}`}>{icon}</div>
-        <h2 id="confirm-title" className="confirm-title font-display">
-          {title}
-        </h2>
-        <p className="confirm-text">{message}</p>
-        <div className="confirm-actions">
-          <button className="btn btn-outline" onClick={onCancel}>
-            {cancelLabel}
-          </button>
-          <button
-            className={`btn ${variant === 'danger' ? 'btn-danger' : variant === 'success' ? 'btn-success' : 'btn-primary'}`}
-            onClick={onConfirm}
-          >
-            {confirmLabel}
-          </button>
-        </div>
+      <div className={`confirm-icon confirm-icon--${variant}`}>{icon}</div>
+      <h2 id="confirm-title" className="confirm-title font-display">
+        {title}
+      </h2>
+      <p className="confirm-text">{message}</p>
+      <div className="confirm-actions">
+        <button type="button" className="btn btn-outline" onClick={onCancel}>
+          {cancelLabel}
+        </button>
+        <button
+          type="button"
+          className={`btn ${variant === 'danger' ? 'btn-danger' : variant === 'success' ? 'btn-success' : 'btn-primary'}`}
+          onClick={onConfirm}
+        >
+          {confirmLabel}
+        </button>
       </div>
-    </div>
+    </dialog>
   );
 }
 

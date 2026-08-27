@@ -3,24 +3,10 @@
    Shared kawaii confirmation pop-up (archive products, orders…)
    ════════════════════════════════════════════════════════════ */
 
-.confirm-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(61, 26, 46, 0.45);
-  backdrop-filter: blur(3px);
-  z-index: 1000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: var(--space-lg);
-}
-
 .confirm-dialog {
   background: var(--color-surface);
-  width: 100%;
+  color: var(--color-text);
+  width: calc(100% - var(--space-xl) * 2);
   max-width: 380px;
   border-radius: var(--radius-xl);
   border: 2.5px solid var(--color-border);
@@ -31,6 +17,16 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-md);
+  margin: auto;
+}
+
+.confirm-dialog:not([open]) {
+  display: none;
+}
+
+.confirm-dialog::backdrop {
+  background-color: rgba(61, 26, 46, 0.45);
+  backdrop-filter: blur(3px);
 }
 
 .confirm-icon {

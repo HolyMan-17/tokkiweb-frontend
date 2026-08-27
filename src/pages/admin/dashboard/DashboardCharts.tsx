@@ -1,19 +1,6 @@
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  Sector,
-} from 'recharts';
-import type { PieSectorShapeProps } from 'recharts';
+import { useState, useEffect } from 'react';
 import { formatPrice } from '../../../constants';
+import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 
 const PIE_COLORS = {
   pending: '#e8a44d', // var(--color-warning)
@@ -54,33 +41,6 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
   return null;
 }
 
-function renderSlice(props: PieSectorShapeProps) {
-  const {
-    cx = 0,
-    cy = 0,
-    innerRadius = 0,
-    outerRadius = 0,
-    startAngle = 0,
-    endAngle = 0,
-    cornerRadius = 0,
-    fill,
-    isActive,
-  } = props;
-  return (
-    <Sector
-      cx={cx}
-      cy={cy}
-      innerRadius={innerRadius}
-      outerRadius={outerRadius}
-      startAngle={startAngle}
-      endAngle={endAngle}
-      cornerRadius={cornerRadius}
-      fill={fill}
-      className={isActive ? 'pie-sector pie-sector--active' : 'pie-sector'}
-    />
-  );
-}
-
 export interface DaySales {
   label: string;
   total: number;
@@ -93,12 +53,98 @@ interface DashboardChartsProps {
   canceledCount: number;
 }
 
+interface PieSectorShapeProps {
+  cx?: number;
+  cy?: number;
+  innerRadius?: number;
+  outerRadius?: number;
+  startAngle?: number;
+  endAngle?: number;
+  cornerRadius?: number;
+  fill?: string;
+  isActive?: boolean;
+}
+
+type RechartsModule = typeof import('recharts');
+
+let rechartsCache: RechartsModule | null = null;
+let rechartsPromise: Promise<RechartsModule> | null = null;
+
+function loadRecharts(): Promise<RechartsModule> {
+  if (rechartsCache) return Promise.resolve(rechartsCache);
+  if (!rechartsPromise) {
+    rechartsPromise = import('recharts').then((mod) => {
+      rechartsCache = mod;
+      return mod;
+    });
+  }
+  return rechartsPromise;
+}
+
 export function DashboardCharts({
   salesByDay,
   pendingCount,
   approvedCount,
   canceledCount,
 }: DashboardChartsProps) {
+  const [recharts, setRecharts] = useState<RechartsModule | null>(rechartsCache);
+
+  useEffect(() => {
+    if (!recharts) {
+      loadRecharts().then(setRecharts);
+    }
+  }, [recharts]);
+
+  if (!recharts) {
+    return (
+      <div className="dashboard-charts-loading" style={{ minHeight: '200px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  const {
+    BarChart,
+    Bar,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    ResponsiveContainer,
+    PieChart,
+    Pie,
+    Cell,
+    Legend,
+    Sector,
+  } = recharts;
+
+  const renderSlice = (props: PieSectorShapeProps) => {
+    const {
+      cx = 0,
+      cy = 0,
+      innerRadius = 0,
+      outerRadius = 0,
+      startAngle = 0,
+      endAngle = 0,
+      cornerRadius = 0,
+      fill,
+      isActive,
+    } = props;
+    return (
+      <Sector
+        cx={cx}
+        cy={cy}
+        innerRadius={innerRadius}
+        outerRadius={outerRadius}
+        startAngle={startAngle}
+        endAngle={endAngle}
+        cornerRadius={cornerRadius}
+        fill={fill}
+        className={isActive ? 'pie-sector pie-sector--active' : 'pie-sector'}
+      />
+    );
+  };
+
   const pieData = [
     { name: 'Pendientes', value: pendingCount, color: PIE_COLORS.pending },
     { name: 'Aprobados', value: approvedCount, color: PIE_COLORS.approved },

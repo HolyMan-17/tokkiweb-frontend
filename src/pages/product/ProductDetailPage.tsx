@@ -65,9 +65,17 @@ export default function ProductDetailPage() {
       </nav>
 
       <div className="product-image-container animate-scaleIn">
-        <div className="product-image-placeholder">
-          {product.product_name.charAt(0)}
-        </div>
+        {product.product_image_url ? (
+          <img
+            src={product.product_image_url}
+            alt={product.product_name}
+            className="product-image"
+          />
+        ) : (
+          <div className="product-image-placeholder">
+            {product.product_name.charAt(0)}
+          </div>
+        )}
       </div>
 
       <div className="product-info stagger">
