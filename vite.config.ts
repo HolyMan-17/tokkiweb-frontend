@@ -1,6 +1,6 @@
 import { defineConfig, type Plugin } from 'vitest/config'
 import react from '@vitejs/plugin-react'
-import { existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 // Inlines the entry stylesheet into the built index.html so the browser gets
