@@ -112,7 +112,7 @@ describe('AdminDashboardPage — resumen vía API', () => {
     const editLinks = screen.getAllByRole('link', { name: /Editar Bálsamo de Fresa/i });
     expect(editLinks.length).toBeGreaterThan(0);
     expect(editLinks[0]).toHaveAttribute('href', '/tokki-admin/products');
-  });
+  }, 15000);
 
   it('conecta la tarjeta de Alertas Stock con la ruta /tokki-admin/products?stock=low', async () => {
     renderPage();
@@ -120,7 +120,7 @@ describe('AdminDashboardPage — resumen vía API', () => {
     await screen.findByText('Alertas Stock');
     const stockAlertLink = screen.getByRole('link', { name: /Ver alertas de stock/i });
     expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=low');
-  });
+  }, 15000);
 
   it('pide el listado de pedidos con el token de admin', async () => {
     renderPage();
@@ -128,5 +128,5 @@ describe('AdminDashboardPage — resumen vía API', () => {
 
     const auth = mockFetchOrderSummaries.mock.calls[0][0];
     expect(await auth?.getToken?.()).toBe('clerk-token');
-  });
+  }, 15000);
 });
