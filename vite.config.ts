@@ -28,7 +28,7 @@ function inlineEntryCss(): Plugin {
         if (!existsSync(cssPath)) continue
         const css = readFileSync(cssPath, 'utf8')
         source = source.replace(match[0], `\n<style>\n${css}\n</style>`)
-        rmSync(cssPath)
+        // Keep the CSS file in dist/assets so Clerk UI and browser chunk preloading find it with text/css MIME type
       }
 
       // 2) Preload the critical fonts at parse time (matches the weights used
