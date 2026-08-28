@@ -32,7 +32,7 @@
       "destination": "https://api.tokkishopve.com/images/:match*"
     },
     {
-      "source": "/((?!api/|images/).*)",
+      "source": "/((?!api/|images/|assets/|.*\\..*).*)",
       "destination": "/index.html"
     }
   ]
