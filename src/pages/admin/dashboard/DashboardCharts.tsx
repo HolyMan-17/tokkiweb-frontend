@@ -261,15 +261,17 @@ export function DashboardCharts({
         </div>
 
         <div className="chart-container">
-          <ResponsiveContainer width="100%" height={220}>
-            <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={barData} margin={{ top: 10, right: 10, left: 0, bottom: 15 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--color-border)" />
               <XAxis
                 dataKey="label"
+                interval={0}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'var(--color-text-muted)', fontSize: 12 }}
-                dy={10}
+                tick={{ fill: 'var(--color-text-muted)', fontSize: period === 'month' ? 11 : 12, fontWeight: 500 }}
+                dy={8}
+                height={35}
               />
               <YAxis hide />
               <Tooltip content={<CustomTooltip metric={metric} />} cursor={{ fill: 'var(--pink-50)' }} />

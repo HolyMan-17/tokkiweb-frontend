@@ -68,8 +68,19 @@ export default function CartPage() {
       <div className="cart-items stagger">
         {items.map(item => (
           <div key={item.product.product_id} className="cart-item-card card">
-            <div className="item-image-placeholder">
-              {item.product.product_name.charAt(0)}
+            <div className="item-image-container">
+              {item.product.product_image_url ? (
+                <img
+                  src={item.product.product_image_url}
+                  alt={item.product.product_name}
+                  className="item-image-thumb"
+                  loading="lazy"
+                />
+              ) : (
+                <div className="item-image-placeholder">
+                  {item.product.product_name.charAt(0)}
+                </div>
+              )}
             </div>
             <div className="item-details">
               <h3 className="item-name">{item.product.product_name}</h3>

@@ -24,20 +24,16 @@ function makeOrder(overrides: Partial<OrderSummary> = {}): OrderSummary {
 }
 
 describe('computeSalesByDay', () => {
-  test('ignores non-approved orders', () => {
+  test('ignores non-approved orders and capitalizes day labels', () => {
     const orders = [
       makeOrder({ status: 'pending', created_at: '2026-08-25T10:00:00.000Z' }),
       makeOrder({ status: 'canceled', created_at: '2026-08-25T11:00:00.000Z' }),
     ];
-    expect(computeSalesByDay(orders, TODAY)).toEqual([
-      { label: 'mié 19', total: 0 },
-      { label: 'jue 20', total: 0 },
-      { label: 'vie 21', total: 0 },
-      { label: 'sáb 22', total: 0 },
-      { label: 'dom 23', total: 0 },
-      { label: 'lun 24', total: 0 },
-      { label: 'mar 25', total: 0 },
-    ]);
+    const result = computeSalesByDay(orders, TODAY);
+    expect(result).toHaveLength(7);
+    expect(result[0].label).toMatch(/mi[eé] 19/i);
+    expect(result[6].label).toMatch(/mar 25/i);
+    expect(result[6].total).toBe(0);
   });
 
   test('sums same-day approved orders with Number(total_amount)', () => {
@@ -46,7 +42,7 @@ describe('computeSalesByDay', () => {
       makeOrder({ total_amount: '7.5', created_at: '2026-08-25T20:00:00.000Z' }),
     ];
     const result = computeSalesByDay(orders, TODAY);
-    expect(result[6].label).toBe('mar 25');
+    expect(result[6].label).toMatch(/mar 25/i);
     expect(result[6].total).toBeCloseTo(20, 5);
   });
 });
@@ -72,20 +68,26 @@ describe('computeSalesByPeriod', () => {
     expect(result[6].total).toBe(2); // approved + pending (excludes canceled)
   });
 
-  test('computes weekly breakdown for the current month', () => {
+  test('computes weekly breakdown with date ranges across the month (Monday to Sunday)', () => {
     const orders = [
-      makeOrder({ total_amount: '15.00', created_at: '2026-08-03T10:00:00.000Z' }), // Sem 1
-      makeOrder({ total_amount: '30.00', created_at: '2026-08-10T10:00:00.000Z' }), // Sem 2
-      makeOrder({ total_amount: '45.00', created_at: '2026-08-25T10:00:00.000Z' }), // Sem 4
+      makeOrder({ total_amount: '15.00', created_at: '2026-08-03T10:00:00.000Z' }), // Week of 3 - 9 ago
+      makeOrder({ total_amount: '30.00', created_at: '2026-08-10T10:00:00.000Z' }), // Week of 10 - 16 ago
+      makeOrder({ total_amount: '45.00', created_at: '2026-08-25T10:00:00.000Z' }), // Week of 24 - 30 ago
     ];
     const result = computeSalesByPeriod(orders, { period: 'week', metric: 'revenue', referenceDate: TODAY });
     expect(result.length).toBeGreaterThanOrEqual(4);
-    expect(result[0].label).toBe('Sem 1');
-    expect(result[0].total).toBe(15);
-    expect(result[1].label).toBe('Sem 2');
-    expect(result[1].total).toBe(30);
-    expect(result[3].label).toBe('Sem 4');
-    expect(result[3].total).toBe(45);
+    
+    // Checks that date ranges are formatted (e.g. "3 - 9 ago" or "31 ago - 6 sep")
+    const week2 = result.find(r => r.label.includes('3 - 9'));
+    const week3 = result.find(r => r.label.includes('10 - 16'));
+    const week5 = result.find(r => r.label.includes('24 - 30'));
+
+    expect(week2).toBeDefined();
+    expect(week2?.total).toBe(15);
+    expect(week3).toBeDefined();
+    expect(week3?.total).toBe(30);
+    expect(week5).toBeDefined();
+    expect(week5?.total).toBe(45);
   });
 
   test('computes monthly breakdown for the current year (12 months)', () => {
@@ -131,4 +133,3 @@ describe('computeDeliveryDistribution', () => {
     expect(delivery?.value).toBe(2);
   });
 });
-

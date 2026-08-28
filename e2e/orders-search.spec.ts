@@ -216,4 +216,69 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     await searchInput.fill('V-26345678');
     await searchWrapper.screenshot({ path: 'test-results/orders-search-mobile-filled.png' });
   });
+
+  test('mobile viewport rendering of create order dropdowns and search bar', async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 812 });
+
+    await page.route('**/api/products', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: [
+            {
+              product_id: 1,
+              product_name: 'Bálsamo Labial Bunny',
+              price: '8.50',
+              stock_quantity: 15,
+              in_stock: true,
+              category: 'Maquillaje',
+              description: 'Bálsamo hidratante con diseño kawaii.',
+              product_image_url: '/assets/sample.png',
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto('/tokki-admin/orders/new');
+    await page.waitForLoadState('networkidle');
+
+    // 1) Verify dropdown selects render properly on mobile
+    const deliverySelect = page.locator('#delivery-type');
+    const paymentSelect = page.locator('#payment-method');
+
+    await expect(deliverySelect).toBeVisible();
+    await expect(paymentSelect).toBeVisible();
+
+    // Select different options and verify value updates without errors
+    await deliverySelect.selectOption('retiro_tienda');
+    expect(await deliverySelect.inputValue()).toBe('retiro_tienda');
+
+    await deliverySelect.selectOption('envio_nacional');
+    expect(await deliverySelect.inputValue()).toBe('envio_nacional');
+
+    await paymentSelect.selectOption('pago_movil');
+    expect(await paymentSelect.inputValue()).toBe('pago_movil');
+
+    await paymentSelect.selectOption('binance');
+    expect(await paymentSelect.inputValue()).toBe('binance');
+
+    // 2) Verify quick fill button adapts to mobile
+    const quickFillBtn = page.locator('.btn-quick-fill');
+    await expect(quickFillBtn).toBeVisible();
+    await quickFillBtn.click();
+    await expect(page.locator('#customer-name')).toHaveValue('Cliente');
+
+    // 3) Verify search bar in product picker on mobile
+    const searchInput = page.locator('.pos-search-input');
+    await expect(searchInput).toBeVisible();
+    await searchInput.fill('Bálsamo Labial');
+    await expect(searchInput).toHaveValue('Bálsamo Labial');
+
+    // Verify chips render without clipping
+    const chips = page.locator('.pos-chip');
+    await expect(chips.first()).toBeVisible();
+  });
 });

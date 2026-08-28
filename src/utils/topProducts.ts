@@ -35,6 +35,13 @@ interface OrderItemLike {
   quantity?: number;
 }
 
+interface LooseProductLike extends Product {
+  name?: string;
+  price?: string | number;
+  category_name?: string;
+  image_url?: string | null;
+}
+
 /**
  * Computes top-ranked products for the admin dashboard based on order line-items (if available)
  * or catalog insights (in-stock status, product value/price, and inventory movement).
@@ -74,16 +81,20 @@ export function computeTopProducts(
   }
 
   // Calculate sold units per product
-  const annotated = products.map((product) => {
+  const annotated = products.map((rawProduct) => {
+    const product = rawProduct as LooseProductLike;
+    const rawName = product.product_name || product.name || '';
+    const normName = rawName.trim().toLowerCase();
     let soldCount = 0;
     if (soldCountById.has(product.product_id)) {
       soldCount = soldCountById.get(product.product_id)!;
-    } else if (soldCountByName.has(product.product_name.trim().toLowerCase())) {
-      soldCount = soldCountByName.get(product.product_name.trim().toLowerCase())!;
+    } else if (normName && soldCountByName.has(normName)) {
+      soldCount = soldCountByName.get(normName)!;
     }
-    const priceNum = Number(product.product_price) || 0;
+    const priceNum = Number(product.product_price ?? product.price ?? 0) || 0;
     return {
       product,
+      name: rawName,
       soldCount,
       priceNum,
     };
@@ -135,14 +146,14 @@ export function computeTopProducts(
     });
   }
 
-  return annotated.slice(0, Math.max(0, limit)).map(({ product, soldCount }, index) => ({
+  return annotated.slice(0, Math.max(0, limit)).map(({ product, name, soldCount }, index) => ({
     product_id: product.product_id,
-    product_name: product.product_name,
-    category: product.category,
-    product_price: product.product_price,
+    product_name: name,
+    category: product.category || product.category_name || '',
+    product_price: String(product.product_price ?? product.price ?? '0'),
     qty_available: product.qty_available,
     in_stock: product.in_stock,
-    product_image_url: product.product_image_url,
+    product_image_url: product.product_image_url ?? product.image_url,
     soldCount: soldCount > 0 ? soldCount : undefined,
     badgeRank: getRankBadge(index),
   }));

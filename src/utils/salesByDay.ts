@@ -69,7 +69,9 @@ export function computeSalesByPeriod(
     for (let i = days - 1; i >= 0; i--) {
       const d = new Date(refDate);
       d.setDate(d.getDate() - i);
-      points.push({ label: dayFormatter.format(d), total: totals.get(dayKey(d)) ?? 0 });
+      const raw = dayFormatter.format(d).replace('.', '').replace(',', '');
+      const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
+      points.push({ label: capitalized, total: totals.get(dayKey(d)) ?? 0 });
     }
     return points;
   }
@@ -77,27 +79,70 @@ export function computeSalesByPeriod(
   if (period === 'week') {
     const currentYear = refDate.getFullYear();
     const currentMonth = refDate.getMonth();
-    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-    const weekCount = Math.ceil(daysInMonth / 7);
+    const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+    const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-    const weekTotals = new Array(weekCount).fill(0);
+    // Monday-based ISO calendar weeks that span across the month
+    const firstDayOfWeek = firstDayOfMonth.getDay();
+    const mondayOffset = firstDayOfWeek === 0 ? -6 : 1 - firstDayOfWeek;
+    const startMonday = new Date(currentYear, currentMonth, 1 + mondayOffset, 0, 0, 0, 0);
+
+    interface WeekBucket {
+      start: Date;
+      end: Date;
+      label: string;
+      total: number;
+    }
+
+    const weeks: WeekBucket[] = [];
+    const currentWeekStart = new Date(startMonday);
+
+    while (currentWeekStart <= lastDayOfMonth) {
+      const weekStart = new Date(currentWeekStart);
+      const weekEnd = new Date(currentWeekStart);
+      weekEnd.setDate(weekEnd.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+
+      const startDay = weekStart.getDate();
+      const endDay = weekEnd.getDate();
+      const startMonth = monthFormatter.format(weekStart).replace('.', '').toLowerCase();
+      const endMonth = monthFormatter.format(weekEnd).replace('.', '').toLowerCase();
+
+      let label: string;
+      if (weekStart.getMonth() === weekEnd.getMonth()) {
+        label = `${startDay} - ${endDay} ${startMonth}`;
+      } else {
+        label = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
+      }
+
+      weeks.push({
+        start: weekStart,
+        end: weekEnd,
+        label,
+        total: 0,
+      });
+
+      currentWeekStart.setDate(currentWeekStart.getDate() + 7);
+    }
 
     for (const order of orders) {
       if (metric === 'revenue' && order.status !== 'approved') continue;
       if (metric === 'orders' && order.status === 'canceled') continue;
 
-      const orderDate = new Date(order.created_at);
-      if (orderDate.getFullYear() === currentYear && orderDate.getMonth() === currentMonth) {
-        const day = orderDate.getDate();
-        const weekIndex = Math.min(Math.floor((day - 1) / 7), weekCount - 1);
-        const val = metric === 'revenue' ? Number(order.total_amount) : 1;
-        weekTotals[weekIndex] += val;
+      const orderTime = new Date(order.created_at).getTime();
+      const val = metric === 'revenue' ? Number(order.total_amount) : 1;
+
+      for (const w of weeks) {
+        if (orderTime >= w.start.getTime() && orderTime <= w.end.getTime()) {
+          w.total += val;
+          break;
+        }
       }
     }
 
-    return weekTotals.map((tot, idx) => ({
-      label: `Sem ${idx + 1}`,
-      total: tot,
+    return weeks.map((w) => ({
+      label: w.label,
+      total: w.total,
     }));
   }
 
@@ -119,8 +164,8 @@ export function computeSalesByPeriod(
 
     return monthTotals.map((tot, m) => {
       const d = new Date(currentYear, m, 1);
-      const rawMonth = monthFormatter.format(d);
-      const label = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1).replace('.', '');
+      const rawMonth = monthFormatter.format(d).replace('.', '');
+      const label = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
       return {
         label,
         total: tot,
@@ -178,4 +223,3 @@ export function computeDeliveryDistribution(
     color: DELIVERY_PALETTE[type.toLowerCase()] || FALLBACK_COLORS[idx % FALLBACK_COLORS.length],
   }));
 }
-
