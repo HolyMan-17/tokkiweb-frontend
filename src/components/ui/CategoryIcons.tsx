@@ -21,6 +21,7 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={224} height={145} loading="lazy" />,
   'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={158} height={167} loading="lazy" />,
   Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={128} height={128} loading="lazy" />,
+  'Dulces & Comida Asiatica': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Peluches y Figuras': <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
   'Zona KPOP': <img src={kpopImg} alt="" className="category-emoji-img category-kpop" width={160} height={160} loading="lazy" />,
@@ -44,6 +45,18 @@ const CATEGORY_ALIASES: Record<string, string> = {
   regalos: 'Bolsas o cajas de regalo',
   gift: 'Bolsas o cajas de regalo',
   gifts: 'Bolsas o cajas de regalo',
+  'dulces & comida asiatica': 'Dulces & Comida Asiatica',
+  'dulces y comida asiatica': 'Dulces & Comida Asiatica',
+  'dulces y comida asiática': 'Dulces & Comida Asiatica',
+  'dulces-&-comida-asiatica': 'Dulces & Comida Asiatica',
+  'dulces-y-comida-asiatica': 'Dulces & Comida Asiatica',
+  'dulces asiaticos': 'Dulces & Comida Asiatica',
+  'dulces asiáticos': 'Dulces & Comida Asiatica',
+  'dulces-asiaticos': 'Dulces & Comida Asiatica',
+  dulces: 'Dulces & Comida Asiatica',
+  'comida asiatica': 'Dulces & Comida Asiatica',
+  'comida asiática': 'Dulces & Comida Asiatica',
+  snacks: 'Dulces & Comida Asiatica',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {

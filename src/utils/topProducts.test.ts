@@ -51,7 +51,7 @@ const MOCK_PRODUCTS: Product[] = [
   {
     product_id: 6,
     product_name: 'Mochi de Fresa',
-    category: 'Dulces Asiáticos',
+    category: 'Dulces & Comida Asiatica',
     product_price: '3.00',
     product_description: 'Mochi relleno',
     qty_available: 8,

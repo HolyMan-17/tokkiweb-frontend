@@ -42,7 +42,7 @@ const MOCK_PRODUCTS: Product[] = [
     product_description: 'Dulce tradicional relleno de crema de fresa.',
     qty_available: 5,
     in_stock: true,
-    category: 'Dulces Asiáticos',
+    category: 'Dulces & Comida Asiatica',
     product_image_url: null,
   },
 ];
@@ -74,7 +74,7 @@ describe('AdminProductPicker', () => {
     expect(screen.getByRole('tab', { name: /maquillaje/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /skincare/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /accesorios/i })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /dulces asiáticos/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /dulces & comida asiatica/i })).toBeInTheDocument();
   });
 
   it('renderiza la cuadrícula de productos con información de precios y stock', () => {

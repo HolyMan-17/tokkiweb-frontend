@@ -47,7 +47,7 @@ const MOCK_PRODUCTS = [
     product_price: '5.50',
     qty_available: 8,
     in_stock: true,
-    category: 'Dulces Asiáticos',
+    category: 'Dulces & Comida Asiatica',
     product_description: 'Pack de mochis',
     product_image_url: null,
   },

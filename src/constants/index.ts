@@ -7,7 +7,7 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Lentes de Contacto',        emoji: '👁️' },
   { name: 'Pines & Chapas',            emoji: '📌' },
   { name: 'Ropa',                      emoji: '👗' },
-  { name: 'Dulces Asiáticos',          emoji: '🍡' },
+  { name: 'Dulces & Comida Asiatica',  emoji: '🍡' },
   { name: 'Peluches y Figuras',        emoji: '🧸' },
   { name: 'Bolsas o cajas de regalo',  emoji: '🎁' },
   { name: 'Otros',                     emoji: '🛍️' },

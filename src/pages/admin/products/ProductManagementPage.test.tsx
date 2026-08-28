@@ -40,7 +40,7 @@ const MOCK_PRODUCTS: Product[] = [
     product_description: 'Delicioso mochi artesanal',
     qty_available: 3,
     in_stock: true,
-    category: 'Dulces Asiáticos',
+    category: 'Dulces & Comida Asiatica',
   },
   {
     product_id: 4,
