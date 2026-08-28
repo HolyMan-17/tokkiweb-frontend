@@ -42,11 +42,18 @@
   line-height: 1.2;
 }
 
-/* Title variant with a leading brand gif (e.g. sparkles on the Todos page) */
 .category-page-title--flex {
   display: flex;
   align-items: center;
-  gap: var(--space-sm);
+  gap: 12px;
+}
+
+.category-page-title > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 2rem;
 }
 
 /* Brand icons inside page titles sit inline at title scale — consistent
@@ -54,6 +61,19 @@
 .category-page-title .category-emoji-img {
   width: 2rem;
   height: 2rem;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.category-page-title .category-kpop {
+  width: 4rem;
+  height: 4rem;
+}
+
+.category-page-title .category-gift {
+  width: 6rem;
+  height: 6rem;
+  transform: translateY(0.2rem);
 }
 
 .title-sparkle {

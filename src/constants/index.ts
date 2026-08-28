@@ -1,14 +1,16 @@
 // ─── Categories (name → emoji) ────────────────────────────
 export const CATEGORIES: { name: string; emoji: string }[] = [
-  { name: 'Maquillaje',          emoji: '💄' },
-  { name: 'Skincare',            emoji: '🧴' },
-  { name: 'Accesorios',          emoji: '💎' },
-  { name: 'Lentes de Contacto',  emoji: '👁️' },
-  { name: 'Pines & Chapas',      emoji: '📌' },
-  { name: 'Ropa',                emoji: '👗' },
-  { name: 'Dulces Asiáticos',    emoji: '🍡' },
-  { name: 'Peluches y Figuras',  emoji: '🧸' },
-  { name: 'Otros',               emoji: '🛍️' },
+  { name: 'Zona KPOP',                 emoji: '🎤' },
+  { name: 'Maquillaje',                emoji: '💄' },
+  { name: 'Skincare',                  emoji: '🧴' },
+  { name: 'Accesorios',                emoji: '💎' },
+  { name: 'Lentes de Contacto',        emoji: '👁️' },
+  { name: 'Pines & Chapas',            emoji: '📌' },
+  { name: 'Ropa',                      emoji: '👗' },
+  { name: 'Dulces Asiáticos',          emoji: '🍡' },
+  { name: 'Peluches y Figuras',        emoji: '🧸' },
+  { name: 'Bolsas o cajas de regalo',  emoji: '🎁' },
+  { name: 'Otros',                     emoji: '🛍️' },
 ];
 
 export function slugify(text: string): string {

@@ -4,7 +4,6 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import CartPage from './CartPage';
 import { CartProvider } from '../../context/CartContext';
 import { fetchAllProducts } from '../../api/products';
-import { MOCK_PRODUCTS } from '../../mock/data';
 import type { Product } from '../../types';
 
 vi.mock('../../api/products', () => ({
@@ -13,13 +12,41 @@ vi.mock('../../api/products', () => ({
 
 const mockFetchAllProducts = vi.mocked(fetchAllProducts);
 
-const [p1, p2] = MOCK_PRODUCTS;
+const p1: Product = {
+  product_id: 1,
+  product_name: 'Bálsamo de Fresa',
+  product_price: '3.50',
+  product_description: 'Bálsamo labial hidratante.',
+  qty_available: 45,
+  in_stock: true,
+  category: 'Maquillaje',
+};
+
+const p2: Product = {
+  product_id: 2,
+  product_name: 'Butterfly Gloss',
+  product_price: '5.00',
+  product_description: 'Gloss labial brillante.',
+  qty_available: 30,
+  in_stock: true,
+  category: 'Maquillaje',
+};
+
+const p3: Product = {
+  product_id: 3,
+  product_name: 'Sombras Pastel',
+  product_price: '7.50',
+  product_description: 'Paleta de sombras pastel.',
+  qty_available: 12,
+  in_stock: true,
+  category: 'Maquillaje',
+};
 
 function freshCatalog(): Product[] {
   return [
     // p1 bajó de stock a 2 unidades; p2 ya no existe en el catálogo.
     { ...p1, qty_available: 2 },
-    ...MOCK_PRODUCTS.slice(2),
+    p3,
   ];
 }
 

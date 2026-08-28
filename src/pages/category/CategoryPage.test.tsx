@@ -66,4 +66,68 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(screen.queryByText('Sombras Rosadas')).not.toBeInTheDocument();
     expect(screen.getByText('Mostrando 1 de 2 productos')).toBeInTheDocument();
   });
+
+  it('renderiza la página de categoría Zona KPOP con su icono kpop.png y productos correspondientes', async () => {
+    const kpopProduct: Product = {
+      product_id: 201,
+      product_name: 'Photocard Set BTS',
+      product_price: '6.50',
+      product_description: 'Set de photocards holográficas.',
+      qty_available: 20,
+      in_stock: true,
+      category: 'Zona KPOP',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, kpopProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/zona-kpop']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Zona KPOP')).toBeInTheDocument();
+    expect(screen.getByText('Photocard Set BTS')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('kpop');
+  });
+
+  it('renderiza la página de categoría Bolsas o cajas de regalo con su icono gift.gif y productos correspondientes', async () => {
+    const giftProduct: Product = {
+      product_id: 301,
+      product_name: 'Caja de Regalo Kawaii Corazones',
+      product_price: '4.00',
+      product_description: 'Caja rígida con lazo de satén.',
+      qty_available: 25,
+      in_stock: true,
+      category: 'Bolsas o cajas de regalo',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, giftProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/bolsas-o-cajas-de-regalo']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Bolsas o cajas de regalo')).toBeInTheDocument();
+    expect(screen.getByText('Caja de Regalo Kawaii Corazones')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('gift');
+  });
 });

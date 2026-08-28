@@ -6,7 +6,7 @@ import CheckoutPage from './CheckoutPage';
 import { CartProvider } from '../../context/CartContext';
 import { fetchAllProducts } from '../../api/products';
 import { createOrder } from '../../api/orders';
-import { MOCK_PRODUCTS } from '../../mock/data';
+import type { Product } from '../../types';
 
 vi.mock('../../api/products', () => ({
   fetchAllProducts: vi.fn(),
@@ -19,10 +19,20 @@ vi.mock('../../api/orders', () => ({
 const mockFetchAllProducts = vi.mocked(fetchAllProducts);
 const mockCreateOrder = vi.mocked(createOrder);
 
+const mockTestProduct: Product = {
+  product_id: 1,
+  product_name: 'Bálsamo de Fresa',
+  product_price: '3.50',
+  product_description: 'Bálsamo labial hidratante.',
+  qty_available: 45,
+  in_stock: true,
+  category: 'Maquillaje',
+};
+
 function seedCart(quantity: number) {
   window.localStorage.setItem(
     'tokki_cart_v1',
-    JSON.stringify([{ product: MOCK_PRODUCTS[0], quantity }]),
+    JSON.stringify([{ product: mockTestProduct, quantity }]),
   );
 }
 
@@ -52,7 +62,7 @@ beforeEach(() => {
   seedCart(1);
   mockFetchAllProducts.mockReset();
   mockCreateOrder.mockReset();
-  mockFetchAllProducts.mockResolvedValue([...MOCK_PRODUCTS]);
+  mockFetchAllProducts.mockResolvedValue([mockTestProduct]);
   mockCreateOrder.mockResolvedValue({
     ok: true,
     data: {
@@ -61,7 +71,7 @@ beforeEach(() => {
       delivery_type: 'envio_nacional',
       payment_method: 'pago_movil',
       total_amount: '3.50',
-      items: [{ id: 1, name: MOCK_PRODUCTS[0].product_name, ordered_qty: 1, price: '3.50' }],
+      items: [{ id: 1, name: mockTestProduct.product_name, ordered_qty: 1, price: '3.50' }],
     },
   });
 });
@@ -139,7 +149,7 @@ describe('CheckoutPage — campo Cédula', () => {
 });
 
 describe('CheckoutPage — reconciliación de stock antes de pagar', () => {
-  const p1 = MOCK_PRODUCTS[0];
+  const p1 = mockTestProduct;
 
   function seedCartFor(quantity: number) {
     window.localStorage.setItem(

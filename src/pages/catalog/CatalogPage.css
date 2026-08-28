@@ -209,14 +209,16 @@
 .carousels-wrapper {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding-top: 8px;
+  gap: 20px;
+  padding-top: 12px;
 }
 
 .category-section {
-  /* Vertical rhythm is owned by .carousels-wrapper (gap) so every section
-     is spaced identically — no per-section padding drift. */
+  /* Vertical rhythm is owned by .carousels-wrapper (gap) with internal gap to cards */
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
 /* Section rendered directly under the hero (e.g. "Todos") — give it the
@@ -232,11 +234,13 @@
   justify-content: space-between;
   padding: 0 16px;
   /* Identical across every section so title rows sit at the same height */
-  min-height: 44px;
+  min-height: 52px;
   /* Cap header width for readability on ultra-wide screens */
   max-width: 1200px;
+  width: 100%;
   margin-left: auto;
   margin-right: auto;
+  gap: 16px;
 }
 
 .category-title {
@@ -246,14 +250,22 @@
   color: var(--color-text);
   display: flex;
   align-items: center;
-  gap: 6px;
-  /* All title rows share the same height (icon size 3rem) so the
-     text stays vertically aligned across every category section. */
-  min-height: 3rem;
+  gap: 14px;
+  /* All title rows share the exact same height and baseline across every category */
+  min-height: 3.5rem;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .category-emoji {
-  font-size: 3rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  flex-shrink: 0;
+  position: relative;
+  font-size: 2.4rem;
   line-height: 1;
 }
 
@@ -262,6 +274,7 @@
   height: 3rem;
   object-fit: contain;
   display: block;
+  flex-shrink: 0;
 }
 
 .category-emoji-img {
@@ -269,39 +282,56 @@
   height: 3rem;
   object-fit: contain;
   display: block;
+  flex-shrink: 0;
+  max-width: none;
+  max-height: none;
 }
 
 /* Skincare cosmetic icon — bigger and nudged up to sit visually aligned
    with the title. transform (not margin) keeps the layout box unchanged
    so other sections stay aligned. */
 .category-cosmetic {
-  width: 4rem;
-  height: 4rem;
-  transform: translateY(-0.35rem);
+  width: 3.8rem;
+  height: 3.8rem;
+  transform: translateY(-0.25rem);
 }
 
 /* Lentes de Contacto icon — bigger than the standard icons */
 .category-lentes {
-  width: 4rem;
-  height: 4rem;
+  width: 3.8rem;
+  height: 3.8rem;
 }
 
 /* Ropa dress icon — bigger than the standard icons */
 .category-dress {
-  width: 4rem;
-  height: 4rem;
+  width: 3.8rem;
+  height: 3.8rem;
 }
 
 /* Dulces Asiáticos treat icon — bigger than the standard icons */
 .category-treat {
-  width: 4rem;
-  height: 4rem;
+  width: 3.8rem;
+  height: 3.8rem;
 }
 
 /* Peluches y Figuras bear icon — bigger than the standard icons */
 .category-bear {
-  width: 4rem;
-  height: 4rem;
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+/* Zona KPOP icon — prominently sized for carousel header */
+.category-kpop {
+  width: 4.4rem;
+  height: 4.4rem;
+  transform: translateY(-0.1rem);
+}
+
+/* Bolsas o cajas de regalo icon — prominently sized and visually centered with title text */
+.category-gift {
+  width: 4.6rem;
+  height: 4.6rem;
+  transform: translateY(0.1rem);
 }
 
 /* Otros beating heart icon — bigger than the standard icons */

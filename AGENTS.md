@@ -85,12 +85,8 @@ src/
 │   ├── auth.ts            # ADMIN_PATH (/tokki-admin), roles, Clerk config
 │   └── routes.ts          # ROUTES + ADMIN_ROUTES — single source of truth
 │                          #   for every path (no hardcoded strings in pages)
-├── mock/data.ts           # Seed data (MOCK_PRODUCTS, MOCK_ORDERS) — used to
-│                          #   prime localStorage on first run only
-├── store/localStore.ts    # localStorage-backed data layer (products, orders,
-│                          #   cart). Hooks: useProducts(), useOrders() +
-│                          #   mutations (createOrder, setOrderStatus,
-│                          #   saveProducts). Simulates the API before wiring.
+├── store/localStore.ts    # localStorage-backed client cache (products cache &
+│                          #   cart persistence).
 ├── pages/
 │   ├── catalog/           # CatalogPage (standalone, full-bleed carousels,
 │   │                      #   animated hero bg, brand logo + gifs)
@@ -168,8 +164,7 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Admin Dashboard Analytics:** Interactive timeframe filters (`Días`, `Semanas`, `Meses`), metric toggle (`Ingresos ($)` vs `Pedidos (#)`), and distribution breakdown (`Por Estado`, `Por Pago`, `Por Entrega`). Highlights top best-selling products (`topProducts.ts`) and direct link to low stock items (`/tokki-admin/products?stock=low`).
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
-- **Cart:** (`src/context/CartContext.tsx`) persists product snapshots to localStorage (`tokki_cart_v1`) — reconciled against the live catalog on cart mount and pre-submit.
-- **Product cache in admin forms:** `src/store/localStore.ts` is slimmed to products cache + cart persistence. Mock seed data (`src/mock/data.ts`) is products-only for test fixtures.
+- **Cart & Products Cache:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists client-side state in `localStorage` (`tokki_cart_v1` and `tokki_products_v1`). All mock seed data has been removed from git and `.gitignore`d.
 
 ---
 
@@ -261,6 +256,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 
 | Category            | Emoji | Product Examples                          |
 |---------------------|-------|-------------------------------------------|
+| Zona KPOP           | 🎤    | Photocards, lightsticks, idol stickers    |
 | Maquillaje          | 💄    | Lip balms, gloss, eyeshadow, tints, liner |
 | Skincare            | 🧴    | Face masks, serums, eye patches, sunscreen|
 | Accesorios          | 💎    | Chains, necklaces, rings, earrings, clips |
@@ -268,8 +264,9 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Pines & Chapas      | 📌    | Enamel pins, pin sets                     |
 | Ropa                | 👗    | Crop tops, socks, hats, kawaii sets       |
 | Dulces Asiáticos    | 🍡    | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune   |
-| Peluches y Figuras  | 🧸    | Plushies, anime figures, keychains        |
-| Otros               | 🛍️    | Stickers, notebooks, totes                |
+| Peluches y Figuras        | 🧸    | Plushies, anime figures, keychains        |
+| Bolsas o cajas de regalo  | 🎁    | Gift boxes, gift bags, wrapping kits      |
+| Otros                     | 🛍️    | Stickers, notebooks, totes                |
 
 To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.
 

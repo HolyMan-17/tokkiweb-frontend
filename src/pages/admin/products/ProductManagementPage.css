@@ -135,6 +135,16 @@
   height: 2.6rem;
 }
 
+.chip .category-kpop {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+.chip .category-gift {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
 .chip:hover {
   border-color: var(--pink-300);
   color: var(--color-text);

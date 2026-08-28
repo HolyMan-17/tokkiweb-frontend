@@ -3,10 +3,27 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, beforeEach } from 'vitest';
 import { CartProvider, useCart } from './CartContext';
 import { describeStockAdjustment, type StockAdjustment } from '../utils/stock';
-import { MOCK_PRODUCTS } from '../mock/data';
 import type { Product } from '../types';
 
-const [p1, p2] = MOCK_PRODUCTS;
+const p1: Product = {
+  product_id: 1,
+  product_name: 'Bálsamo de Fresa',
+  product_price: '3.50',
+  product_description: 'Bálsamo labial hidratante.',
+  qty_available: 45,
+  in_stock: true,
+  category: 'Maquillaje',
+};
+
+const p2: Product = {
+  product_id: 2,
+  product_name: 'Butterfly Gloss',
+  product_price: '5.00',
+  product_description: 'Gloss labial brillante.',
+  qty_available: 30,
+  in_stock: true,
+  category: 'Maquillaje',
+};
 
 function freshProduct(product: Product, patch: Partial<Product> = {}): Product {
   return { ...product, ...patch };
