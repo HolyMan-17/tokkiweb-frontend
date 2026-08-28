@@ -41,4 +41,15 @@ describe('index.html — meta description & Open Graph', () => {
   it('el título es descriptivo para resultados de búsqueda', () => {
     expect(html).toMatch(/<title>[^<]{10,}<\/title>/);
   });
+
+  it('declara favicons compatibles con Google Search (múltiplo de 48px y formato PNG/ICO)', () => {
+    expect(html).toMatch(/<link[^>]*rel="icon"[^>]*sizes="48x48"[^>]*href="\/favicon-48x48\.png"/);
+    expect(html).toMatch(/<link[^>]*rel="icon"[^>]*href="\/favicon\.ico"/);
+    expect(html).toMatch(/<link[^>]*rel="apple-touch-icon"[^>]*href="\/apple-touch-icon\.png"/);
+    expect(html).toMatch(/<link[^>]*rel="manifest"[^>]*href="\/site\.webmanifest"/);
+  });
+
+  it('no contiene referencias residuales al icono de Vite', () => {
+    expect(html).not.toMatch(/vite\.svg/i);
+  });
 });

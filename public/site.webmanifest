@@ -1,0 +1,20 @@
+{
+  "name": "Tokki Shop — Accesorios y Dulces Coreanos",
+  "short_name": "Tokki Shop",
+  "description": "Tienda asiática de maquillaje, skincare, accesorios, lentes de contacto, pines, ropa, peluches, dulces y comida asiática en Venezuela.",
+  "icons": [
+    {
+      "src": "/favicon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/favicon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ],
+  "theme_color": "#e68bbe",
+  "background_color": "#fff0f7",
+  "display": "standalone"
+}

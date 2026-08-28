@@ -327,11 +327,17 @@
   transform: translateY(-0.1rem);
 }
 
-/* Bolsas o cajas de regalo icon — prominently sized and visually centered with title text */
+/* Bolsos o cajas de regalo icon — prominently sized and visually centered with title text */
 .category-gift {
   width: 4.6rem;
   height: 4.6rem;
   transform: translateY(0.1rem);
+}
+
+/* Bolsos y Carteras purse icon — compact and visually balanced with title text */
+.category-purse {
+  width: 3.2rem;
+  height: 3.2rem;
 }
 
 /* Otros beating heart icon — bigger than the standard icons */

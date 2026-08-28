@@ -27,6 +27,7 @@
   font-weight: 700;
   color: var(--color-primary);
   text-decoration: none;
+  margin-bottom: var(--space-md);
   transition: transform var(--duration-fast) var(--ease-out);
 }
 
@@ -40,6 +41,7 @@
   font-weight: 800;
   color: var(--color-text);
   line-height: 1.2;
+  margin-top: var(--space-xs);
 }
 
 .category-page-title--flex {
@@ -70,10 +72,46 @@
   height: 4rem;
 }
 
+.category-page-title .category-cosmetic {
+  width: 3.8rem;
+  height: 3.8rem;
+  transform: translateY(-0.15rem);
+}
+
+.category-page-title .category-ring {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.category-page-title .category-lentes {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.category-page-title .category-dress {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.category-page-title .category-treat {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.category-page-title .category-bear {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
 .category-page-title .category-gift {
   width: 6rem;
   height: 6rem;
   transform: translateY(0.2rem);
+}
+
+.category-page-title .category-purse {
+  width: 2.2rem;
+  height: 2.2rem;
 }
 
 .title-sparkle {
@@ -130,11 +168,15 @@
   font-size: 1rem;               /* 16px = no iOS zoom on focus */
   font-weight: 500;
   color: var(--color-text);
+  text-overflow: ellipsis;
 }
 
 .category-search-input::placeholder {
   color: var(--color-text-muted);
   font-weight: 400;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 .category-search-clear {

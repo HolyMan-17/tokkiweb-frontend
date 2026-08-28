@@ -145,6 +145,11 @@
   height: 3.2rem;
 }
 
+.chip .category-purse {
+  width: 2.4rem;
+  height: 2.4rem;
+}
+
 .chip:hover {
   border-color: var(--pink-300);
   color: var(--color-text);

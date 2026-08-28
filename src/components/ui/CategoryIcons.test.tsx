@@ -54,6 +54,18 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     }
   });
 
+  it('CATEGORY_ICONS contains an entry for Accesorios with ring.avif and category-ring class', () => {
+    const icon = CATEGORY_ICONS['Accesorios'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('ring');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-ring');
+  });
+
   it('CATEGORIES contains Bolsas o cajas de regalo with gift emoji fallback', () => {
     const giftCat = CATEGORIES.find(c => c.name === 'Bolsas o cajas de regalo');
     expect(giftCat).toBeDefined();
@@ -134,6 +146,52 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(alias2).not.toBeNull();
     const { container: c4 } = render(<>{alias2}</>);
     expect(c4.querySelector('img')?.getAttribute('src')).toContain('treat');
+  });
+
+  it('CATEGORIES contains Bolsos y Carteras with purse emoji fallback', () => {
+    const purseCat = CATEGORIES.find(c => c.name === 'Bolsos y Carteras');
+    expect(purseCat).toBeDefined();
+    expect(purseCat?.emoji).toBe('👜');
+    expect(slugify(purseCat!.name)).toBe('bolsos-y-carteras');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Bolsos y Carteras with purse.png image', () => {
+    const icon = CATEGORY_ICONS['Bolsos y Carteras'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('purse');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-purse');
+  });
+
+  it('getCategoryIcon returns the purse icon for Bolsos y Carteras and aliases', () => {
+    const exact = getCategoryIcon('Bolsos y Carteras');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('purse');
+
+    const lower = getCategoryIcon('bolsos y carteras');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('purse');
+
+    const alias1 = getCategoryIcon('bolsos');
+    expect(alias1).not.toBeNull();
+    const { container: c3 } = render(<>{alias1}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('purse');
+
+    const alias2 = getCategoryIcon('carteras');
+    expect(alias2).not.toBeNull();
+    const { container: c4 } = render(<>{alias2}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('purse');
+
+    const alias3 = getCategoryIcon('purses');
+    expect(alias3).not.toBeNull();
+    const { container: c5 } = render(<>{alias3}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('purse');
   });
 
   it('returns null for completely unknown category with no match', () => {

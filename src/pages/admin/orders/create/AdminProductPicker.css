@@ -140,6 +140,11 @@
   height: 22px;
 }
 
+.pos-chip .category-purse {
+  width: 18px;
+  height: 18px;
+}
+
 .pos-chip:hover {
   border-color: var(--pink-300);
   background: var(--pink-100);

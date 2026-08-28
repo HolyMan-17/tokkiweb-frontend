@@ -143,7 +143,7 @@ export default function CategoryPage() {
           <input
             type="text"
             className="category-search-input"
-            placeholder={`Buscar por nombre o descripción en ${category.name}...`}
+            placeholder={`Buscar en ${category.name}...`}
             value={query}
             onChange={e => setQuery(e.target.value)}
             aria-label={`Buscar por nombre o descripción en ${category.name}`}

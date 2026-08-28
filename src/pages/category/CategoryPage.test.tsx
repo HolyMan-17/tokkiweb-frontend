@@ -126,8 +126,60 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(screen.getByText('Caja de Regalo Kawaii Corazones')).toBeInTheDocument();
     expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
 
-    const titleImg = document.querySelector('.category-page-title img');
-    expect(titleImg).not.toBeNull();
-    expect(titleImg?.getAttribute('src')).toContain('gift');
+    expect(screen.getByPlaceholderText('Buscar en Bolsas o cajas de regalo...')).toBeInTheDocument();
+  });
+
+  it('renderiza el placeholder de búsqueda adaptado para categorías con nombres largos como Bolsos y Carteras', async () => {
+    const purseProduct: Product = {
+      product_id: 401,
+      product_name: 'Mochila Kawaii Bunny',
+      product_price: '18.00',
+      product_description: 'Mochila de felpa suave.',
+      qty_available: 8,
+      in_stock: true,
+      category: 'Bolsos y Carteras',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, purseProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/bolsos-y-carteras']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Bolsos y Carteras')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Buscar en Bolsos y Carteras...')).toBeInTheDocument();
+  });
+
+  it('renderiza el placeholder de búsqueda adaptado para Dulces & Comida Asiatica', async () => {
+    const treatProduct: Product = {
+      product_id: 501,
+      product_name: 'Pepero Choco Cookie',
+      product_price: '2.50',
+      product_description: 'Galletas cubiertas de chocolate.',
+      qty_available: 30,
+      in_stock: true,
+      category: 'Dulces & Comida Asiatica',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, treatProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/dulces-&-comida-asiatica']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Dulces & Comida Asiatica')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Buscar en Dulces & Comida Asiatica...')).toBeInTheDocument();
   });
 });

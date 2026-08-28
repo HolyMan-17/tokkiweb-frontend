@@ -263,6 +263,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Lentes de Contacto  | 👁️    | Colored cosmetic contact lenses           |
 | Pines & Chapas      | 📌    | Enamel pins, pin sets                     |
 | Ropa                | 👗    | Crop tops, socks, hats, kawaii sets       |
+| Bolsos y Carteras   | 👜    | Kawaii backpacks, tote bags, plush purses |
 | Dulces & Comida Asiatica | 🍡 | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune |
 | Peluches y Figuras        | 🧸    | Plushies, anime figures, keychains        |
 | Bolsas o cajas de regalo  | 🎁    | Gift boxes, gift bags, wrapping kits      |
