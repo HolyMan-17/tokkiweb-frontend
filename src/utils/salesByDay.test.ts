@@ -68,29 +68,32 @@ describe('computeSalesByPeriod', () => {
     expect(result[6].total).toBe(2); // approved + pending (excludes canceled)
   });
 
-  test('computes weekly breakdown with date ranges across the month (Monday to Sunday)', () => {
+  test('computes weekly breakdown with date ranges across the month (Monday to Sunday in dd/mm - dd/mm and rich fullLabel)', () => {
     const orders = [
-      makeOrder({ total_amount: '15.00', created_at: '2026-08-03T10:00:00.000Z' }), // Week of 3 - 9 ago
-      makeOrder({ total_amount: '30.00', created_at: '2026-08-10T10:00:00.000Z' }), // Week of 10 - 16 ago
-      makeOrder({ total_amount: '45.00', created_at: '2026-08-25T10:00:00.000Z' }), // Week of 24 - 30 ago
+      makeOrder({ total_amount: '15.00', created_at: '2026-08-03T10:00:00.000Z' }), // Week of 03/08 - 09/08
+      makeOrder({ total_amount: '30.00', created_at: '2026-08-10T10:00:00.000Z' }), // Week of 10/08 - 16/08
+      makeOrder({ total_amount: '45.00', created_at: '2026-08-25T10:00:00.000Z' }), // Week of 24/08 - 30/08
     ];
     const result = computeSalesByPeriod(orders, { period: 'week', metric: 'revenue', referenceDate: TODAY });
     expect(result.length).toBeGreaterThanOrEqual(4);
     
-    // Checks that date ranges are formatted (e.g. "3 - 9 ago" or "31 ago - 6 sep")
-    const week2 = result.find(r => r.label.includes('3 - 9'));
-    const week3 = result.find(r => r.label.includes('10 - 16'));
-    const week5 = result.find(r => r.label.includes('24 - 30'));
+    // Checks that date ranges are formatted as dd/mm - dd/mm (e.g. "03/08 - 09/08" or "31/08 - 06/09")
+    const week2 = result.find(r => r.label.includes('03/08 - 09/08'));
+    const week3 = result.find(r => r.label.includes('10/08 - 16/08'));
+    const week5 = result.find(r => r.label.includes('24/08 - 30/08'));
 
     expect(week2).toBeDefined();
     expect(week2?.total).toBe(15);
+    expect(week2?.fullLabel).toContain('3 - 9');
     expect(week3).toBeDefined();
     expect(week3?.total).toBe(30);
+    expect(week3?.fullLabel).toContain('10 - 16');
     expect(week5).toBeDefined();
     expect(week5?.total).toBe(45);
+    expect(week5?.fullLabel).toContain('24 - 30');
   });
 
-  test('computes monthly breakdown for the current year (12 months)', () => {
+  test('computes monthly breakdown for the current year (12 months with fullLabel)', () => {
     const orders = [
       makeOrder({ total_amount: '100.00', created_at: '2026-01-15T10:00:00.000Z' }),
       makeOrder({ total_amount: '200.00', created_at: '2026-08-20T10:00:00.000Z' }),
@@ -98,8 +101,10 @@ describe('computeSalesByPeriod', () => {
     const result = computeSalesByPeriod(orders, { period: 'month', metric: 'revenue', referenceDate: TODAY });
     expect(result).toHaveLength(12);
     expect(result[0].label).toMatch(/ene/i);
+    expect(result[0].fullLabel).toMatch(/enero/i);
     expect(result[0].total).toBe(100);
     expect(result[7].label).toMatch(/ago/i);
+    expect(result[7].fullLabel).toMatch(/agosto/i);
     expect(result[7].total).toBe(200);
   });
 });

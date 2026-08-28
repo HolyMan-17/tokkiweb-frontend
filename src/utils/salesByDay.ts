@@ -6,6 +6,7 @@ export type ChartMetric = 'revenue' | 'orders';
 
 export interface SalesByDayPoint {
   label: string;
+  fullLabel?: string;
   total: number;
 }
 
@@ -20,8 +21,19 @@ const dayFormatter = new Intl.DateTimeFormat('es-VE', {
   day: 'numeric',
 });
 
+const fullDayFormatter = new Intl.DateTimeFormat('es-VE', {
+  weekday: 'long',
+  day: 'numeric',
+  month: 'long',
+});
+
 const monthFormatter = new Intl.DateTimeFormat('es-VE', {
   month: 'short',
+});
+
+const fullMonthFormatter = new Intl.DateTimeFormat('es-VE', {
+  month: 'long',
+  year: 'numeric',
 });
 
 function dayKey(d: Date): string {
@@ -71,7 +83,15 @@ export function computeSalesByPeriod(
       d.setDate(d.getDate() - i);
       const raw = dayFormatter.format(d).replace('.', '').replace(',', '');
       const capitalized = raw.charAt(0).toUpperCase() + raw.slice(1);
-      points.push({ label: capitalized, total: totals.get(dayKey(d)) ?? 0 });
+      
+      const fullRaw = fullDayFormatter.format(d);
+      const fullCapitalized = fullRaw.charAt(0).toUpperCase() + fullRaw.slice(1);
+
+      points.push({
+        label: capitalized,
+        fullLabel: fullCapitalized,
+        total: totals.get(dayKey(d)) ?? 0,
+      });
     }
     return points;
   }
@@ -91,6 +111,7 @@ export function computeSalesByPeriod(
       start: Date;
       end: Date;
       label: string;
+      fullLabel: string;
       total: number;
     }
 
@@ -103,22 +124,27 @@ export function computeSalesByPeriod(
       weekEnd.setDate(weekEnd.getDate() + 6);
       weekEnd.setHours(23, 59, 59, 999);
 
+      const startD = String(weekStart.getDate()).padStart(2, '0');
+      const startM = String(weekStart.getMonth() + 1).padStart(2, '0');
+      const endD = String(weekEnd.getDate()).padStart(2, '0');
+      const endM = String(weekEnd.getMonth() + 1).padStart(2, '0');
+
+      const label = `${startD}/${startM} - ${endD}/${endM}`;
+
       const startDay = weekStart.getDate();
       const endDay = weekEnd.getDate();
       const startMonth = monthFormatter.format(weekStart).replace('.', '').toLowerCase();
       const endMonth = monthFormatter.format(weekEnd).replace('.', '').toLowerCase();
 
-      let label: string;
-      if (weekStart.getMonth() === weekEnd.getMonth()) {
-        label = `${startDay} - ${endDay} ${startMonth}`;
-      } else {
-        label = `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
-      }
+      const fullLabel = weekStart.getMonth() === weekEnd.getMonth()
+        ? `${startDay} - ${endDay} ${startMonth}`
+        : `${startDay} ${startMonth} - ${endDay} ${endMonth}`;
 
       weeks.push({
         start: weekStart,
         end: weekEnd,
         label,
+        fullLabel,
         total: 0,
       });
 
@@ -142,6 +168,7 @@ export function computeSalesByPeriod(
 
     return weeks.map((w) => ({
       label: w.label,
+      fullLabel: w.fullLabel,
       total: w.total,
     }));
   }
@@ -166,8 +193,13 @@ export function computeSalesByPeriod(
       const d = new Date(currentYear, m, 1);
       const rawMonth = monthFormatter.format(d).replace('.', '');
       const label = rawMonth.charAt(0).toUpperCase() + rawMonth.slice(1);
+
+      const fullRaw = fullMonthFormatter.format(d);
+      const fullLabel = fullRaw.charAt(0).toUpperCase() + fullRaw.slice(1);
+
       return {
         label,
+        fullLabel,
         total: tot,
       };
     });

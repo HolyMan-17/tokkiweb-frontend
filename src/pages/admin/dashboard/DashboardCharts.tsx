@@ -7,6 +7,7 @@ import {
   type TimePeriod,
   type ChartMetric,
   type DistributionPoint,
+  type SalesByDayPoint,
 } from '../../../utils/salesByDay';
 import type { OrderSummary } from '../../../types';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
@@ -20,6 +21,11 @@ const PIE_COLORS = {
 interface TooltipPayloadItem {
   value?: number | string;
   name?: string;
+  payload?: {
+    label?: string;
+    fullLabel?: string;
+    total?: number;
+  };
 }
 
 interface CustomTooltipProps {
@@ -31,10 +37,12 @@ interface CustomTooltipProps {
 
 function CustomTooltip({ active, payload, label, metric = 'revenue' }: CustomTooltipProps) {
   if (active && payload && payload.length) {
-    const val = Number(payload[0].value ?? 0);
+    const item = payload[0];
+    const val = Number(item.value ?? 0);
+    const displayLabel = item.payload?.fullLabel || label || '';
     return (
       <div className="chart-tooltip">
-        {label && <p className="tooltip-label">{label}</p>}
+        {displayLabel && <p className="tooltip-label">{displayLabel}</p>}
         <p className="tooltip-value">
           {metric === 'revenue' ? formatPrice(String(val)) : `${val} ${val === 1 ? 'pedido' : 'pedidos'}`}
         </p>
@@ -58,6 +66,54 @@ function PieTooltip({ active, payload }: CustomTooltipProps) {
     );
   }
   return null;
+}
+
+interface CustomXAxisTickProps {
+  x?: number;
+  y?: number;
+  payload?: {
+    value?: string;
+  };
+  period?: TimePeriod;
+}
+
+function CustomXAxisTick({ x = 0, y = 0, payload, period = 'day' }: CustomXAxisTickProps) {
+  const value = String(payload?.value ?? '');
+
+  if (period === 'week' && value.includes(' - ')) {
+    const [start, end] = value.split(' - ');
+    return (
+      <g transform={`translate(${x},${y})`}>
+        <text
+          x={0}
+          y={0}
+          textAnchor="middle"
+          fill="var(--color-text-muted)"
+          fontSize={10}
+          fontWeight={500}
+        >
+          <tspan x={0} dy={10}>{start}</tspan>
+          <tspan x={0} dy={12}>{`- ${end}`}</tspan>
+        </text>
+      </g>
+    );
+  }
+
+  return (
+    <g transform={`translate(${x},${y})`}>
+      <text
+        x={0}
+        y={0}
+        dy={period === 'month' ? 8 : 10}
+        textAnchor="middle"
+        fill="var(--color-text-muted)"
+        fontSize={period === 'month' ? 11 : 12}
+        fontWeight={500}
+      >
+        {value}
+      </text>
+    </g>
+  );
 }
 
 export interface DaySales {
@@ -116,6 +172,7 @@ export function DashboardCharts({
   const [period, setPeriod] = useState<TimePeriod>('day');
   const [metric, setMetric] = useState<ChartMetric>('revenue');
   const [distributionType, setDistributionType] = useState<DistributionCriteria>('status');
+  const [selectedPoint, setSelectedPoint] = useState<SalesByDayPoint | null>(null);
 
   useEffect(() => {
     if (!recharts) {
@@ -213,14 +270,20 @@ export function DashboardCharts({
                 <button
                   type="button"
                   className={`pill-btn ${metric === 'revenue' ? 'pill-btn--active' : ''}`}
-                  onClick={() => setMetric('revenue')}
+                  onClick={() => {
+                    setMetric('revenue');
+                    setSelectedPoint(null);
+                  }}
                 >
                   Ingresos ($)
                 </button>
                 <button
                   type="button"
                   className={`pill-btn ${metric === 'orders' ? 'pill-btn--active' : ''}`}
-                  onClick={() => setMetric('orders')}
+                  onClick={() => {
+                    setMetric('orders');
+                    setSelectedPoint(null);
+                  }}
                 >
                   Pedidos (#)
                 </button>
@@ -230,21 +293,30 @@ export function DashboardCharts({
                 <button
                   type="button"
                   className={`pill-btn ${period === 'day' ? 'pill-btn--active' : ''}`}
-                  onClick={() => setPeriod('day')}
+                  onClick={() => {
+                    setPeriod('day');
+                    setSelectedPoint(null);
+                  }}
                 >
                   Días
                 </button>
                 <button
                   type="button"
                   className={`pill-btn ${period === 'week' ? 'pill-btn--active' : ''}`}
-                  onClick={() => setPeriod('week')}
+                  onClick={() => {
+                    setPeriod('week');
+                    setSelectedPoint(null);
+                  }}
                 >
                   Semanas
                 </button>
                 <button
                   type="button"
                   className={`pill-btn ${period === 'month' ? 'pill-btn--active' : ''}`}
-                  onClick={() => setPeriod('month')}
+                  onClick={() => {
+                    setPeriod('month');
+                    setSelectedPoint(null);
+                  }}
                 >
                   Meses
                 </button>
@@ -254,8 +326,31 @@ export function DashboardCharts({
 
           <div className="chart-summary-chip">
             <span>
-              Total período:{' '}
-              <strong>{metric === 'revenue' ? formatPrice(String(periodTotal)) : `${periodTotal} pedidos`}</strong>
+              {selectedPoint ? (
+                <>
+                  <span className="selected-chip-label">{selectedPoint.fullLabel || selectedPoint.label}:</span>{' '}
+                  <strong>
+                    {metric === 'revenue' ? formatPrice(String(selectedPoint.total)) : `${selectedPoint.total} pedidos`}
+                  </strong>
+                  <button
+                    type="button"
+                    className="chip-clear-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSelectedPoint(null);
+                    }}
+                    title="Ver total período"
+                    aria-label="Ver total período"
+                  >
+                    ×
+                  </button>
+                </>
+              ) : (
+                <>
+                  Total período:{' '}
+                  <strong>{metric === 'revenue' ? formatPrice(String(periodTotal)) : `${periodTotal} pedidos`}</strong>
+                </>
+              )}
             </span>
           </div>
         </div>
@@ -269,9 +364,8 @@ export function DashboardCharts({
                 interval={0}
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: 'var(--color-text-muted)', fontSize: period === 'month' ? 11 : 12, fontWeight: 500 }}
-                dy={8}
-                height={35}
+                tick={<CustomXAxisTick period={period} />}
+                height={period === 'week' ? 44 : 35}
               />
               <YAxis hide />
               <Tooltip content={<CustomTooltip metric={metric} />} cursor={{ fill: 'var(--pink-50)' }} />
@@ -281,6 +375,8 @@ export function DashboardCharts({
                 radius={[8, 8, 0, 0]}
                 maxBarSize={40}
                 activeBar={{ fill: 'var(--pink-400)', stroke: 'var(--pink-500)', strokeWidth: 2 }}
+                onClick={(entry) => setSelectedPoint(entry as unknown as SalesByDayPoint)}
+                style={{ cursor: 'pointer' }}
               />
             </BarChart>
           </ResponsiveContainer>

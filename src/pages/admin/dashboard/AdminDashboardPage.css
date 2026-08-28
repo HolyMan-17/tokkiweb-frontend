@@ -144,6 +144,36 @@
   font-family: var(--font-display);
 }
 
+.selected-chip-label {
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.chip-clear-btn {
+  background: var(--pink-100);
+  border: 1px solid var(--pink-300);
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  line-height: 1;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.chip-clear-btn:hover {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: #ffffff;
+}
+
 .chart-card {
   padding: var(--space-lg);
 }
@@ -501,6 +531,28 @@
   font-family: var(--font-display);
 }
 
+@media (max-width: 639px) {
+  .chart-card {
+    padding: var(--space-md);
+  }
+
+  .chart-controls {
+    width: 100%;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .pill-group {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .pill-btn {
+    padding: 4px 9px;
+    font-size: 0.72rem;
+  }
+}
+
 @media (min-width: 640px) {
   .chart-header-top {
     flex-direction: row;
@@ -522,4 +574,5 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 

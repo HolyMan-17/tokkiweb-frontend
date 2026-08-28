@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Admin Dashboard Sales Analysis Charts', () => {
-  test('renders all day, week, and month labels without skipping', async ({ page }) => {
+  test.beforeEach(async ({ page }) => {
     // Mock /api/orders
     await page.route('**/api/orders', async (route) => {
       await route.fulfill({
@@ -76,7 +76,9 @@ test.describe('Admin Dashboard Sales Analysis Charts', () => {
         }),
       });
     });
+  });
 
+  test('renders all day, week, and month labels without skipping', async ({ page }) => {
     const consoleErrors: string[] = [];
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
@@ -99,8 +101,8 @@ test.describe('Admin Dashboard Sales Analysis Charts', () => {
     await semanasBtn.click();
     await expect(semanasBtn).toHaveClass(/pill-btn--active/);
 
-    // Verify weekly date range format (e.g. "3 - 9 ago" or "24 - 30 ago")
-    await expect(salesCard.getByText(/\d+\s*-\s*\d+/i).first()).toBeVisible({ timeout: 10000 });
+    // Verify weekly date range format with dd/mm (e.g. "03/08" and "- 09/08" or "31/08 - 06/09")
+    await expect(salesCard.getByText(/\d{2}\/\d{2}/i).first()).toBeVisible({ timeout: 10000 });
 
     // 4) Switch to Meses view
     const mesesBtn = salesCard.locator('button.pill-btn:has-text("Meses")');
@@ -125,5 +127,30 @@ test.describe('Admin Dashboard Sales Analysis Charts', () => {
         err.includes('Uncaught Error'),
     );
     expect(critical).toHaveLength(0);
+  });
+
+  test('mobile viewport rendering of sales charts and week ranges without clipping', async ({ page }) => {
+    // 375x667 standard mobile viewport
+    await page.setViewportSize({ width: 375, height: 667 });
+
+    await page.goto('/tokki-admin');
+    await page.waitForLoadState('networkidle');
+
+    const salesCard = page.locator('.chart-card').first();
+    await expect(salesCard).toBeVisible();
+
+    // Switch to Semanas
+    const semanasBtn = salesCard.locator('button.pill-btn:has-text("Semanas")');
+    await semanasBtn.click();
+    await expect(semanasBtn).toHaveClass(/pill-btn--active/);
+
+    // Verify dd/mm ticks are visible and properly contained
+    const ddmmTicks = salesCard.locator('text:has-text("/")');
+    await expect(ddmmTicks.first()).toBeVisible({ timeout: 10000 });
+
+    // Verify chart container width fits screen without horizontal page overflow
+    const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+    const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+    expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
 });
