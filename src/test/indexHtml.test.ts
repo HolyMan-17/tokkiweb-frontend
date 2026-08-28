@@ -53,3 +53,23 @@ describe('index.html — meta description & Open Graph', () => {
     expect(html).not.toMatch(/vite\.svg/i);
   });
 });
+
+describe('SEO — robots.txt y sitemap.xml', () => {
+  it('robots.txt permite el rastreo y declara el sitemap canónico', async () => {
+    const robotsModule = await import('../../public/robots.txt?raw');
+    const robots = robotsModule.default;
+    expect(robots).toContain('User-agent: *');
+    expect(robots).toContain('Allow: /');
+    expect(robots).toContain('Sitemap: https://www.tokkishopve.com/sitemap.xml');
+  });
+
+  it('sitemap.xml contiene la página de inicio, /productos y todas las categorías', async () => {
+    const sitemapModule = await import('../../public/sitemap.xml?raw');
+    const sitemap = sitemapModule.default;
+    expect(sitemap).toContain('https://www.tokkishopve.com/');
+    expect(sitemap).toContain('https://www.tokkishopve.com/productos');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/bolsos-y-carteras');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/zona-kpop');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/dulces-&amp;-comida-asiatica');
+  });
+});
