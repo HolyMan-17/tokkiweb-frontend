@@ -463,6 +463,36 @@
   box-shadow: var(--shadow-card-hover);
 }
 
+/* ── Footer signature ──────────────────────────────────────────────────────── */
+.catalog-footer {
+  text-align: center;
+  padding: 12px 16px 36px;
+}
+
+.catalog-footer-text {
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  color: #8a6579;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.footer-dev-link {
+  color: var(--p5);
+  font-family: var(--font-display);
+  font-weight: 700;
+  text-decoration: none;
+  border-bottom: 1.5px dashed var(--p3);
+  transition: all 0.2s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+.footer-dev-link:hover {
+  color: #3d1a2e;
+  border-bottom-color: var(--p5);
+  transform: translateY(-2px);
+}
+
 /* ── Responsive ─────────────────────────────────────────────────────────────── */
 /* Card widths are no longer hardcoded per breakpoint — the JS agent computes
    --carousel-card-width from the track's real width so a whole number of

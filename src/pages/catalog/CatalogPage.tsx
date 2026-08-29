@@ -44,7 +44,9 @@ function computeCardWidth(track: HTMLDivElement): number {
     (parseFloat(styles.paddingLeft) || 0) -
     (parseFloat(styles.paddingRight) || 0);
   const gap = parseFloat(styles.columnGap) || parseFloat(styles.gap) || 12;
-  const isDesktop = window.matchMedia('(min-width: 768px)').matches;
+  const isDesktop = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+    ? window.matchMedia('(min-width: 768px)').matches
+    : false;
   const minWidth = isDesktop ? 210 : 148;
   const n = Math.max(2, Math.floor((available + gap) / (minWidth + gap)));
   return (available - (n - 1) * gap) / n;
@@ -110,13 +112,13 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
     };
     track.addEventListener('scroll', onScroll, { passive: true });
 
-    const ro = new ResizeObserver(() => applyWidth());
-    ro.observe(track);
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => applyWidth()) : null;
+    ro?.observe(track);
 
     return () => {
       if (scrollRaf) cancelAnimationFrame(scrollRaf);
       track.removeEventListener('scroll', onScroll);
-      ro.disconnect();
+      ro?.disconnect();
     };
   }, [applyWidth, updateArrows]);
 
@@ -188,7 +190,7 @@ function SocialCircles() {
   return (
     <div className="social-circles" aria-label="Redes sociales">
       <a
-        href="https://www.whatsapp.com/catalog/584122698243/?app_absent=0"
+        href="https://wa.me/584122698243"
         target="_blank"
         rel="noreferrer"
         className="social-circle social-whatsapp"
@@ -323,6 +325,21 @@ export default function CatalogPage() {
 
         {/* ── Social ── */}
         <SocialCircles />
+
+        {/* ── Footer ── */}
+        <footer className="catalog-footer">
+          <p className="catalog-footer-text">
+            © 2026{' '}
+            <a
+              href="https://oak-dev-11db6.web.app/"
+              target="_blank"
+              rel="noreferrer"
+              className="footer-dev-link"
+            >
+              Tokki Shop
+            </a>
+          </p>
+        </footer>
       </div>
     </>
   );

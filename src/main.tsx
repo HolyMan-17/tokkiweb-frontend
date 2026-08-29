@@ -35,6 +35,9 @@ for (const href of CRITICAL_FONTS) {
 }
 
 import './index.css';
+import { printDevSignature } from './utils/devSignature';
+
+printDevSignature();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
