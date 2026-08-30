@@ -11,6 +11,9 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Dulces & Comida Asiatica',  emoji: '🍡' },
   { name: 'Peluches y Figuras',        emoji: '🧸' },
   { name: 'Bolsas o cajas de regalo',  emoji: '🎁' },
+  { name: 'Cosplays',                 emoji: '🎭' },
+  { name: 'Para ellos',               emoji: '🕷️' },
+  { name: 'Regalos de pareja',        emoji: '💑' },
   { name: 'Otros',                     emoji: '🛍️' },
 ];
 

@@ -340,6 +340,24 @@
   height: 3.2rem;
 }
 
+/* Cosplays icon — prominently sized for carousel header */
+.category-cosplay {
+  width: 4.2rem;
+  height: 4.2rem;
+}
+
+/* Para ellos spiderman icon — prominently sized for carousel header */
+.category-spiderman {
+  width: 5.2rem;
+  height: 5.2rem;
+}
+
+/* Regalos de pareja couple icon — prominently sized for carousel header */
+.category-couple {
+  width: 4.2rem;
+  height: 4.2rem;
+}
+
 /* Otros beating heart icon — bigger than the standard icons */
 .category-heart {
   width: 3.4rem;

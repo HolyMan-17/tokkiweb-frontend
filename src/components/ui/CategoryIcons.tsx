@@ -14,6 +14,9 @@ import beatingHeart from '../../assets/beating_heart.gif';
 import kpopImg from '../../assets/kpop.png';
 import giftGif from '../../assets/gift.gif';
 import purseImg from '../../assets/purse.png';
+import cosplayImg from '../../assets/cosplay.png';
+import spidermanImg from '../../assets/spiderman.png';
+import coupleImg from '../../assets/couple.png';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
@@ -23,6 +26,9 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={158} height={167} loading="lazy" />,
   Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={128} height={128} loading="lazy" />,
   'Bolsos y Carteras': <img src={purseImg} alt="" className="category-emoji-img category-purse" width={128} height={128} loading="lazy" />,
+  Cosplays: <img src={cosplayImg} alt="" className="category-emoji-img category-cosplay" width={128} height={128} loading="lazy" />,
+  'Para ellos': <img src={spidermanImg} alt="" className="category-emoji-img category-spiderman" width={128} height={128} loading="lazy" />,
+  'Regalos de pareja': <img src={coupleImg} alt="" className="category-emoji-img category-couple" width={128} height={128} loading="lazy" />,
   'Dulces & Comida Asiatica': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Peluches y Figuras': <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
@@ -69,6 +75,21 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'comida asiatica': 'Dulces & Comida Asiatica',
   'comida asiática': 'Dulces & Comida Asiatica',
   snacks: 'Dulces & Comida Asiatica',
+  cosplays: 'Cosplays',
+  cosplay: 'Cosplays',
+  disfraz: 'Cosplays',
+  disfraces: 'Cosplays',
+  'para ellos': 'Para ellos',
+  'para-ellos': 'Para ellos',
+  ellos: 'Para ellos',
+  hombres: 'Para ellos',
+  masculino: 'Para ellos',
+  'regalos de pareja': 'Regalos de pareja',
+  'regalos-de-pareja': 'Regalos de pareja',
+  pareja: 'Regalos de pareja',
+  parejas: 'Regalos de pareja',
+  novios: 'Regalos de pareja',
+  couple: 'Regalos de pareja',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {

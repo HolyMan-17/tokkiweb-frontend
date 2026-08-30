@@ -267,6 +267,9 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Dulces & Comida Asiatica | 🍡 | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune |
 | Peluches y Figuras        | 🧸    | Plushies, anime figures, keychains        |
 | Bolsas o cajas de regalo  | 🎁    | Gift boxes, gift bags, wrapping kits      |
+| Cosplays                    | 🎭    | Cosplay outfits, wigs, accessories        |
+| Para ellos                  | 🕷️    | Men's items, masculine gifts              |
+| Regalos de pareja           | 💑    | Couple gifts, matching sets               |
 | Otros                     | 🛍️    | Stickers, notebooks, totes                |
 
 To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.

@@ -71,5 +71,8 @@ describe('SEO — robots.txt y sitemap.xml', () => {
     expect(sitemap).toContain('https://www.tokkishopve.com/categorias/bolsos-y-carteras');
     expect(sitemap).toContain('https://www.tokkishopve.com/categorias/zona-kpop');
     expect(sitemap).toContain('https://www.tokkishopve.com/categorias/dulces-&amp;-comida-asiatica');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/cosplays');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/para-ellos');
+    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/regalos-de-pareja');
   });
 });

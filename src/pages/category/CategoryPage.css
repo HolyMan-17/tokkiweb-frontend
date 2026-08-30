@@ -114,6 +114,21 @@
   height: 2.2rem;
 }
 
+.category-page-title .category-cosplay {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
+.category-page-title .category-spiderman {
+  width: 4.8rem;
+  height: 4.8rem;
+}
+
+.category-page-title .category-couple {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
 .title-sparkle {
   width: 2rem;
   height: auto;

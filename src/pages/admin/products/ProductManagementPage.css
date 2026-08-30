@@ -150,6 +150,21 @@
   height: 2.4rem;
 }
 
+.chip .category-cosplay {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
+.chip .category-spiderman {
+  width: 3.2rem;
+  height: 3.2rem;
+}
+
+.chip .category-couple {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
 .chip:hover {
   border-color: var(--pink-300);
   color: var(--color-text);

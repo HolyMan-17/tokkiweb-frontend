@@ -194,6 +194,134 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('purse');
   });
 
+  it('CATEGORIES contains Cosplays with theater mask emoji fallback', () => {
+    const cosplayCat = CATEGORIES.find(c => c.name === 'Cosplays');
+    expect(cosplayCat).toBeDefined();
+    expect(cosplayCat?.emoji).toBe('🎭');
+    expect(slugify(cosplayCat!.name)).toBe('cosplays');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Cosplays with cosplay.png image', () => {
+    const icon = CATEGORY_ICONS['Cosplays'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('cosplay');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-cosplay');
+  });
+
+  it('getCategoryIcon returns the cosplay icon for Cosplays and aliases', () => {
+    const exact = getCategoryIcon('Cosplays');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('cosplay');
+
+    const lower = getCategoryIcon('cosplays');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('cosplay');
+
+    const alias1 = getCategoryIcon('cosplay');
+    expect(alias1).not.toBeNull();
+    const { container: c3 } = render(<>{alias1}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('cosplay');
+
+    const alias2 = getCategoryIcon('disfraces');
+    expect(alias2).not.toBeNull();
+    const { container: c4 } = render(<>{alias2}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('cosplay');
+  });
+
+  it('CATEGORIES contains Para ellos with spider emoji fallback', () => {
+    const ellosCat = CATEGORIES.find(c => c.name === 'Para ellos');
+    expect(ellosCat).toBeDefined();
+    expect(ellosCat?.emoji).toBe('🕷️');
+    expect(slugify(ellosCat!.name)).toBe('para-ellos');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Para ellos with spiderman.png image', () => {
+    const icon = CATEGORY_ICONS['Para ellos'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('spiderman');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-spiderman');
+  });
+
+  it('getCategoryIcon returns the spiderman icon for Para ellos and aliases', () => {
+    const exact = getCategoryIcon('Para ellos');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('spiderman');
+
+    const lower = getCategoryIcon('para ellos');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('spiderman');
+
+    const alias1 = getCategoryIcon('hombres');
+    expect(alias1).not.toBeNull();
+    const { container: c3 } = render(<>{alias1}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('spiderman');
+
+    const alias2 = getCategoryIcon('ellos');
+    expect(alias2).not.toBeNull();
+    const { container: c4 } = render(<>{alias2}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('spiderman');
+  });
+
+  it('CATEGORIES contains Regalos de pareja with couple emoji fallback', () => {
+    const parejaCat = CATEGORIES.find(c => c.name === 'Regalos de pareja');
+    expect(parejaCat).toBeDefined();
+    expect(parejaCat?.emoji).toBe('💑');
+    expect(slugify(parejaCat!.name)).toBe('regalos-de-pareja');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Regalos de pareja with couple.png image', () => {
+    const icon = CATEGORY_ICONS['Regalos de pareja'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('couple');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-couple');
+  });
+
+  it('getCategoryIcon returns the couple icon for Regalos de pareja and aliases', () => {
+    const exact = getCategoryIcon('Regalos de pareja');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('couple');
+
+    const lower = getCategoryIcon('regalos de pareja');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('couple');
+
+    const alias1 = getCategoryIcon('pareja');
+    expect(alias1).not.toBeNull();
+    const { container: c3 } = render(<>{alias1}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('couple');
+
+    const alias2 = getCategoryIcon('novios');
+    expect(alias2).not.toBeNull();
+    const { container: c4 } = render(<>{alias2}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('couple');
+
+    const alias3 = getCategoryIcon('couple');
+    expect(alias3).not.toBeNull();
+    const { container: c5 } = render(<>{alias3}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('couple');
+  });
+
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();
