@@ -358,6 +358,12 @@
   height: 4.2rem;
 }
 
+/* Bloques de construccion lego heart icon — prominently sized for carousel header */
+.category-lego {
+  width: 3.8rem;
+  height: 3.8rem;
+}
+
 /* Otros beating heart icon — bigger than the standard icons */
 .category-heart {
   width: 3.4rem;

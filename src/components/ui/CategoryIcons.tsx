@@ -17,6 +17,7 @@ import purseImg from '../../assets/purse.png';
 import cosplayImg from '../../assets/cosplay.png';
 import spidermanImg from '../../assets/spiderman.png';
 import coupleImg from '../../assets/couple.png';
+import legoHeartGif from '../../assets/lego_heart.gif';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
@@ -29,6 +30,8 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Cosplays: <img src={cosplayImg} alt="" className="category-emoji-img category-cosplay" width={128} height={128} loading="lazy" />,
   'Para ellos': <img src={spidermanImg} alt="" className="category-emoji-img category-spiderman" width={128} height={128} loading="lazy" />,
   'Regalos de pareja': <img src={coupleImg} alt="" className="category-emoji-img category-couple" width={128} height={128} loading="lazy" />,
+  'Bloques de construccion': <img src={legoHeartGif} alt="" className="category-emoji-img category-lego" width={128} height={123} loading="lazy" />,
+  'Bloques de construcción': <img src={legoHeartGif} alt="" className="category-emoji-img category-lego" width={128} height={123} loading="lazy" />,
   'Dulces & Comida Asiatica': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Peluches y Figuras': <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
@@ -90,6 +93,17 @@ const CATEGORY_ALIASES: Record<string, string> = {
   parejas: 'Regalos de pareja',
   novios: 'Regalos de pareja',
   couple: 'Regalos de pareja',
+  'bloques de construccion': 'Bloques de construccion',
+  'bloques de construcción': 'Bloques de construccion',
+  'bloques-de-construccion': 'Bloques de construccion',
+  'bloques-de-construcción': 'Bloques de construccion',
+  'bloques': 'Bloques de construccion',
+  'bloque': 'Bloques de construccion',
+  'lego': 'Bloques de construccion',
+  'legos': 'Bloques de construccion',
+  'lego heart': 'Bloques de construccion',
+  'construccion': 'Bloques de construccion',
+  'construcción': 'Bloques de construccion',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {

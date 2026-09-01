@@ -4,6 +4,7 @@ import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import OrderDetailPage from './OrderDetailPage';
 import { fetchOrderDetail, approveOrder, cancelOrder, NotFoundError } from '../../../api/orders';
+import { fetchAllProducts } from '../../../api/products';
 import { AdminAuthContext } from '../../../components/auth/AdminAuthContext';
 import type { OrderDetail } from '../../../types';
 
@@ -14,7 +15,12 @@ vi.mock('../../../api/orders', async importOriginal => ({
   cancelOrder: vi.fn(),
 }));
 
+vi.mock('../../../api/products', () => ({
+  fetchAllProducts: vi.fn().mockResolvedValue([]),
+}));
+
 const mockFetchOrderDetail = vi.mocked(fetchOrderDetail);
+const mockFetchAllProducts = vi.mocked(fetchAllProducts);
 const mockApproveOrder = vi.mocked(approveOrder);
 const mockCancelOrder = vi.mocked(cancelOrder);
 
@@ -63,9 +69,11 @@ function renderPage() {
 
 beforeEach(() => {
   mockFetchOrderDetail.mockReset();
+  mockFetchAllProducts.mockReset();
   mockApproveOrder.mockReset();
   mockCancelOrder.mockReset();
   mockFetchOrderDetail.mockResolvedValue(ORDER);
+  mockFetchAllProducts.mockResolvedValue([]);
 });
 
 describe('OrderDetailPage — datos completos del pedido', () => {
@@ -136,6 +144,93 @@ describe('OrderDetailPage — datos completos del pedido', () => {
       'href',
       'https://wa.me/584121234567?text=Hola%20Mar%C3%ADa%2C%20te%20escribimos%20de%20Tokki%20Shop%20sobre%20tu%20pedido%20%2342.',
     );
+  });
+
+  it('muestra la imagen del producto comprado cuando tiene product_image_url', async () => {
+    mockFetchOrderDetail.mockResolvedValue({
+      ...ORDER,
+      items: [
+        {
+          product_name: 'Lip Tint Coreano',
+          product_qty: 1,
+          product_price: '5.00',
+          product_total: '5.00',
+          product_image_url: 'https://example.com/liptint.png',
+        },
+      ],
+    });
+    renderPage();
+    const img = await screen.findByRole('img', { name: 'Lip Tint Coreano' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/liptint.png');
+  });
+
+  it('muestra el placeholder con la inicial cuando el producto no tiene imagen', async () => {
+    mockFetchOrderDetail.mockResolvedValue({
+      ...ORDER,
+      items: [
+        {
+          product_name: 'Bálsamo de Fresa',
+          product_qty: 2,
+          product_price: '3.50',
+          product_total: '7.00',
+          product_image_url: null,
+        },
+      ],
+    });
+    renderPage();
+    expect(await screen.findByText('Bálsamo de Fresa')).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'Bálsamo de Fresa' })).not.toBeInTheDocument();
+    expect(screen.getByText('B')).toBeInTheDocument();
+  });
+
+  it('resuelve image_url como alias si el backend envía esa propiedad', async () => {
+    mockFetchOrderDetail.mockResolvedValue({
+      ...ORDER,
+      items: [
+        {
+          product_name: 'Parche de Ojos',
+          product_qty: 3,
+          product_price: '2.00',
+          product_total: '6.00',
+          image_url: 'https://example.com/patch.jpg',
+        },
+      ],
+    });
+    renderPage();
+    const img = await screen.findByRole('img', { name: 'Parche de Ojos' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/patch.jpg');
+  });
+
+  it('resuelve la imagen buscando el producto en el catálogo cuando el pedido no incluye la foto', async () => {
+    mockFetchAllProducts.mockResolvedValue([
+      {
+        product_id: 99,
+        product_name: 'Gloss Kawaii',
+        product_price: '4.50',
+        product_description: 'Brillo labial coreano',
+        qty_available: 5,
+        in_stock: true,
+        category: 'Maquillaje',
+        product_image_url: 'https://example.com/gloss.png',
+      },
+    ]);
+    mockFetchOrderDetail.mockResolvedValue({
+      ...ORDER,
+      items: [
+        {
+          product_name: 'Gloss Kawaii',
+          product_qty: 1,
+          product_price: '4.50',
+          product_total: '4.50',
+        },
+      ],
+    });
+    renderPage();
+    const img = await screen.findByRole('img', { name: 'Gloss Kawaii' });
+    expect(img).toBeInTheDocument();
+    expect(img).toHaveAttribute('src', 'https://example.com/gloss.png');
   });
 
   it('muestra la vista de no encontrado cuando la API responde 404', async () => {

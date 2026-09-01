@@ -42,6 +42,8 @@ export interface OrderItem {
   product_qty: number;
   product_price: string;
   product_total: string;        // qty × unit price (computed server-side)
+  product_image_url?: string | null;
+  image_url?: string | null;
 }
 
 export interface OrderDetail {
@@ -81,6 +83,8 @@ export interface CreatedOrderItem {
   name: string;
   ordered_qty: number;
   price: string;
+  product_image_url?: string | null;
+  image_url?: string | null;
 }
 
 export interface CreatedOrder {

@@ -14,6 +14,7 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Cosplays',                 emoji: '🎭' },
   { name: 'Para ellos',               emoji: '🕷️' },
   { name: 'Regalos de pareja',        emoji: '💑' },
+  { name: 'Bloques de construccion',  emoji: '🧱' },
   { name: 'Otros',                     emoji: '🛍️' },
 ];
 

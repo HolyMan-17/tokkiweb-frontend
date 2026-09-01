@@ -6,6 +6,7 @@ import {
   cancelOrder,
   NotFoundError,
 } from '../../../api/orders';
+import { fetchAllProducts } from '../../../api/products';
 import { useAsync } from '../../../hooks/useAsync';
 import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import { formatPrice, formatDateTime, getDeliveryLabel, getPaymentLabel } from '../../../constants';
@@ -35,6 +36,20 @@ export default function OrderDetailPage() {
     () => fetchOrderDetail(Number(id), auth),
     [id, auth]
   );
+  const { data: catalogProducts } = useAsync(fetchAllProducts, []);
+
+  const catalogImageMap = useMemo(() => {
+    const byName = new Map<string, string>();
+    const byId = new Map<number, string>();
+    if (!catalogProducts) return { byName, byId };
+    for (const p of catalogProducts) {
+      if (p.product_image_url) {
+        byName.set(p.product_name.toLowerCase().trim(), p.product_image_url);
+        byId.set(p.product_id, p.product_image_url);
+      }
+    }
+    return { byName, byId };
+  }, [catalogProducts]);
 
   const confirmAction = async () => {
     if (!order || !pendingAction || isProcessingRef.current) return;
@@ -192,20 +207,53 @@ export default function OrderDetailPage() {
         <div className="card items-card">
           <h3 className="section-label">Artículos</h3>
           <div className="items-list">
-            {order.items.map((item) => (
-              <div key={`${item.product_name}-${item.product_price}`} className="order-item-row">
-                <div className="item-info">
-                  <span className="item-qty">{item.product_qty}x</span>
-                  <div className="item-details">
-                    <span className="item-name">{item.product_name}</span>
-                    <span className="item-price">{formatPrice(item.product_price)} c/u</span>
+            {order.items.map((item) => {
+              const raw = item as unknown as Record<string, unknown>;
+              const rawId =
+                typeof raw.product_id === 'number'
+                  ? raw.product_id
+                  : typeof raw.id === 'number'
+                    ? raw.id
+                    : undefined;
+
+              const imageUrl =
+                item.product_image_url ||
+                item.image_url ||
+                (raw.image as string | undefined) ||
+                (rawId ? catalogImageMap.byId.get(rawId) : undefined) ||
+                (item.product_name ? catalogImageMap.byName.get(item.product_name.toLowerCase().trim()) : undefined);
+
+              const initialLetter = item.product_name ? item.product_name.charAt(0).toUpperCase() : '🛍️';
+
+              return (
+                <div key={`${item.product_name}-${item.product_price}`} className="order-item-row">
+                  <div className="item-info">
+                    <div className="item-image-container">
+                      {imageUrl ? (
+                        <img
+                          src={imageUrl}
+                          alt={item.product_name}
+                          className="item-image-thumb"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="item-image-placeholder">
+                          {initialLetter}
+                        </div>
+                      )}
+                    </div>
+                    <span className="item-qty">{item.product_qty}x</span>
+                    <div className="item-details">
+                      <span className="item-name">{item.product_name}</span>
+                      <span className="item-price">{formatPrice(item.product_price)} c/u</span>
+                    </div>
+                  </div>
+                  <div className="item-totals">
+                    <span className="item-line-total">{formatPrice(item.product_total)}</span>
                   </div>
                 </div>
-                <div className="item-totals">
-                  <span className="item-line-total">{formatPrice(item.product_total)}</span>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
           <div className="order-total-section">
             <span>Total</span>

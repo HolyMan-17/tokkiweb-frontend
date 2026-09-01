@@ -270,6 +270,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Cosplays                    | 🎭    | Cosplay outfits, wigs, accessories        |
 | Para ellos                  | 🕷️    | Men's items, masculine gifts              |
 | Regalos de pareja           | 💑    | Couple gifts, matching sets               |
+| Bloques de construccion     | 🧱    | Nano blocks, lego hearts, floral bouquets |
 | Otros                     | 🛍️    | Stickers, notebooks, totes                |
 
 To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.

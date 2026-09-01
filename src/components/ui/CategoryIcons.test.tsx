@@ -322,6 +322,57 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('couple');
   });
 
+  it('CATEGORIES contains Bloques de construccion with brick emoji fallback', () => {
+    const bloquesCat = CATEGORIES.find(c => c.name === 'Bloques de construccion');
+    expect(bloquesCat).toBeDefined();
+    expect(bloquesCat?.emoji).toBe('🧱');
+    expect(slugify(bloquesCat!.name)).toBe('bloques-de-construccion');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Bloques de construccion with lego_heart.gif image', () => {
+    const icon = CATEGORY_ICONS['Bloques de construccion'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('lego_heart');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-lego');
+  });
+
+  it('getCategoryIcon returns the lego icon for Bloques de construccion and aliases', () => {
+    const exact = getCategoryIcon('Bloques de construccion');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+
+    const lower = getCategoryIcon('bloques de construccion');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+
+    const withAccent = getCategoryIcon('Bloques de construcción');
+    expect(withAccent).not.toBeNull();
+    const { container: c3 } = render(<>{withAccent}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+
+    const alias1 = getCategoryIcon('lego');
+    expect(alias1).not.toBeNull();
+    const { container: c4 } = render(<>{alias1}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+
+    const alias2 = getCategoryIcon('legos');
+    expect(alias2).not.toBeNull();
+    const { container: c5 } = render(<>{alias2}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+
+    const alias3 = getCategoryIcon('bloques');
+    expect(alias3).not.toBeNull();
+    const { container: c6 } = render(<>{alias3}</>);
+    expect(c6.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
+  });
+
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();
