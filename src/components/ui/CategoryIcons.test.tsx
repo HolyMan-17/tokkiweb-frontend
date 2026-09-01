@@ -373,6 +373,98 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c6.querySelector('img')?.getAttribute('src')).toContain('lego_heart');
   });
 
+  it('CATEGORIES contains Figuras with superhero emoji fallback', () => {
+    const figurasCat = CATEGORIES.find(c => c.name === 'Figuras');
+    expect(figurasCat).toBeDefined();
+    expect(figurasCat?.emoji).toBe('🦸');
+    expect(slugify(figurasCat!.name)).toBe('figuras');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Figuras with luffy.png image', () => {
+    const icon = CATEGORY_ICONS['Figuras'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('luffy');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-luffy');
+  });
+
+  it('getCategoryIcon returns the luffy icon for Figuras and aliases', () => {
+    const exact = getCategoryIcon('Figuras');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('luffy');
+
+    const lower = getCategoryIcon('figuras');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('luffy');
+
+    const alias1 = getCategoryIcon('figura');
+    expect(alias1).not.toBeNull();
+    const { container: c3 } = render(<>{alias1}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('luffy');
+
+    const alias2 = getCategoryIcon('figures');
+    expect(alias2).not.toBeNull();
+    const { container: c4 } = render(<>{alias2}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('luffy');
+
+    const alias3 = getCategoryIcon('luffy');
+    expect(alias3).not.toBeNull();
+    const { container: c5 } = render(<>{alias3}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('luffy');
+  });
+
+  it('CATEGORIES contains Peluches with teddy bear emoji fallback', () => {
+    const peluchesCat = CATEGORIES.find(c => c.name === 'Peluches');
+    expect(peluchesCat).toBeDefined();
+    expect(peluchesCat?.emoji).toBe('🧸');
+    expect(slugify(peluchesCat!.name)).toBe('peluches');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Peluches with hopping_bear.gif image', () => {
+    const icon = CATEGORY_ICONS['Peluches'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('bear');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-bear');
+  });
+
+  it('preserves Peluches y Figuras category and supports Peluches and aliases with bear icon', () => {
+    const peluchesYFiguras = getCategoryIcon('Peluches y Figuras');
+    expect(peluchesYFiguras).not.toBeNull();
+    const { container: c1 } = render(<>{peluchesYFiguras}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('bear');
+
+    const peluches = getCategoryIcon('Peluches');
+    expect(peluches).not.toBeNull();
+    const { container: c2 } = render(<>{peluches}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('bear');
+
+    const lower = getCategoryIcon('peluches');
+    expect(lower).not.toBeNull();
+    const { container: c3 } = render(<>{lower}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('bear');
+
+    const alias1 = getCategoryIcon('peluche');
+    expect(alias1).not.toBeNull();
+    const { container: c4 } = render(<>{alias1}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('bear');
+
+    const alias2 = getCategoryIcon('plush');
+    expect(alias2).not.toBeNull();
+    const { container: c5 } = render(<>{alias2}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('bear');
+  });
+
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();

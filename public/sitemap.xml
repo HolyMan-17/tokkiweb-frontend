@@ -66,12 +66,17 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.tokkishopve.com/categorias/bolsas-o-cajas-de-regalo</loc>
+    <loc>https://www.tokkishopve.com/categorias/peluches</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.tokkishopve.com/categorias/otros</loc>
+    <loc>https://www.tokkishopve.com/categorias/figuras</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tokkishopve.com/categorias/bolsas-o-cajas-de-regalo</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>
@@ -87,6 +92,16 @@
   </url>
   <url>
     <loc>https://www.tokkishopve.com/categorias/regalos-de-pareja</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tokkishopve.com/categorias/bloques-de-construccion</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://www.tokkishopve.com/categorias/otros</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
   </url>

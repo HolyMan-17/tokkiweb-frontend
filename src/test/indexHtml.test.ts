@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import html from '../../index.html?raw';
+import { CATEGORIES, slugify } from '../constants';
 
 // Static contract test: link-preview / SEO tags must exist in the served
 // shell. Crawlers (Instagram, TikTok, WhatsApp, Google) read these from the
@@ -63,16 +64,17 @@ describe('SEO — robots.txt y sitemap.xml', () => {
     expect(robots).toContain('Sitemap: https://www.tokkishopve.com/sitemap.xml');
   });
 
-  it('sitemap.xml contiene la página de inicio, /productos y todas las categorías', async () => {
+  it('sitemap.xml contiene la página de inicio, /productos y todas las categorías de CATEGORIES', async () => {
     const sitemapModule = await import('../../public/sitemap.xml?raw');
     const sitemap = sitemapModule.default;
     expect(sitemap).toContain('https://www.tokkishopve.com/');
     expect(sitemap).toContain('https://www.tokkishopve.com/productos');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/bolsos-y-carteras');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/zona-kpop');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/dulces-&amp;-comida-asiatica');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/cosplays');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/para-ellos');
-    expect(sitemap).toContain('https://www.tokkishopve.com/categorias/regalos-de-pareja');
+
+    for (const cat of CATEGORIES) {
+      const slug = slugify(cat.name).replace(/&/g, '&amp;');
+      expect(sitemap, `sitemap should contain category URL for ${cat.name} (${slug})`).toContain(
+        `https://www.tokkishopve.com/categorias/${slug}`,
+      );
+    }
   });
 });

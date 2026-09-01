@@ -165,6 +165,11 @@
   height: 2.8rem;
 }
 
+.chip .category-luffy {
+  width: 2.8rem;
+  height: 2.8rem;
+}
+
 .chip:hover {
   border-color: var(--pink-300);
   color: var(--color-text);

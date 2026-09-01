@@ -364,6 +364,12 @@
   height: 3.8rem;
 }
 
+/* Figuras luffy icon — prominently sized for carousel header */
+.category-luffy {
+  width: 4.2rem;
+  height: 4.2rem;
+}
+
 /* Otros beating heart icon — bigger than the standard icons */
 .category-heart {
   width: 3.4rem;

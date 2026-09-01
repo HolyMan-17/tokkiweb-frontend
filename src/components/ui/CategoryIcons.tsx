@@ -18,6 +18,7 @@ import cosplayImg from '../../assets/cosplay.png';
 import spidermanImg from '../../assets/spiderman.png';
 import coupleImg from '../../assets/couple.png';
 import legoHeartGif from '../../assets/lego_heart.gif';
+import luffyImg from '../../assets/luffy.png';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
@@ -35,6 +36,8 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Dulces & Comida Asiatica': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Peluches y Figuras': <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
+  Peluches: <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
+  Figuras: <img src={luffyImg} alt="" className="category-emoji-img category-luffy" width={128} height={128} loading="lazy" />,
   'Zona KPOP': <img src={kpopImg} alt="" className="category-emoji-img category-kpop" width={160} height={160} loading="lazy" />,
   'Bolsas o cajas de regalo': <img src={giftGif} alt="" className="category-emoji-img category-gift" width={140} height={134} loading="lazy" />,
   Otros: <img src={beatingHeart} alt="" className="category-emoji-img category-heart" width={190} height={180} loading="lazy" />,
@@ -104,6 +107,20 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'lego heart': 'Bloques de construccion',
   'construccion': 'Bloques de construccion',
   'construcción': 'Bloques de construccion',
+  figuras: 'Figuras',
+  figura: 'Figuras',
+  figures: 'Figuras',
+  figure: 'Figuras',
+  luffy: 'Figuras',
+  anime: 'Figuras',
+  'figuras de anime': 'Figuras',
+  'figuras-de-anime': 'Figuras',
+  peluches: 'Peluches',
+  peluche: 'Peluches',
+  plush: 'Peluches',
+  plushies: 'Peluches',
+  'peluches y figuras': 'Peluches y Figuras',
+  'peluches-y-figuras': 'Peluches y Figuras',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {
