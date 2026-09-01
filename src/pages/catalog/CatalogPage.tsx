@@ -296,7 +296,7 @@ export default function CatalogPage() {
           </div>
           <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={420} height={420} fetchPriority="high" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
-          <p className="hero-sub">Maquillaje • Skincare • Accesorios • Peluches y Figuras • Comida Asiatica & Más</p>
+          <p className="hero-sub">Maquillaje • Skincare • Accesorios • Peluches • Figuras • Comida Asiatica & Más</p>
         </header>
 
         {/* ── Carousels: Todos (all products) + one per category ── */}

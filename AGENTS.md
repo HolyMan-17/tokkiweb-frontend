@@ -265,7 +265,6 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Ropa                | 👗    | Crop tops, socks, hats, kawaii sets       |
 | Bolsos y Carteras   | 👜    | Kawaii backpacks, tote bags, plush purses |
 | Dulces & Comida Asiatica | 🍡 | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune |
-| Peluches y Figuras        | 🧸    | Plushies, anime figures, keychains        |
 | Peluches                  | 🧸    | Plushies, stuffed animals, keychains      |
 | Figuras                   | 🦸    | Anime figures, scale models, collectibles |
 | Bolsas o cajas de regalo  | 🎁    | Gift boxes, gift bags, wrapping kits      |

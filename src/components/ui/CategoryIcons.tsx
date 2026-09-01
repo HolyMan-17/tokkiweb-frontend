@@ -35,7 +35,6 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Bloques de construcción': <img src={legoHeartGif} alt="" className="category-emoji-img category-lego" width={128} height={123} loading="lazy" />,
   'Dulces & Comida Asiatica': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
   'Dulces Asiáticos': <img src={treatGif} alt="" className="category-emoji-img category-treat" width={112} height={94} loading="lazy" />,
-  'Peluches y Figuras': <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
   Peluches: <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
   Figuras: <img src={luffyImg} alt="" className="category-emoji-img category-luffy" width={128} height={128} loading="lazy" />,
   'Zona KPOP': <img src={kpopImg} alt="" className="category-emoji-img category-kpop" width={160} height={160} loading="lazy" />,
@@ -119,8 +118,6 @@ const CATEGORY_ALIASES: Record<string, string> = {
   peluche: 'Peluches',
   plush: 'Peluches',
   plushies: 'Peluches',
-  'peluches y figuras': 'Peluches y Figuras',
-  'peluches-y-figuras': 'Peluches y Figuras',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {

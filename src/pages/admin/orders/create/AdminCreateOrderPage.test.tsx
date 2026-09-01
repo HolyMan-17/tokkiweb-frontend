@@ -48,7 +48,7 @@ const MOCK_PRODUCTS: Product[] = [
     product_name: 'Peluche Conejo Pastel',
     product_price: '12.00',
     product_description: 'Peluche suave coleccionable',
-    category: 'Peluches y Figuras',
+    category: 'Peluches',
     qty_available: 0,
     in_stock: false,
   },

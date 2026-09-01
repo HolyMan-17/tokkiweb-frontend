@@ -31,16 +31,6 @@ const MOCK_PRODUCTS = [
     product_description: 'Peluche suave de oso',
     product_image_url: null,
   },
-  {
-    product_id: 703,
-    product_name: 'Combo Peluche y Figura Pikachu',
-    product_price: '35.00',
-    qty_available: 4,
-    in_stock: true,
-    category: 'Peluches y Figuras',
-    product_description: 'Set especial combinado',
-    product_image_url: null,
-  },
 ];
 
 function setupMocks(page: import('@playwright/test').Page) {

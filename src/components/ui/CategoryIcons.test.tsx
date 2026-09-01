@@ -438,12 +438,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(img?.className).toContain('category-bear');
   });
 
-  it('preserves Peluches y Figuras category and supports Peluches and aliases with bear icon', () => {
-    const peluchesYFiguras = getCategoryIcon('Peluches y Figuras');
-    expect(peluchesYFiguras).not.toBeNull();
-    const { container: c1 } = render(<>{peluchesYFiguras}</>);
-    expect(c1.querySelector('img')?.getAttribute('src')).toContain('bear');
-
+  it('getCategoryIcon returns the bear icon for Peluches and aliases', () => {
     const peluches = getCategoryIcon('Peluches');
     expect(peluches).not.toBeNull();
     const { container: c2 } = render(<>{peluches}</>);

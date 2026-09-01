@@ -17,7 +17,7 @@ const MOCK_PRODUCTS = [
     product_price: '18.00',
     qty_available: 8,
     in_stock: true,
-    category: 'Peluches y Figuras',
+    category: 'Peluches',
     product_description: 'Peluche suave de Sanrio',
     product_image_url: null,
   },
@@ -171,11 +171,11 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
     await expect(page.getByText('Caja de Regalo Corazones Pastel')).toBeVisible();
   });
 
-  test('Catalog page aligns category titles between Peluches y Figuras and Bolsas o cajas de regalo', async ({ page }) => {
+  test('Catalog page aligns category titles between Peluches and Bolsas o cajas de regalo', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/');
 
-    const peluchesTitle = page.getByRole('heading', { name: /Peluches y Figuras/i });
+    const peluchesTitle = page.getByRole('heading', { name: 'Peluches', exact: true });
     const giftTitle = page.getByRole('heading', { name: /Bolsas o cajas de regalo/i });
 
     await expect(peluchesTitle).toBeVisible();
