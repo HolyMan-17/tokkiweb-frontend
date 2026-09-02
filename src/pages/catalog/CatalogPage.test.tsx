@@ -56,3 +56,86 @@ describe('CatalogPage — footer and social links', () => {
     expect(waLink).toHaveAttribute('href', 'https://wa.me/584122698243');
   });
 });
+
+describe('CatalogPage — carousels sorting & ver mas prompt card', () => {
+  it('renders products in descending order of product_id (most recently added first)', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 1,
+        product_name: 'Producto Antiguo',
+        category: 'Maquillaje',
+        product_price: '2.00',
+        product_description: 'Desc',
+        qty_available: 5,
+        in_stock: true,
+      },
+      {
+        product_id: 25,
+        product_name: 'Producto Reciente',
+        category: 'Maquillaje',
+        product_price: '5.00',
+        product_description: 'Desc 2',
+        qty_available: 5,
+        in_stock: true,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const recentItems = await screen.findAllByText('Producto Reciente');
+    const oldItems = await screen.findAllByText('Producto Antiguo');
+    expect(recentItems.length).toBeGreaterThan(0);
+    expect(oldItems.length).toBeGreaterThan(0);
+
+    // In the DOM, recent item should appear before the older item in the list
+    expect(recentItems[0].compareDocumentPosition(oldItems[0])).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
+  it('does NOT render a "Ver más" card in track when category has <= 16 products', async () => {
+    // Default mock has only 1 product
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await screen.findByText('Mochi de Fresa');
+    const moreCards = screen.queryAllByRole('link', { name: /Ver todos los productos/i });
+    expect(moreCards.length).toBe(0);
+  });
+
+  it('renders a "Ver más" card with sparkles gif at the end when track has > 16 products', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    const mock20Products = Array.from({ length: 20 }, (_, i) => ({
+      product_id: i + 1,
+      product_name: `Producto ${i + 1}`,
+      category: 'Maquillaje',
+      product_price: '5.00',
+      product_description: 'Desc',
+      qty_available: 5,
+      in_stock: true,
+    }));
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce(mock20Products);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const moreCards = await screen.findAllByRole('link', { name: /Ver todos los productos/i });
+    expect(moreCards.length).toBeGreaterThanOrEqual(1);
+    expect(moreCards[0]).toHaveAttribute('href', '/productos');
+
+    // Verify sparkles gif is rendered inside the card
+    const sparklesImgs = moreCards[0].querySelectorAll('img.carousel-more-sparkle');
+    expect(sparklesImgs.length).toBe(1);
+  });
+});

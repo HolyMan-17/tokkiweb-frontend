@@ -179,6 +179,43 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
             <ProductCard product={p} />
           </div>
         ))}
+        {seeMoreTo && products.length > MAX_CARDS_PER_CAROUSEL && (
+          <div className="carousel-item">
+            <Link
+              to={seeMoreTo}
+              className="carousel-more-card"
+              aria-label={`Ver todos los productos de ${title}`}
+            >
+              <div className="carousel-more-frame">
+                <div className="carousel-more-icon-wrap">
+                  <img
+                    src={sparklesImg}
+                    alt=""
+                    className="carousel-more-sparkle"
+                    width={32}
+                    height={34}
+                    loading="lazy"
+                  />
+                  <div className="carousel-more-arrow-circle">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12"></line>
+                      <polyline points="12 5 19 12 12 19"></polyline>
+                    </svg>
+                  </div>
+                </div>
+              </div>
+              <div className="carousel-more-body">
+                <p className="carousel-more-title">Ver más</p>
+                <p className="carousel-more-subtitle">
+                  {title === 'Todos' ? 'Ver todo el catálogo' : `Explora ${title}`}
+                </p>
+                <span className="carousel-more-btn">
+                  Ver todo →
+                </span>
+              </div>
+            </Link>
+          </div>
+        )}
       </div>
     </section>
   );
@@ -235,7 +272,11 @@ const SCROLL_KEY = 'tokki_catalog_scroll';
 export default function CatalogPage() {
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
-  const grouped = useMemo(() => groupByCategory(products), [products]);
+  const sortedProducts = useMemo(
+    () => products.toSorted((a, b) => b.product_id - a.product_id),
+    [products],
+  );
+  const grouped = useMemo(() => groupByCategory(sortedProducts), [sortedProducts]);
 
   // Restore the scroll position when returning from a category page, and
   // remember it when leaving so "Volver" lands where the user was.
@@ -304,7 +345,7 @@ export default function CatalogPage() {
           <CategoryCarousel
             title="Todos"
             emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
-            products={products}
+            products={sortedProducts}
             seeMoreTo={ROUTES.allProducts}
           />
 
