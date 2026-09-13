@@ -117,8 +117,7 @@ describe('AdminDashboardPage — resumen vía API', () => {
   it('conecta la tarjeta de Alertas Stock con la ruta /tokki-admin/products?stock=low', async () => {
     renderPage();
 
-    await screen.findByText('Alertas Stock');
-    const stockAlertLink = screen.getByRole('link', { name: /Ver alertas de stock/i });
+    const stockAlertLink = await screen.findByRole('link', { name: /ver alertas de stock/i });
     expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=low');
   }, 15000);
 

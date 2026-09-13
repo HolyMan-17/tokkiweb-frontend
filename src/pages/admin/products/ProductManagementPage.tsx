@@ -10,6 +10,7 @@ import ErrorState from '../../../components/ui/ErrorState';
 import ProductFormModal from './ProductFormModal';
 import { ProductFilterToolbar, type StockFilter } from './ProductFilterToolbar';
 import { ProductAdminGrid } from './ProductAdminGrid';
+import { exportProductsToCsv } from '../../../utils/exportProducts';
 import './ProductManagementPage.css';
 
 export default function ProductManagementPage() {
@@ -140,9 +141,22 @@ export default function ProductManagementPage() {
         <div>
           <h1 className="page-title">Productos <span>({products.length})</span></h1>
         </div>
-        <button className="btn btn-primary" onClick={openAddModal}>
-          Agregar producto
-        </button>
+        <div className="products-header-actions">
+          <button className="btn btn-primary" onClick={openAddModal}>
+            Agregar producto
+          </button>
+          <button
+            type="button"
+            className="btn btn-export-csv"
+            onClick={() => exportProductsToCsv(filtered)}
+            disabled={filtered.length === 0}
+            title={filtered.length === 0 ? 'No hay productos para exportar' : 'Exportar productos a CSV'}
+            aria-label="Exportar productos a CSV"
+          >
+            <span className="export-icon" aria-hidden="true">📥</span>
+            Exportar CSV
+          </button>
+        </div>
       </header>
 
       <ProductFilterToolbar

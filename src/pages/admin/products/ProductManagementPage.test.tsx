@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ProductManagementPage from './ProductManagementPage';
 import { fetchAllProducts } from '../../../api/products';
+import { exportProductsToCsv } from '../../../utils/exportProducts';
 import { AdminAuthContext } from '../../../components/auth/AdminAuthContext';
 import type { Product } from '../../../types';
 
@@ -12,7 +13,16 @@ vi.mock('../../../api/products', () => ({
   archiveProduct: vi.fn(),
 }));
 
+vi.mock('../../../utils/exportProducts', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../../../utils/exportProducts')>();
+  return {
+    ...actual,
+    exportProductsToCsv: vi.fn(),
+  };
+});
+
 const mockFetchAllProducts = vi.mocked(fetchAllProducts);
+const mockExportProductsToCsv = vi.mocked(exportProductsToCsv);
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -160,4 +170,44 @@ describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () =
     expect(await screen.findByText('Bálsamo Labial Fresa')).toBeInTheDocument();
     expect(screen.getByText('Pin Kawaii Bunny')).toBeInTheDocument();
   });
+
+  it('renderiza el botón de exportar CSV habilitado y ejecuta exportProductsToCsv con productos filtrados', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+    const exportBtn = screen.getByRole('button', { name: /exportar productos a csv/i });
+    expect(exportBtn).toBeInTheDocument();
+    expect(exportBtn).toBeEnabled();
+
+    // Clic en exportar sin filtros (debe exportar todos los productos)
+    await user.click(exportBtn);
+    expect(mockExportProductsToCsv).toHaveBeenCalledTimes(1);
+    expect(mockExportProductsToCsv).toHaveBeenCalledWith(MOCK_PRODUCTS);
+
+    // Filtrar por bajo stock
+    const lowStockBtn = screen.getByRole('button', { name: /bajo stock/i });
+    await user.click(lowStockBtn);
+
+    // Exportar nuevamente (solo productos con bajo stock: Serum y Mochi)
+    await user.click(exportBtn);
+    expect(mockExportProductsToCsv).toHaveBeenCalledTimes(2);
+    expect(mockExportProductsToCsv).toHaveBeenLastCalledWith([MOCK_PRODUCTS[1], MOCK_PRODUCTS[2]]);
+  });
+
+  it('deshabilita el botón de exportar CSV cuando no hay productos coincidentes', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+    const exportBtn = screen.getByRole('button', { name: /exportar productos a csv/i });
+    expect(exportBtn).toBeEnabled();
+
+    const searchInput = screen.getByLabelText('Buscar producto');
+    await user.type(searchInput, 'no_existe_nada_con_este_nombre');
+
+    expect(exportBtn).toBeDisabled();
+    expect(exportBtn).toHaveAttribute('title', 'No hay productos para exportar');
+  });
 });
+

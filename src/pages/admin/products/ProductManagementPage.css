@@ -18,6 +18,62 @@
   white-space: nowrap;
 }
 
+.products-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm, 8px);
+  flex-wrap: wrap;
+}
+
+.products-header-actions .btn {
+  padding: 8px 18px;
+}
+
+.btn-export-csv {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs, 6px);
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--p2);
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(230, 139, 190, 0.2);
+  transition: transform var(--duration-fast) var(--ease-spring),
+              background-color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out),
+              color var(--duration-fast) var(--ease-out);
+}
+
+.btn-export-csv:hover:not(:disabled) {
+  background-color: var(--pink-50);
+  border-color: var(--p4);
+  color: var(--color-primary);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(230, 139, 190, 0.35);
+}
+
+.btn-export-csv:active:not(:disabled) {
+  transform: scale(0.96);
+}
+
+.btn-export-csv:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  box-shadow: none;
+  border-color: var(--color-border);
+}
+
+.export-icon {
+  font-size: 1rem;
+  line-height: 1;
+}
+
 /* ─── Browse toolbar ─────────────────────────────────────── */
 .products-toolbar {
   display: flex;
