@@ -310,7 +310,7 @@ export default function CatalogPage() {
 
   return (
     <>
-      <CatalogTopNav />
+      <CatalogTopNav products={products} />
 
       <div className="catalog-page">
         {/* ── Hero ── */}

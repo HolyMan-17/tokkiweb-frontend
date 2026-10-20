@@ -94,7 +94,7 @@ export default function CategoryPage() {
   if (!category) {
     return (
       <>
-        <CatalogTopNav />
+        <CatalogTopNav products={allStoreProducts} />
         <div className="category-page">
           <div className="category-empty">
             <h1 className="category-page-title">Categoría no encontrada</h1>
@@ -125,7 +125,7 @@ export default function CategoryPage() {
 
   return (
     <>
-      <CatalogTopNav />
+      <CatalogTopNav products={allStoreProducts} />
 
       <div className="category-page">
         {/* Header */}

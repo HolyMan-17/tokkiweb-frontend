@@ -4,10 +4,16 @@ import { ADMIN_PATH, CLERK_PUBLISHABLE_KEY, ROLES } from '../../lib/auth';
 import { ROUTES } from '../../lib/routes';
 import { useAdminAuth } from '../auth/useAdminAuth';
 import { CartIcon, GearIcon } from '../ui/icons';
+import { GlobalSearchBar } from '../ui/GlobalSearchBar';
+import type { Product } from '../../types';
 import './CatalogTopNav.css';
 import hoppingBunny from '../../assets/hopping_bunny.gif';
 
-export function CatalogTopNav() {
+interface CatalogTopNavProps {
+  products?: Product[];
+}
+
+export function CatalogTopNav({ products }: CatalogTopNavProps = {}) {
   const { items } = useCart();
   const totalQty = items.reduce((s, i) => s + i.quantity, 0);
   const { role } = useAdminAuth();
@@ -22,6 +28,10 @@ export function CatalogTopNav() {
           <span className="logo-text">Tokki</span>
           <span className="logo-store">Shop</span>
         </Link>
+
+        <div className="nav-search">
+          <GlobalSearchBar products={products} />
+        </div>
 
         <div className="nav-actions">
           {showAdminLink && (

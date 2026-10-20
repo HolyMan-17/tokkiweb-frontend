@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useMemo, useCallback } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
@@ -43,7 +43,26 @@ export default function AllProductsPage() {
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allProducts = useMemo(() => data ?? [], [data]);
 
-  const [query, setQuery] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const query = searchParams.get('q') ?? '';
+
+  const setQuery = useCallback(
+    (newQuery: string) => {
+      setSearchParams(
+        prev => {
+          const next = new URLSearchParams(prev);
+          if (newQuery.trim()) {
+            next.set('q', newQuery);
+          } else {
+            next.delete('q');
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const [sort, setSort] = useState<SortOption>('recent');
   const [stockOnly, setStockOnly] = useState(false);
 
@@ -106,7 +125,7 @@ export default function AllProductsPage() {
 
   return (
     <>
-      <CatalogTopNav />
+      <CatalogTopNav products={allProducts} />
 
       <div className="category-page">
         {/* Header */}

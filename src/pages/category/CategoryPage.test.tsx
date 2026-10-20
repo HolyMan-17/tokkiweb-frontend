@@ -59,7 +59,7 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(await screen.findByText('Gloss Mariposa')).toBeInTheDocument();
     expect(screen.getByText('Sombras Rosadas')).toBeInTheDocument();
 
-    await user.type(screen.getByPlaceholderText(/Buscar/i), 'hidratante');
+    await user.type(screen.getByPlaceholderText('Buscar en Maquillaje...'), 'hidratante');
 
     // "hidratante" solo existe en la descripción del Gloss Mariposa.
     expect(screen.getByText('Gloss Mariposa')).toBeInTheDocument();
