@@ -69,6 +69,16 @@
   color: var(--color-text-muted, #b07a98);
 }
 
+/* Remove default unstyled search cancel button in WebKit/Blink browsers */
+.global-search__input::-webkit-search-cancel-button,
+.global-search__input::-webkit-search-decoration,
+.global-search__input::-webkit-search-results-button,
+.global-search__input::-webkit-search-results-decoration {
+  -webkit-appearance: none;
+  appearance: none;
+  display: none;
+}
+
 .global-search__clear-btn {
   display: inline-flex;
   align-items: center;

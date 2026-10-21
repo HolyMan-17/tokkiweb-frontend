@@ -252,7 +252,7 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
               type="search"
               role="combobox"
               className="global-search__input"
-              placeholder="Buscar productos, dulces, maquillaje…"
+              placeholder="Buscar producto"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onFocus={() => setIsOpen(true)}
