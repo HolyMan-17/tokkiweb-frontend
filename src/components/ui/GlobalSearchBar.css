@@ -110,12 +110,22 @@
 }
 
 .global-search__section-title {
+  display: flex;
+  align-items: center;
+  gap: 6px;
   font-family: var(--font-display, 'DynaPuff', cursive);
   font-size: 0.85rem;
   font-weight: 700;
   color: var(--p5, #e68bbe);
   padding: 4px 8px 8px;
   margin: 0;
+}
+
+.global-search__sparkles {
+  width: 1.25rem;
+  height: 1.25rem;
+  object-fit: contain;
+  vertical-align: middle;
 }
 
 .global-search__list {

@@ -72,7 +72,7 @@ describe('GlobalSearchBar', () => {
     vi.clearAllMocks();
   });
 
-  it('1. focus on empty input opens listbox and displays "Últimas Novedades ✨" with latest products', () => {
+  it('1. focus on empty input opens listbox and displays "Últimas Novedades" with sparkles.gif and latest products', () => {
     render(
       <MemoryRouter>
         <GlobalSearchBar products={MOCK_PRODUCTS} />
@@ -86,6 +86,10 @@ describe('GlobalSearchBar', () => {
 
     expect(input).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByText(/últimas novedades/i)).toBeInTheDocument();
+
+    const sparklesImg = document.querySelector('.global-search__sparkles');
+    expect(sparklesImg).not.toBeNull();
+    expect(sparklesImg?.getAttribute('src')).toContain('sparkles');
 
     // Latest 4 products in reverse order: id 5, 4, 3, 2
     expect(screen.getByText('Photocard Holder Tokki')).toBeInTheDocument();
@@ -133,7 +137,7 @@ describe('GlobalSearchBar', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('4. shows empty state message and category links when query has no matches', () => {
+  it('4. shows empty state message and category links for all active catalog categories', () => {
     render(
       <MemoryRouter>
         <GlobalSearchBar products={MOCK_PRODUCTS} />
@@ -148,9 +152,14 @@ describe('GlobalSearchBar', () => {
       screen.getByText(/no encontramos "ramen picante"\. intente buscando en nuestras categorías/i)
     ).toBeInTheDocument();
 
-    // Check category pills appear in empty state
-    const categoryLink = screen.getByRole('link', { name: /maquillaje/i });
-    expect(categoryLink).toHaveAttribute('href', '/categorias/maquillaje');
+    // Check all categories with products in catalog appear
+    expect(screen.getByRole('link', { name: /maquillaje/i })).toHaveAttribute('href', '/categorias/maquillaje');
+    expect(screen.getByRole('link', { name: /skincare/i })).toHaveAttribute('href', '/categorias/skincare');
+    expect(screen.getByRole('link', { name: /zona kpop/i })).toHaveAttribute('href', '/categorias/zona-kpop');
+    expect(screen.getByRole('link', { name: /dulces & comida asiatica/i })).toHaveAttribute('href', '/categorias/dulces-&-comida-asiatica');
+
+    // Categories without products must not appear
+    expect(screen.queryByRole('link', { name: /accesorios/i })).not.toBeInTheDocument();
   });
 
   it('5. submitting with Enter or clicking "Ver todos" navigates to /productos?q=...', () => {
@@ -170,7 +179,7 @@ describe('GlobalSearchBar', () => {
     expect(input).toHaveAttribute('aria-expanded', 'false');
   });
 
-  it('6. clear button (×) empties input and restores "Últimas Novedades ✨"', () => {
+  it('6. clear button (×) empties input and restores "Últimas Novedades"', () => {
     render(
       <MemoryRouter>
         <GlobalSearchBar products={MOCK_PRODUCTS} />

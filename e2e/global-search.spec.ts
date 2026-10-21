@@ -144,4 +144,56 @@ test.describe('Global Search Bar — Desktop & Mobile Interaction', () => {
     await cancelBtn.click();
     await expect(cancelBtn).not.toBeVisible();
   });
+
+  test('empty state renders category pills for all active categories in catalog', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+
+    await page.route('**/api/products', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: [
+            {
+              product_id: 1,
+              product_name: 'Gloss Mágico Bunny',
+              product_price: '5.50',
+              product_description: 'Brillo labial hidratante.',
+              qty_available: 10,
+              in_stock: true,
+              category: 'Maquillaje',
+              product_image_url: null,
+            },
+            {
+              product_id: 2,
+              product_name: 'Mochi Fresa Cream',
+              product_price: '3.50',
+              product_description: 'Dulce tradicional relleno de crema.',
+              qty_available: 8,
+              in_stock: true,
+              category: 'Dulces & Comida Asiatica',
+              product_image_url: null,
+            },
+          ],
+        }),
+      });
+    });
+
+    await page.goto('/');
+
+    const searchInput = page.getByRole('combobox', { name: /buscar producto/i });
+    await searchInput.fill('termino-inexistente-xyz');
+
+    await expect(
+      page.getByText(/no encontramos "termino-inexistente-xyz"\. intente buscando en nuestras categorías/i),
+    ).toBeVisible();
+
+    const listbox = page.locator('#tokki-search-listbox');
+    await expect(listbox.getByRole('link', { name: /maquillaje/i })).toBeVisible();
+    await expect(listbox.getByRole('link', { name: /dulces & comida asiatica/i })).toBeVisible();
+    await expect(listbox.getByRole('link', { name: /accesorios/i })).not.toBeVisible();
+  });
 });

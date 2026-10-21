@@ -6,6 +6,7 @@ import { matchesSearch } from '../../utils/productSearch';
 import { CATEGORIES, slugify, formatPrice } from '../../constants';
 import { getCategoryIcon } from './CategoryIcons';
 import { ROUTES } from '../../lib/routes';
+import sparklesGif from '../../assets/sparkles.gif';
 import './GlobalSearchBar.css';
 
 // ── Module-level helpers & cache ──────────────────────────────────────────────
@@ -39,6 +40,76 @@ const SEARCH_SVG = (
   </svg>
 );
 
+// ── Sub-components for modularity ─────────────────────────────────────────────
+
+interface SearchItemButtonProps {
+  product: Product;
+  onSelect: (id: number) => void;
+}
+
+function SearchItemButton({ product, onSelect }: SearchItemButtonProps) {
+  return (
+    <button
+      type="button"
+      role="option"
+      aria-selected={false}
+      className="global-search__item"
+      onClick={() => onSelect(product.product_id)}
+    >
+      {product.product_image_url ? (
+        <img
+          src={product.product_image_url}
+          alt=""
+          className="global-search__thumb"
+          loading="lazy"
+        />
+      ) : (
+        <span className="global-search__thumb global-search__thumb--placeholder">
+          🐰
+        </span>
+      )}
+      <div className="global-search__item-info">
+        <span className="global-search__item-name">{product.product_name}</span>
+        <span className="global-search__item-category">{product.category}</span>
+      </div>
+      <span className="global-search__item-price">
+        {formatPrice(product.product_price)}
+      </span>
+    </button>
+  );
+}
+
+interface SearchEmptyStateProps {
+  query: string;
+  categories: { name: string; emoji: string }[];
+  onClose: () => void;
+}
+
+function SearchEmptyState({ query, categories, onClose }: SearchEmptyStateProps) {
+  return (
+    <div className="global-search__empty">
+      <p className="global-search__empty-message">
+        No encontramos "{query}". Intente buscando en nuestras categorías
+      </p>
+      <div className="global-search__categories">
+        {categories.map((cat) => (
+          <Link
+            key={cat.name}
+            to={ROUTES.category(slugify(cat.name))}
+            className="global-search__category-pill"
+            onClick={onClose}
+          >
+            <span className="global-search__category-icon">
+              {getCategoryIcon(cat.name) ?? cat.emoji}
+            </span>
+            <span>{cat.name}</span>
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 interface GlobalSearchBarProps {
   products?: Product[];
 }
@@ -53,7 +124,6 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
 
-  // Use provided products if passed; otherwise fallback to cached fetch
   const allProducts = initialProducts ?? fetchedProducts;
 
   useEffect(() => {
@@ -63,16 +133,13 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
         .then((data) => {
           if (isSubscribed) setFetchedProducts(data);
         })
-        .catch(() => {
-          // silently handle or empty list
-        });
+        .catch(() => {});
       return () => {
         isSubscribed = false;
       };
     }
   }, [initialProducts]);
 
-  // Lock mobile body scroll when mobile modal is open
   useEffect(() => {
     if (isMobileOpen) {
       const originalOverflow = document.body.style.overflow;
@@ -83,7 +150,6 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
     }
   }, [isMobileOpen]);
 
-  // Click-outside listener (using mousedown to prevent race condition with suggestion clicks)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
@@ -98,16 +164,21 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
 
   const trimmedQuery = query.trim();
 
-  // Novedades (last 4 products in catalog reversed)
   const latestProducts = useMemo(() => {
     return allProducts.slice(-4).reverse();
   }, [allProducts]);
 
-  // Matching products
   const matchingProducts = useMemo(() => {
     if (!trimmedQuery) return [];
     return allProducts.filter((p) => matchesSearch(p, trimmedQuery));
   }, [allProducts, trimmedQuery]);
+
+  const activeCategories = useMemo(() => {
+    if (allProducts.length === 0) return CATEGORIES;
+    const availableCategoryNames = new Set(allProducts.map((p) => p.category));
+    const matched = CATEGORIES.filter((cat) => availableCategoryNames.has(cat.name));
+    return matched.length > 0 ? matched : CATEGORIES;
+  }, [allProducts]);
 
   const closeSearch = useCallback(() => {
     setIsOpen(false);
@@ -158,14 +229,11 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
     inputRef.current?.focus();
   }, []);
 
-  const highlightedCategories = useMemo(() => CATEGORIES.slice(0, 4), []);
-
   return (
     <div
       ref={containerRef}
       className={`global-search ${isMobileOpen ? 'global-search--mobile-open' : ''}`}
     >
-      {/* Mobile circular trigger button (hidden on desktop via CSS) */}
       <button
         type="button"
         className="global-search__mobile-trigger"
@@ -175,7 +243,6 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
         {SEARCH_SVG}
       </button>
 
-      {/* Search panel (inline on desktop, full-screen overlay on mobile) */}
       <div className="global-search__panel">
         <div className="global-search__header">
           <div className="global-search__pill">
@@ -217,80 +284,41 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
           </button>
         </div>
 
-        {/* Dropdown listbox (Desktop floating card / Mobile scrollable body) */}
         {isOpen && (
           <div id="tokki-search-listbox" role="listbox" className="global-search__dropdown">
             {!trimmedQuery ? (
-              // Zero-Query: Últimas Novedades
               <div className="global-search__suggestions">
-                <p className="global-search__section-title">Últimas Novedades ✨</p>
+                <p className="global-search__section-title">
+                  Últimas Novedades
+                  <img
+                    src={sparklesGif}
+                    alt=""
+                    className="global-search__sparkles"
+                    width={20}
+                    height={20}
+                    loading="lazy"
+                  />
+                </p>
                 <div className="global-search__list">
                   {latestProducts.map((p) => (
-                    <button
+                    <SearchItemButton
                       key={p.product_id}
-                      type="button"
-                      role="option"
-                      aria-selected={false}
-                      className="global-search__item"
-                      onClick={() => handleSelectProduct(p.product_id)}
-                    >
-                      {p.product_image_url ? (
-                        <img
-                          src={p.product_image_url}
-                          alt=""
-                          className="global-search__thumb"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="global-search__thumb global-search__thumb--placeholder">
-                          🐰
-                        </span>
-                      )}
-                      <div className="global-search__item-info">
-                        <span className="global-search__item-name">{p.product_name}</span>
-                        <span className="global-search__item-category">{p.category}</span>
-                      </div>
-                      <span className="global-search__item-price">
-                        {formatPrice(p.product_price)}
-                      </span>
-                    </button>
+                      product={p}
+                      onSelect={handleSelectProduct}
+                    />
                   ))}
                 </div>
               </div>
             ) : matchingProducts.length > 0 ? (
-              // Active Query with Matches
               <div className="global-search__suggestions">
                 <p className="global-search__section-title">Sugerencias</p>
                 <div className="global-search__list">
                   {matchingProducts.slice(0, 5).map((p) => (
-                    <button
+                    <SearchItemButton
                       key={p.product_id}
-                      type="button"
-                      role="option"
-                      aria-selected={false}
-                      className="global-search__item"
-                      onClick={() => handleSelectProduct(p.product_id)}
-                    >
-                      {p.product_image_url ? (
-                        <img
-                          src={p.product_image_url}
-                          alt=""
-                          className="global-search__thumb"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <span className="global-search__thumb global-search__thumb--placeholder">
-                          🐰
-                        </span>
-                      )}
-                      <div className="global-search__item-info">
-                        <span className="global-search__item-name">{p.product_name}</span>
-                        <span className="global-search__item-category">{p.category}</span>
-                      </div>
-                      <span className="global-search__item-price">
-                        {formatPrice(p.product_price)}
-                      </span>
-                    </button>
+                      product={p}
+                      onSelect={handleSelectProduct}
+                    />
                   ))}
                 </div>
 
@@ -305,27 +333,11 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
                 </div>
               </div>
             ) : (
-              // Empty State (No Matches)
-              <div className="global-search__empty">
-                <p className="global-search__empty-message">
-                  No encontramos "{trimmedQuery}". Intente buscando en nuestras categorías
-                </p>
-                <div className="global-search__categories">
-                  {highlightedCategories.map((cat) => (
-                    <Link
-                      key={cat.name}
-                      to={ROUTES.category(slugify(cat.name))}
-                      className="global-search__category-pill"
-                      onClick={closeSearch}
-                    >
-                      <span className="global-search__category-icon">
-                        {getCategoryIcon(cat.name) ?? cat.emoji}
-                      </span>
-                      <span>{cat.name}</span>
-                    </Link>
-                  ))}
-                </div>
-              </div>
+              <SearchEmptyState
+                query={trimmedQuery}
+                categories={activeCategories}
+                onClose={closeSearch}
+              />
             )}
           </div>
         )}
