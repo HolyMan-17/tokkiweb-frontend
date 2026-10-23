@@ -460,6 +460,56 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('bear');
   });
 
+  it('CATEGORIES contains Albumes directly below Zona KPOP (index 1)', () => {
+    expect(CATEGORIES[0].name).toBe('Zona KPOP');
+    expect(CATEGORIES[1].name).toBe('Albumes');
+    expect(CATEGORIES[1].emoji).toBe('💿');
+    expect(slugify(CATEGORIES[1].name)).toBe('albumes');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Albumes with album_icon.png and category-albumes class', () => {
+    const icon = CATEGORY_ICONS['Albumes'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('album_icon');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-albumes');
+  });
+
+  it('getCategoryIcon returns the Albumes icon for exact and alias matches', () => {
+    // Exact match
+    const exact = getCategoryIcon('Albumes');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('album_icon');
+
+    // Accent match
+    const accented = getCategoryIcon('Álbumes');
+    expect(accented).not.toBeNull();
+    const { container: c2 } = render(<>{accented}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('album_icon');
+
+    // Case-insensitive match
+    const lower = getCategoryIcon('albumes');
+    expect(lower).not.toBeNull();
+    const { container: c3 } = render(<>{lower}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('album_icon');
+
+    // Singular / alias matches
+    const singular = getCategoryIcon('album');
+    expect(singular).not.toBeNull();
+    const { container: c4 } = render(<>{singular}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('album_icon');
+
+    const cdAlias = getCategoryIcon('cd');
+    expect(cdAlias).not.toBeNull();
+    const { container: c5 } = render(<>{cdAlias}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('album_icon');
+  });
+
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();

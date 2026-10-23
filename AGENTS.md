@@ -257,6 +257,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Category            | Emoji | Product Examples                          |
 |---------------------|-------|-------------------------------------------|
 | Zona KPOP           | 🎤    | Photocards, lightsticks, idol stickers    |
+| Albumes             | 💿    | K-Pop albums, photocards, digipacks, CDs  |
 | Maquillaje          | 💄    | Lip balms, gloss, eyeshadow, tints, liner |
 | Skincare            | 🧴    | Face masks, serums, eye patches, sunscreen|
 | Accesorios          | 💎    | Chains, necklaces, rings, earrings, clips |

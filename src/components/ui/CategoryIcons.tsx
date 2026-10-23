@@ -19,6 +19,7 @@ import spidermanImg from '../../assets/spiderman.png';
 import coupleImg from '../../assets/couple.png';
 import legoHeartGif from '../../assets/lego_heart.gif';
 import luffyImg from '../../assets/luffy.png';
+import albumIcon from '../../assets/album_icon.png';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
@@ -38,11 +39,20 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Peluches: <img src={hoppingBear} alt="" className="category-emoji-img category-bear" width={112} height={112} loading="lazy" />,
   Figuras: <img src={luffyImg} alt="" className="category-emoji-img category-luffy" width={128} height={128} loading="lazy" />,
   'Zona KPOP': <img src={kpopImg} alt="" className="category-emoji-img category-kpop" width={160} height={160} loading="lazy" />,
+  Albumes: <img src={albumIcon} alt="" className="category-emoji-img category-albumes" width={128} height={128} loading="lazy" />,
+  'Álbumes': <img src={albumIcon} alt="" className="category-emoji-img category-albumes" width={128} height={128} loading="lazy" />,
   'Bolsas o cajas de regalo': <img src={giftGif} alt="" className="category-emoji-img category-gift" width={140} height={134} loading="lazy" />,
   Otros: <img src={beatingHeart} alt="" className="category-emoji-img category-heart" width={190} height={180} loading="lazy" />,
 };
 
 const CATEGORY_ALIASES: Record<string, string> = {
+  albumes: 'Albumes',
+  'álbumes': 'Albumes',
+  album: 'Albumes',
+  'álbum': 'Albumes',
+  albums: 'Albumes',
+  cd: 'Albumes',
+  cds: 'Albumes',
   kpop: 'Zona KPOP',
   'k-pop': 'Zona KPOP',
   'zona-kpop': 'Zona KPOP',

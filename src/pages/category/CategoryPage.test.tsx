@@ -182,4 +182,36 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(await screen.findByText('Dulces & Comida Asiatica')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('Buscar en Dulces & Comida Asiatica...')).toBeInTheDocument();
   });
+
+  it('renderiza la página de categoría Albumes con su icono album_icon.png y productos correspondientes', async () => {
+    const albumProduct: Product = {
+      product_id: 601,
+      product_name: 'NewJeans 2nd EP Get Up Bunny Beach Bag',
+      product_price: '28.00',
+      product_description: 'Álbum original importado con photocards y CD.',
+      qty_available: 12,
+      in_stock: true,
+      category: 'Albumes',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, albumProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/albumes']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Albumes')).toBeInTheDocument();
+    expect(screen.getByText('NewJeans 2nd EP Get Up Bunny Beach Bag')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('album_icon');
+  });
 });

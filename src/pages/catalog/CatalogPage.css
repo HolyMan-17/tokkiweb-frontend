@@ -327,6 +327,12 @@
   transform: translateY(-0.1rem);
 }
 
+/* Albumes icon — prominently sized for carousel header */
+.category-albumes {
+  width: 4.2rem;
+  height: 4.2rem;
+}
+
 /* Bolsos o cajas de regalo icon — prominently sized and visually centered with title text */
 .category-gift {
   width: 4.6rem;
