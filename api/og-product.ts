@@ -26,6 +26,10 @@ export interface NodeRes {
   end: (body?: string) => void;
 }
 
+declare const process: {
+  env: Record<string, string | undefined>;
+};
+
 const DEFAULT_BACKEND_URL = 'https://api.tokkishopve.com';
 const DEFAULT_SITE_URL = 'https://www.tokkishopve.com';
 const DEFAULT_SITE_NAME = 'Tokki Shop';

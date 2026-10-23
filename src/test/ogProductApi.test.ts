@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import handler, { type NodeReq, type NodeRes } from './og-product';
+import handler, { type NodeReq, type NodeRes } from '../../api/og-product';
 
 describe('api/og-product handler', () => {
   const originalFetch = globalThis.fetch;
