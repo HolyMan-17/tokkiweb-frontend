@@ -114,4 +114,84 @@ describe('ProductDetailPage — temporizador del toast', () => {
     expect(screen.getByText('G')).toBeInTheDocument();
     expect(screen.getByText('G')).toHaveClass('product-image-placeholder');
   });
+
+  it('actualiza document.title con el nombre y precio del producto y lo restaura al desmontar', async () => {
+    mockFetchAllProducts.mockResolvedValue([product]);
+    const { unmount } = renderPage();
+    await act(async () => {});
+
+    expect(document.title).toBe('Gloss Fresa — $49.99 | Tokki Shop');
+
+    unmount();
+    expect(document.title).toBe('Tokki Shop — Accesorios y Dulces Coreanos');
+  });
+
+  it('renderiza el botón de compartir con etiqueta accesible', async () => {
+    mockFetchAllProducts.mockResolvedValue([product]);
+    renderPage();
+    await act(async () => {});
+
+    const shareBtn = screen.getByRole('button', { name: /compartir gloss fresa/i });
+    expect(shareBtn).toBeInTheDocument();
+  });
+
+  it('usa navigator.share cuando está disponible en el navegador', async () => {
+    const shareMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'share', {
+      value: shareMock,
+      writable: true,
+      configurable: true,
+    });
+
+    mockFetchAllProducts.mockResolvedValue([product]);
+    renderPage();
+    await act(async () => {});
+
+    const shareBtn = screen.getByRole('button', { name: /compartir gloss fresa/i });
+    await act(async () => {
+      fireEvent.click(shareBtn);
+    });
+
+    expect(shareMock).toHaveBeenCalledTimes(1);
+    expect(shareMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        title: 'Gloss Fresa — $49.99 | Tokki Shop',
+        url: expect.stringContaining('/products/1'),
+      }),
+    );
+  });
+
+  it('copia al portapapeles y muestra toast de feedback cuando navigator.share no existe', async () => {
+    // Ensure navigator.share is undefined
+    Object.defineProperty(navigator, 'share', {
+      value: undefined,
+      writable: true,
+      configurable: true,
+    });
+
+    const writeTextMock = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText: writeTextMock },
+      writable: true,
+      configurable: true,
+    });
+
+    mockFetchAllProducts.mockResolvedValue([product]);
+    renderPage();
+    await act(async () => {});
+
+    const shareBtn = screen.getByRole('button', { name: /compartir gloss fresa/i });
+    await act(async () => {
+      fireEvent.click(shareBtn);
+    });
+
+    expect(writeTextMock).toHaveBeenCalledTimes(1);
+    expect(writeTextMock).toHaveBeenCalledWith(expect.stringContaining('/products/1'));
+    expect(screen.getByText(/enlace copiado al portapapeles/i)).toBeInTheDocument();
+
+    act(() => {
+      vi.advanceTimersByTime(3000);
+    });
+    expect(screen.queryByText(/enlace copiado al portapapeles/i)).not.toBeInTheDocument();
+  });
 });

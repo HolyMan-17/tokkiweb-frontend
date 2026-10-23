@@ -7,8 +7,12 @@
   max-width: 100%;
 }
 
-/* ─── Back chip ─────────────────────────────────────────── */
+/* ─── Detail nav bar ────────────────────────────────────── */
 .detail-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-sm);
   margin-bottom: var(--space-md);
 }
 
@@ -36,6 +40,45 @@
 
 .back-link:active {
   transform: scale(0.95);
+}
+
+.share-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--pink-200);
+  box-shadow: var(--shadow-sm);
+  font-family: var(--font-display);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  transition:
+    transform 0.18s var(--ease-spring),
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.share-btn:hover {
+  border-color: var(--pink-400);
+  background: var(--pink-100);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.share-btn:active {
+  transform: scale(0.95);
+}
+
+.share-icon {
+  flex-shrink: 0;
+  transition: transform 0.2s var(--ease-spring);
+}
+
+.share-btn:hover .share-icon {
+  transform: scale(1.15) rotate(12deg);
 }
 
 /* ─── Product image sticker ─────────────────────────────── */
