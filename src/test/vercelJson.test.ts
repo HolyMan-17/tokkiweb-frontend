@@ -36,6 +36,22 @@ describe('vercel.json — Social crawler Open Graph rewrites', () => {
     expect(regex.test('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1')).toBe(false);
   });
 
+  it('tiene configurado el rewrite de crawlers para /categorias/:slug apuntando a /api/og-product', () => {
+    const rewrites = vercelConfig.rewrites as VercelRewrite[];
+    const ogRewrite = rewrites.find(
+      (r) => r.source === '/categorias/:slug' && r.destination === '/api/og-product?category=:slug',
+    );
+
+    expect(ogRewrite).toBeDefined();
+    expect(ogRewrite?.has).toBeDefined();
+    expect(ogRewrite?.has?.[0]?.type).toBe('header');
+    expect(ogRewrite?.has?.[0]?.key.toLowerCase()).toBe('user-agent');
+
+    const regex = new RegExp(ogRewrite!.has![0].value.replace(/^\(\?i\)/, ''), 'i');
+    expect(regex.test('WhatsApp/2.21.12.21 A')).toBe(true);
+    expect(regex.test('facebookexternalhit/1.1')).toBe(true);
+  });
+
   it('excluye /api/og-product del proxy general del backend para que Vercel ejecute la función serverless', () => {
     const rewrites = vercelConfig.rewrites as VercelRewrite[];
     const backendProxy = rewrites.find((r) =>

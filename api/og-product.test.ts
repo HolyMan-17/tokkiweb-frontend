@@ -100,6 +100,54 @@ describe('api/og-product handler', () => {
     expect(html).toContain('Tokki Shop — Accesorios y Dulces Coreanos');
   });
 
+  it('devuelve metadatos de categoría con rel="canonical" y og:url limpios cuando se solicita una categoría', async () => {
+    const request = new Request(
+      'https://www.tokkishopve.com/api/og-product?category=albumes&sort=asc&page=2',
+    );
+    const response = (await handler(request)) as Response;
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain('<title>Albumes — Tokki Shop</title>');
+    expect(html).toContain(
+      '<link rel="canonical" href="https://www.tokkishopve.com/categorias/albumes" />',
+    );
+    expect(html).toContain(
+      '<meta property="og:url" content="https://www.tokkishopve.com/categorias/albumes" />',
+    );
+  });
+
+  it('asegura que rel="canonical" y og:url siempre coinciden en respuestas de productos', async () => {
+    const mockProduct = {
+      product_id: 205,
+      product_name: 'TINTA LABIAL TULIP',
+      product_price: '5.50',
+      product_description: 'Tinta labial coreana',
+      category: 'Maquillaje',
+      qty_available: 3,
+      in_stock: true,
+      product_image_url: 'https://api.tokkishopve.com/images/products/tulip.webp',
+    };
+
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ success: true, data: mockProduct }),
+    }) as unknown as typeof fetch;
+
+    const request = new Request('https://www.tokkishopve.com/api/og-product?id=205&ref=fb&v=2');
+    const response = (await handler(request)) as Response;
+
+    expect(response.status).toBe(200);
+    const html = await response.text();
+    expect(html).toContain(
+      '<link rel="canonical" href="https://www.tokkishopve.com/products/205" />',
+    );
+    expect(html).toContain(
+      '<meta property="og:url" content="https://www.tokkishopve.com/products/205" />',
+    );
+  });
+
   it('devuelve fallback cuando el parámetro id es inválido o no numérico', async () => {
     const request = new Request('https://www.tokkishopve.com/api/og-product?id=abc');
     const response = (await handler(request)) as Response;

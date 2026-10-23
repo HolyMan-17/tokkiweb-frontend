@@ -35,6 +35,17 @@
       "destination": "/api/og-product?id=:id"
     },
     {
+      "source": "/categorias/:slug",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|discordbot|slackbot|linkedinbot|pinterest|google-pagerenderer|bingbot).*$"
+        }
+      ],
+      "destination": "/api/og-product?category=:slug"
+    },
+    {
       "source": "/api/((?!og-product).*)",
       "destination": "https://api.tokkishopve.com/api/$1"
     },

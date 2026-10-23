@@ -121,6 +121,12 @@ describe('ProductDetailPage — temporizador del toast', () => {
     await act(async () => {});
 
     expect(document.title).toBe('Gloss Fresa — $49.99 | Tokki Shop');
+    expect(document.querySelector('link[rel="canonical"]')?.getAttribute('href')).toBe(
+      'https://www.tokkishopve.com/products/1',
+    );
+    expect(document.querySelector('meta[property="og:url"]')?.getAttribute('content')).toBe(
+      'https://www.tokkishopve.com/products/1',
+    );
 
     unmount();
     expect(document.title).toBe('Tokki Shop — Accesorios y Dulces Coreanos');

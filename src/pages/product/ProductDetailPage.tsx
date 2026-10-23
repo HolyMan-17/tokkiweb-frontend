@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
+import { updateDocumentMetadata } from '../../utils/routeMetadata';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
@@ -22,6 +23,7 @@ interface ToastState {
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const { addItem } = useCart();
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, [id]);
   const products = data ?? [];
@@ -38,14 +40,15 @@ export default function ProductDetailPage() {
 
   const product = products.find(p => p.product_id === Number(id));
 
-  // Dynamic document title update with cleanup on unmount
+  // Dynamic document title & canonical update with cleanup on unmount
   useEffect(() => {
     if (!product) return;
-    document.title = `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`;
+    const title = `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`;
+    updateDocumentMetadata(location.pathname, { title });
     return () => {
       document.title = DEFAULT_DOC_TITLE;
     };
-  }, [product]);
+  }, [product, location.pathname]);
 
   const triggerToast = useCallback((message: string, icon = beatingHeart) => {
     setToast({ message, icon });

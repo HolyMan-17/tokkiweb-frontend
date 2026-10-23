@@ -34,6 +34,35 @@ const DEFAULT_DESCRIPTION =
   'Tienda asiatica de maquillaje, skincare, accesorios, lentes de contacto, pines, ropa, peluches, dulces y comida asiática. Envíos a toda Venezuela. 🐰';
 const THEME_COLOR = '#e68bbe';
 
+export const CATEGORIES: { name: string }[] = [
+  { name: 'Zona KPOP' },
+  { name: 'Albumes' },
+  { name: 'Maquillaje' },
+  { name: 'Skincare' },
+  { name: 'Accesorios' },
+  { name: 'Lentes de Contacto' },
+  { name: 'Pines & Chapas' },
+  { name: 'Ropa' },
+  { name: 'Bolsos y Carteras' },
+  { name: 'Dulces & Comida Asiatica' },
+  { name: 'Peluches' },
+  { name: 'Figuras' },
+  { name: 'Bolsas o cajas de regalo' },
+  { name: 'Cosplays' },
+  { name: 'Para ellos' },
+  { name: 'Regalos de pareja' },
+  { name: 'Bloques de construccion' },
+  { name: 'Otros' },
+];
+
+export function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
+
 export function escapeHtml(str: string): string {
   return str
     .replace(/&/g, '&amp;')
@@ -41,6 +70,24 @@ export function escapeHtml(str: string): string {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
+}
+
+export function cleanCanonicalUrl(
+  rawUrl: string,
+  siteUrl: string = DEFAULT_SITE_URL,
+): string {
+  const base = (siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
+  let resolvedPath: string;
+  try {
+    const parsed = new URL(rawUrl, base);
+    resolvedPath = parsed.pathname;
+  } catch {
+    resolvedPath = rawUrl.split('?')[0].split('#')[0];
+  }
+  const cleanPath = resolvedPath.split('?')[0].split('#')[0];
+  const normalized = cleanPath.startsWith('/') ? cleanPath : `/${cleanPath}`;
+  if (normalized === '/') return `${base}/`;
+  return `${base}${normalized.replace(/\/+$/, '')}`;
 }
 
 export function formatPrice(price: string | number): string {
@@ -129,10 +176,66 @@ export function buildProductOgHtml(product: ProductData, options: OgOptions = {}
 </html>`;
 }
 
+export function buildCategoryOgHtml(categorySlug: string, options: OgOptions = {}): string {
+  const siteUrl = (options.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
+  const cleanSlug = categorySlug.split('?')[0].split('#')[0].replace(/^\/+|\/+$/g, '');
+  const category = CATEGORIES.find((c) => slugify(c.name) === cleanSlug);
+  const categoryName = category ? category.name : cleanSlug;
+  const cleanCategoryUrl = `${siteUrl}/categorias/${cleanSlug}`;
+  const title = `${categoryName} — ${DEFAULT_SITE_NAME}`;
+  const rawDesc = `Descubre nuestra colección de ${categoryName} en Tokki Shop. Envíos a toda Venezuela. 🐰`;
+  const description = escapeHtml(rawDesc);
+  const escapedTitle = escapeHtml(title);
+  const logoUrl = `${siteUrl}/tokki_logo.png`;
+  const escapedLogoUrl = escapeHtml(logoUrl);
+  const escapedCategoryUrl = escapeHtml(cleanCategoryUrl);
+
+  return `<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapedTitle}</title>
+  <meta name="description" content="${description}" />
+  <meta name="theme-color" content="${THEME_COLOR}" />
+  <link rel="canonical" href="${escapedCategoryUrl}" />
+
+  <!-- Open Graph / WhatsApp / Facebook / Discord -->
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="${DEFAULT_SITE_NAME}" />
+  <meta property="og:title" content="${escapedTitle}" />
+  <meta property="og:description" content="${description}" />
+  <meta property="og:url" content="${escapedCategoryUrl}" />
+  <meta property="og:image" content="${escapedLogoUrl}" />
+  <meta property="og:image:secure_url" content="${escapedLogoUrl}" />
+  <meta property="og:image:alt" content="${escapeHtml(categoryName)}" />
+  <meta property="og:locale" content="es_VE" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:site" content="@tokkishopve" />
+  <meta name="twitter:title" content="${escapedTitle}" />
+  <meta name="twitter:description" content="${description}" />
+  <meta name="twitter:image" content="${escapedLogoUrl}" />
+
+  <!-- Fast client redirect fallback for human browsers -->
+  <meta http-equiv="refresh" content="0;url=${escapedCategoryUrl}" />
+  <script>
+    window.location.replace("${cleanCategoryUrl}");
+  </script>
+</head>
+<body>
+  <h1>${escapeHtml(categoryName)}</h1>
+  <p>${description}</p>
+  <p><a href="${escapedCategoryUrl}">Ver ${escapeHtml(categoryName)} en Tokki Shop</a></p>
+</body>
+</html>`;
+}
+
 export function buildFallbackOgHtml(options: OgOptions = {}): string {
   const siteUrl = (options.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
-  const targetUrl = options.targetUrl || siteUrl;
-  const escapedTargetUrl = escapeHtml(targetUrl);
+  const cleanTargetUrl = cleanCanonicalUrl(options.targetUrl || siteUrl, siteUrl);
+  const escapedTargetUrl = escapeHtml(cleanTargetUrl);
   const escapedTitle = escapeHtml(DEFAULT_TITLE);
   const escapedDesc = escapeHtml(DEFAULT_DESCRIPTION);
   const logoUrl = `${siteUrl}/tokki_logo.png`;
@@ -169,7 +272,7 @@ export function buildFallbackOgHtml(options: OgOptions = {}): string {
   <!-- Fast client redirect fallback for human browsers -->
   <meta http-equiv="refresh" content="0;url=${escapedTargetUrl}" />
   <script>
-    window.location.replace("${targetUrl}");
+    window.location.replace("${cleanTargetUrl}");
   </script>
 </head>
 <body>
@@ -203,6 +306,27 @@ function extractProductId(req: Request | NodeReq): number {
   return NaN;
 }
 
+function extractCategorySlug(req: Request | NodeReq): string | null {
+  if ('url' in req && req.url) {
+    try {
+      const url = new URL(req.url, 'http://localhost');
+      const catParam = url.searchParams.get('category');
+      if (catParam && catParam.trim() !== '') return catParam.trim();
+    } catch {
+      // Fall through to query inspection
+    }
+  }
+
+  if ('query' in req && req.query && req.query.category) {
+    const raw = Array.isArray(req.query.category)
+      ? req.query.category[0]
+      : req.query.category;
+    if (raw && raw.trim() !== '') return raw.trim();
+  }
+
+  return null;
+}
+
 export default async function handler(
   req: Request | NodeReq,
   res?: NodeRes,
@@ -211,11 +335,10 @@ export default async function handler(
   const backendBase = (process.env.BACKEND_URL || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
 
   const productId = extractProductId(req);
+  const categorySlug = extractCategorySlug(req);
   let html: string;
 
-  if (isNaN(productId) || productId <= 0) {
-    html = buildFallbackOgHtml({ siteUrl });
-  } else {
+  if (!isNaN(productId) && productId > 0) {
     try {
       const apiEndpoint = `${backendBase}/api/products/${productId}`;
       const response = await fetch(apiEndpoint, {
@@ -244,6 +367,10 @@ export default async function handler(
         targetUrl: `${siteUrl}/products/${productId}`,
       });
     }
+  } else if (categorySlug) {
+    html = buildCategoryOgHtml(categorySlug, { siteUrl });
+  } else {
+    html = buildFallbackOgHtml({ siteUrl });
   }
 
   // Node.js Serverless runtime (res.end & res.setHeader are native Node.js methods)

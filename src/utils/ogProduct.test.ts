@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildProductOgHtml, buildFallbackOgHtml } from './ogProduct';
+import { buildProductOgHtml, buildFallbackOgHtml, buildCategoryOgHtml } from './ogProduct';
 import type { Product } from '../types';
 
 describe('buildProductOgHtml', () => {
@@ -108,5 +108,37 @@ describe('buildFallbackOgHtml', () => {
     expect(html).toContain('<meta property="og:title" content="Tokki Shop — Accesorios y Dulces Coreanos" />');
     expect(html).toContain('<meta property="og:image" content="https://www.tokkishopve.com/tokki_logo.png" />');
     expect(html).toContain('<meta http-equiv="refresh" content="0;url=https://www.tokkishopve.com/products/999" />');
+  });
+
+  it('limpia los query parameters del canonical y og:url en fallback', () => {
+    const html = buildFallbackOgHtml({
+      siteUrl: 'https://www.tokkishopve.com',
+      targetUrl: 'https://www.tokkishopve.com/products/999?ref=promo&fbclid=123',
+    });
+
+    expect(html).toContain('<link rel="canonical" href="https://www.tokkishopve.com/products/999" />');
+    expect(html).toContain('<meta property="og:url" content="https://www.tokkishopve.com/products/999" />');
+  });
+});
+
+describe('buildCategoryOgHtml', () => {
+  it('genera metadatos Open Graph y rel="canonical" limpios y coincidentes para categorías', () => {
+    const html = buildCategoryOgHtml('albumes', {
+      siteUrl: 'https://www.tokkishopve.com',
+    });
+
+    expect(html).toContain('<title>Albumes — Tokki Shop</title>');
+    expect(html).toContain('<meta property="og:title" content="Albumes — Tokki Shop" />');
+    expect(html).toContain('<link rel="canonical" href="https://www.tokkishopve.com/categorias/albumes" />');
+    expect(html).toContain('<meta property="og:url" content="https://www.tokkishopve.com/categorias/albumes" />');
+  });
+
+  it('elimina query parameters del canonical y og:url de categorías', () => {
+    const html = buildCategoryOgHtml('zona-kpop?sort=price-asc', {
+      siteUrl: 'https://www.tokkishopve.com',
+    });
+
+    expect(html).toContain('<link rel="canonical" href="https://www.tokkishopve.com/categorias/zona-kpop" />');
+    expect(html).toContain('<meta property="og:url" content="https://www.tokkishopve.com/categorias/zona-kpop" />');
   });
 });

@@ -3,6 +3,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './components/auth/AdminAuth';
 import { ScrollToTop } from './components/ScrollToTop';
+import RouteMetadataSync from './components/RouteMetadataSync';
 import ErrorBoundary from './components/ErrorBoundary';
 import { ADMIN_PATH, ROLES } from './lib/auth';
 import { ROUTES, ADMIN_ROUTES } from './lib/routes';
@@ -74,6 +75,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <ScrollToTop />
+        <RouteMetadataSync />
         <Routes>
           {/* Home / Catalog — standalone, brings its own TopNav */}
           <Route path={ROUTES.home} element={<ErrorBoundary sectionName="el catálogo"><CatalogPage /></ErrorBoundary>} />
