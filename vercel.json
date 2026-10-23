@@ -24,8 +24,19 @@
   ],
   "rewrites": [
     {
-      "source": "/api/:match*",
-      "destination": "https://api.tokkishopve.com/api/:match*"
+      "source": "/products/:id",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|discordbot|slackbot|linkedinbot|pinterest|google-pagerenderer|bingbot).*$"
+        }
+      ],
+      "destination": "/api/og-product?id=:id"
+    },
+    {
+      "source": "/api/((?!og-product).*)",
+      "destination": "https://api.tokkishopve.com/api/$1"
     },
     {
       "source": "/images/:match*",

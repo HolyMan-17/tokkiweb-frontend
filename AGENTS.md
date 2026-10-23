@@ -165,6 +165,7 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
 - **Cart & Products Cache:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists client-side state in `localStorage` (`tokki_cart_v1` and `tokki_products_v1`). All mock seed data has been removed from git and `.gitignore`d.
+- **Product Share & Open Graph Embed Previews:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`). Dynamic `document.title` lifecycle syncs on mount and cleans up on unmount. For social crawlers that don't execute JS (WhatsApp, Discord, Facebook/Instagram, Twitter/X, Telegram), `vercel.json` intercepts user-agent crawler patterns for `/products/:id` and routes to `api/og-product.ts`, which fetches live product data (`GET /api/products/:id`) and serves edge-cached Open Graph & Twitter Card metadata with automatic client redirect fallback for humans.
 
 ---
 
@@ -201,7 +202,7 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **31 Vitest test files / 231 tests green** + **4 Playwright E2E suites green**).
+- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **42 Vitest test files / 336 tests green** + **52 Playwright E2E tests green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
 - Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
