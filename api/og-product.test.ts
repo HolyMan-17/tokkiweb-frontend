@@ -12,7 +12,7 @@ describe('api/og-product handler', () => {
     globalThis.fetch = originalFetch;
   });
 
-  it('devuelve HTML con Open Graph cuando el producto existe en el backend (Node req/res)', async () => {
+  it('devuelve HTML con Open Graph cuando el producto existe en el backend (Node.js runtime)', async () => {
     const mockProduct = {
       product_id: 30,
       product_name: 'POPSOCKET JUNGKOOK',
@@ -36,32 +36,22 @@ describe('api/og-product handler', () => {
       headers: {},
     };
 
-    let statusCode = 200;
     const headers: Record<string, string> = {};
     let responseBody = '';
 
     const res: NodeRes = {
-      status(code: number) {
-        statusCode = code;
-        return this;
-      },
+      statusCode: 0,
       setHeader(name: string, value: string) {
         headers[name] = value;
-        return this;
-      },
-      send(body: string) {
-        responseBody = body;
-        return this;
       },
       end(body?: string) {
         if (body) responseBody = body;
-        return this;
       },
     };
 
     await handler(req, res);
 
-    expect(statusCode).toBe(200);
+    expect(res.statusCode).toBe(200);
     expect(headers['Content-Type']).toContain('text/html');
     expect(headers['Cache-Control']).toContain('s-maxage=3600');
     expect(responseBody).toContain('POPSOCKET JUNGKOOK — $4.80 | Tokki Shop');
