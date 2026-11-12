@@ -36,7 +36,7 @@ The shop is fully wired to the live PostgreSQL backend API (`/api/products`, `/a
 - Customer storefront: `/` (catalog), `/categorias/:slug`, `/productos` (all products), `/products/:id`, `/cart`, `/checkout`, `/confirmation/:orderToken`
 - Admin panel (hidden path): `/tokki-admin` — dashboard, orders (`/tokki-admin/orders`), create order (`/tokki-admin/orders/new`), order detail (`/tokki-admin/orders/:id`), products (`/tokki-admin/products`), dev tools; guarded by Clerk roles
 - All paths live in `src/lib/routes.ts` — never hardcode route strings
-- Admin pages are lazy-loaded; deployed to Vercel with SPA and reverse-proxy `/api` rewrites (`vercel.json`)
+- Admin pages are lazy-loaded; deployed as a Docker container on Coolify, built from `Dockerfile` and served by `server/og-server.mjs` (SPA fallback + reverse-proxy `/api/*` and `/images/*` to the backend)
 
 ## Docs & Guidelines
 

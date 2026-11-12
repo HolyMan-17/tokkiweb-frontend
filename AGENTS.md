@@ -118,7 +118,7 @@ src/
 
 - All paths live in `src/lib/routes.ts` (`ROUTES` for the storefront, `ADMIN_ROUTES` for the panel). **Never hardcode** `/path` strings in pages/components — always use the helpers.
 - Admin pages are `lazy()`-loaded inside a `<Suspense>` boundary so the recharts/admin bundle never ships to storefront visitors.
-- Deployed to Vercel with SPA rewrites (`vercel.json`): every route rewrites to `/index.html` so deep links (including `/tokki-admin`) don't 404.
+- Deployed as a Docker container built from the repo `Dockerfile` (stage 1 runs the Vite build; stage 2 is a slim production image) on Coolify. In production, `server/og-server.mjs` serves `dist/` with an SPA fallback so deep links (including `/tokki-admin`) don't 404, and reverse-proxies `/api/*` + `/images/*` to the backend.
 - The "Todos" carousel's "Ver más" links to `/productos` (`AllProductsPage`) — the whole-inventory browser. Category carousels link to their `/categorias/:slug` page. Both share the browse UI via `CategoryPage.css`; keep new browse classes namespaced with `category-` (Vite CSS is global — see the collision note in that file).
 
 ### File Naming
@@ -165,7 +165,7 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
 - **Cart & Products Cache:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists client-side state in `localStorage` (`tokki_cart_v1` and `tokki_products_v1`). All mock seed data has been removed from git and `.gitignore`d.
-- **Product Share & Open Graph Embed Previews:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`). Dynamic `document.title` lifecycle syncs on mount and cleans up on unmount. For social crawlers that don't execute JS (WhatsApp, Discord, Facebook/Instagram, Twitter/X, Telegram), `vercel.json` intercepts user-agent crawler patterns for `/products/:id` and routes to `api/og-product.ts`, which fetches live product data (`GET /api/products/:id`) and serves edge-cached Open Graph & Twitter Card metadata with automatic client redirect fallback for humans.
+- **Product Share & Open Graph Embed Previews:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`). Dynamic `document.title` lifecycle syncs on mount and cleans up on unmount. For social crawlers that don't execute JS (WhatsApp, Telegram, Discord, Facebook/Instagram, Twitter/X, Slack, LinkedIn), `server/og-server.mjs` intercepts user-agent crawler patterns for `/products/:id`, fetches live product data (`GET /api/products/:id` via `BACKEND_URL`) and serves Open Graph & Twitter Card HTML with cache headers and automatic client redirect fallback for humans.
 
 ---
 
@@ -318,5 +318,5 @@ To add a new category: add it to `CATEGORIES` in constants, add products with th
 - Clerk roles come from `user.publicMetadata.role`: `owner` (full admin) and `tech` (full admin + Dev Tools at `/tokki-admin/dev`).
 - Auth is abstracted behind `useAdminAuth()` (`src/components/auth/useAdminAuth.ts`) + `<AuthProvider>` (`src/components/auth/AdminAuth.tsx`). Consumers NEVER call Clerk hooks directly, so the app also runs without Clerk (dev bypass via `VITE_ADMIN_DEV_BYPASS=true`).
 - Guard sections with `<RequireRole roles={[...]}>` (`src/components/auth/RequireRole.tsx`).
-- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`, `VITE_PUBLIC_SITE_URL` (injected into `index.html` OG/canonical tags — required in Vercel for link previews; see `.env.example`).
+- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`, `VITE_PUBLIC_SITE_URL` (injected into `index.html` OG/canonical tags — set as a Coolify build variable (see `Dockerfile` ARG); see `.env.example`).
 - See `.env.example` for the shape. Never commit a real publishable key.
