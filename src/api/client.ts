@@ -77,7 +77,7 @@ export async function api<T = unknown>(
     try {
       json = await res.json();
     } catch {
-      // Non-JSON response (e.g. Vercel/host HTML 502 page)
+      // Non-JSON response (e.g. host HTML 502 page)
       return { ok: false, message: NETWORK_ERROR_MSG, status: res.status };
     }
 

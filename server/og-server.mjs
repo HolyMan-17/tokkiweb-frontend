@@ -1,12 +1,11 @@
 /**
  * og-server.mjs — Production server for Coolify / Docker deployment.
  *
- * Replaces Vercel's:
+ * Production server responsibilities:
  *  - Static SPA hosting (dist/)
- *  - Serverless OG function (api/og-product.ts)
- *  - Reverse-proxy rewrites (/api/*, /images/*)
- *  - Crawler UA detection for social-embed previews (WhatsApp, Discord, etc.)
- *  - Security headers (vercel.json -> headers[])
+ *  - OG embed generation for social crawlers (WhatsApp, Discord, etc.)
+ *  - Reverse-proxy (/api/*, /images/*)
+ *  - Security headers
  *
  * Zero external dependencies — Node.js built-ins only.
  */
@@ -42,7 +41,7 @@ const DEFAULT_SITE_URL = (
   process.env.VITE_PUBLIC_SITE_URL || 'https://www.tokkishopve.com'
 ).replace(/\/+$/, '');
 
-// ─── Crawler Detection (same regex as vercel.json) ─
+// ─── Crawler Detection (social embed crawler UAs: WhatsApp, Facebook, Twitter/X, Telegram, Discord, Slack, LinkedIn, Pinterest, Bing) ─
 export const CRAWLER_RE =
   /facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|discordbot|slackbot|linkedinbot|pinterest|google-pagerenderer|bingbot/i;
 export const PRODUCT_RE = /^\/products\/(\d+)$/;
@@ -74,7 +73,7 @@ export const MIME_TYPES = {
   '.map': 'application/json',
 };
 
-// ─── Security Headers (match vercel.json) ───────
+// ─── Security Headers ───────────────────────────
 export const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
