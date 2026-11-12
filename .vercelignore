@@ -1,7 +1,0 @@
-# Tests and E2E
-**/*.test.ts
-**/*.test.tsx
-**/*.spec.ts
-e2e/
-test-results/
-playwright-report/
