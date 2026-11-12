@@ -183,6 +183,46 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(screen.getByPlaceholderText('Buscar en Dulces & Comida Asiatica...')).toBeInTheDocument();
   });
 
+  it('ordena por "Más recientes" (default) mostrando primero el producto con mayor product_id', async () => {
+    const labialViejo: Product = {
+      product_id: 10,
+      product_name: 'Labial Viejo',
+      product_price: '3.00',
+      product_description: 'Producto antiguo.',
+      qty_available: 4,
+      in_stock: true,
+      category: 'Maquillaje',
+    };
+    const labialNuevo: Product = {
+      product_id: 99,
+      product_name: 'Labial Nuevo',
+      product_price: '6.00',
+      product_description: 'Producto recién agregado.',
+      qty_available: 7,
+      in_stock: true,
+      category: 'Maquillaje',
+    };
+
+    // El backend devuelve filas en orden de inserción: el más nuevo (id 99)
+    // aparece AL FINAL del arreglo.
+    mockFetchAllProducts.mockResolvedValue([labialViejo, labialNuevo]);
+
+    renderCategory();
+
+    const select = await screen.findByRole('combobox', { name: 'Ordenar productos' });
+    expect(select).toHaveValue('recent');
+
+    const nuevos = await screen.findAllByText('Labial Nuevo');
+    const viejos = await screen.findAllByText('Labial Viejo');
+    expect(nuevos.length).toBeGreaterThan(0);
+    expect(viejos.length).toBeGreaterThan(0);
+
+    // En el DOM, el más nuevo debe aparecer ANTES que el más viejo.
+    expect(nuevos[0].compareDocumentPosition(viejos[0])).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+
   it('renderiza la página de categoría Albumes con su icono album_icon.png y productos correspondientes', async () => {
     const albumProduct: Product = {
       product_id: 601,

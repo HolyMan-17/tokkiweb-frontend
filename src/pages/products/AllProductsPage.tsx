@@ -81,6 +81,9 @@ export default function AllProductsPage() {
 
     // Sort
     switch (sort) {
+      case 'recent':
+        result.sort((a, b) => b.product_id - a.product_id);
+        break;
       case 'price-asc':
         result.sort((a, b) => Number(a.product_price) - Number(b.product_price));
         break;
@@ -90,7 +93,6 @@ export default function AllProductsPage() {
       case 'name':
         result.sort((a, b) => a.product_name.localeCompare(b.product_name));
         break;
-      // 'recent' = original order
     }
 
     return result;

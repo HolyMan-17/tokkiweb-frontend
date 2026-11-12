@@ -53,6 +53,33 @@ vi.mock('../../context/CartContext', () => ({
   }),
 }));
 
+describe('AllProductsPage — orden "Más recientes" (default)', () => {
+  it('muestra primero el producto con mayor product_id aunque llegue al final del arreglo', async () => {
+    // MOCK_PRODUCTS está en orden de inserción: Peluche Conejito Rosa (id 3,
+    // el más nuevo) es el ÚLTIMO elemento, como lo devuelve el backend.
+    render(
+      <MemoryRouter initialEntries={['/productos']}>
+        <Routes>
+          <Route path="/productos" element={<AllProductsPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const select = await screen.findByRole('combobox', { name: 'Ordenar productos' });
+    expect(select).toHaveValue('recent');
+
+    const nuevos = await screen.findAllByText('Peluche Conejito Rosa');
+    const viejos = await screen.findAllByText('Mochi Fresa Cream');
+    expect(nuevos.length).toBeGreaterThan(0);
+    expect(viejos.length).toBeGreaterThan(0);
+
+    // En el DOM, el más nuevo (id 3) debe aparecer ANTES que el más viejo (id 1).
+    expect(nuevos[0].compareDocumentPosition(viejos[0])).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING
+    );
+  });
+});
+
 describe('AllProductsPage — URL ?q= sync', () => {
   it('pre-populates search query and filters products when loaded with ?q=mochi', async () => {
     render(
