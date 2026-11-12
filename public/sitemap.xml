@@ -41,6 +41,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://www.tokkishopve.com/categorias/llaveros</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://www.tokkishopve.com/categorias/lentes-de-contacto</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>

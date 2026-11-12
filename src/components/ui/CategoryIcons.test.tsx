@@ -510,6 +510,55 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('album_icon');
   });
 
+  it('CATEGORIES contains Llaveros directly below Accesorios (index 5)', () => {
+    expect(CATEGORIES[4].name).toBe('Accesorios');
+    expect(CATEGORIES[5].name).toBe('Llaveros');
+    expect(CATEGORIES[5].emoji).toBe('🔑');
+    expect(slugify(CATEGORIES[5].name)).toBe('llaveros');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Llaveros with keychain_art.png and category-keychain class', () => {
+    const icon = CATEGORY_ICONS['Llaveros'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('keychain_art');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-keychain');
+  });
+
+  it('getCategoryIcon returns the Llaveros icon for exact and alias matches', () => {
+    // Exact match
+    const exact = getCategoryIcon('Llaveros');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('keychain_art');
+
+    // Case-insensitive match
+    const lower = getCategoryIcon('llaveros');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('keychain_art');
+
+    // Singular / alias matches
+    const singular = getCategoryIcon('llavero');
+    expect(singular).not.toBeNull();
+    const { container: c3 } = render(<>{singular}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('keychain_art');
+
+    const englishAlias = getCategoryIcon('keychain');
+    expect(englishAlias).not.toBeNull();
+    const { container: c4 } = render(<>{englishAlias}</>);
+    expect(c4.querySelector('img')?.getAttribute('src')).toContain('keychain_art');
+
+    const pluralAlias = getCategoryIcon('keychains');
+    expect(pluralAlias).not.toBeNull();
+    const { container: c5 } = render(<>{pluralAlias}</>);
+    expect(c5.querySelector('img')?.getAttribute('src')).toContain('keychain_art');
+  });
+
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();

@@ -5,6 +5,7 @@ export const CATEGORIES: { name: string; emoji: string }[] = [
   { name: 'Maquillaje',                emoji: '💄' },
   { name: 'Skincare',                  emoji: '🧴' },
   { name: 'Accesorios',                emoji: '💎' },
+  { name: 'Llaveros',                  emoji: '🔑' },
   { name: 'Lentes de Contacto',        emoji: '👁️' },
   { name: 'Pines & Chapas',            emoji: '📌' },
   { name: 'Ropa',                      emoji: '👗' },

@@ -262,6 +262,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Maquillaje          | 💄    | Lip balms, gloss, eyeshadow, tints, liner |
 | Skincare            | 🧴    | Face masks, serums, eye patches, sunscreen|
 | Accesorios          | 💎    | Chains, necklaces, rings, earrings, clips |
+| Llaveros            | 🔑    | Acrylic keychains, plush keychain charms  |
 | Lentes de Contacto  | 👁️    | Colored cosmetic contact lenses           |
 | Pines & Chapas      | 📌    | Enamel pins, pin sets                     |
 | Ropa                | 👗    | Crop tops, socks, hats, kawaii sets       |
@@ -276,7 +277,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Bloques de construccion     | 🧱    | Nano blocks, lego hearts, floral bouquets |
 | Otros                     | 🛍️    | Stickers, notebooks, totes                |
 
-To add a new category: add it to `CATEGORIES` in constants, add products with that `category` string in mock data, and the catalog page will auto-render a new carousel.
+To add a new category: add it to `CATEGORIES` in constants, add an entry + asset import in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`, with aliases in `CATEGORY_ALIASES`), add a `/categorias/<slug>` block to `public/sitemap.xml`, and the catalog page will auto-render a new carousel (empty categories are skipped until a product carries that `category` string).
 
 ## Phone numbers & WhatsApp (checkout & admin)
 

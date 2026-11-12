@@ -20,11 +20,13 @@ import coupleImg from '../../assets/couple.png';
 import legoHeartGif from '../../assets/lego_heart.gif';
 import luffyImg from '../../assets/luffy.png';
 import albumIcon from '../../assets/album_icon.png';
+import keychainArt from '../../assets/keychain_art.png';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
   Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={128} height={112} loading="lazy" />,
   Accesorios: <img src={ringImg} alt="" className="category-emoji-img category-ring" width={223} height={250} loading="lazy" />,
+  Llaveros: <img src={keychainArt} alt="" className="category-emoji-img category-keychain" width={128} height={128} loading="lazy" />,
   'Lentes de Contacto': <img src={lentesImg} alt="" className="category-emoji-img category-lentes" width={224} height={145} loading="lazy" />,
   'Pines & Chapas': <img src={pinImg} alt="" className="category-emoji-img" width={158} height={167} loading="lazy" />,
   Ropa: <img src={dressImg} alt="" className="category-emoji-img category-dress" width={128} height={128} loading="lazy" />,
@@ -128,6 +130,11 @@ const CATEGORY_ALIASES: Record<string, string> = {
   peluche: 'Peluches',
   plush: 'Peluches',
   plushies: 'Peluches',
+  llaveros: 'Llaveros',
+  llavero: 'Llaveros',
+  keychain: 'Llaveros',
+  keychains: 'Llaveros',
+  'key chain': 'Llaveros',
 };
 
 export function getCategoryIcon(name: string): React.ReactNode | null {
