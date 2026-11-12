@@ -7,19 +7,11 @@ import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import BrowseFilters, { type SortOption } from '../../components/ui/BrowseFilters';
 import { getCategoryIcon } from '../../components/ui/CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
 import { matchesSearch } from '../../utils/productSearch';
 import { ROUTES } from '../../lib/routes';
-
-type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'recent',     label: 'Más recientes' },
-  { value: 'price-asc',  label: 'Precio: menor a mayor' },
-  { value: 'price-desc', label: 'Precio: mayor a menor' },
-  { value: 'name',       label: 'Nombre A–Z' },
-];
 
 const SEARCH_SVG = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -162,33 +154,12 @@ export default function CategoryPage() {
         </div>
 
         {/* Filters row */}
-        <div className="category-filters">
-          <div className="filters-left">
-            <button
-              className={`category-stock-pill${!stockOnly ? ' active' : ''}`}
-              onClick={() => setStockOnly(false)}
-            >
-              Todos
-            </button>
-            <button
-              className={`category-stock-pill${stockOnly ? ' active' : ''}`}
-              onClick={() => setStockOnly(true)}
-            >
-              En stock ✓
-            </button>
-          </div>
-
-          <select
-            className="sort-select"
-            value={sort}
-            onChange={e => setSort(e.target.value as SortOption)}
-            aria-label="Ordenar productos"
-          >
-            {SORT_OPTIONS.map(opt => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
+        <BrowseFilters
+          stockOnly={stockOnly}
+          onStockOnlyChange={setStockOnly}
+          sort={sort}
+          onSortChange={setSort}
+        />
 
         {/* Result count */}
         <p className="category-result-count">

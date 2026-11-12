@@ -23,4 +23,5 @@ if (typeof window !== 'undefined' && !window.localStorage) {
 afterEach(() => {
   cleanup();
   window.localStorage?.clear();
+  window.sessionStorage?.clear();
 });
