@@ -206,6 +206,7 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
   test('Guarantees all category icons have proper padding and spacing with zero overlap to text or cards', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/');
+    await page.waitForSelector('.category-section');
 
     const sections = page.locator('.category-section');
     const count = await sections.count();
