@@ -158,7 +158,7 @@ export default function ProductDetailPage() {
           />
         ) : (
           <div className="product-image-placeholder">
-            {product.product_name.charAt(0)}
+            {product.product_name.charAt(0).toUpperCase()}
           </div>
         )}
       </div>

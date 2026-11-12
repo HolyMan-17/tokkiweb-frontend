@@ -78,7 +78,7 @@ export default function CartPage() {
                 />
               ) : (
                 <div className="item-image-placeholder">
-                  {item.product.product_name.charAt(0)}
+                  {item.product.product_name.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>

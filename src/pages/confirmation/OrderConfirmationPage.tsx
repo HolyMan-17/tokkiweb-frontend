@@ -118,8 +118,10 @@ export default function OrderConfirmationPage() {
 
               return (
                 <div key={itemKey} className="summary-row">
-                  <span>{qty}x {name}</span>
-                  <span>{formatPrice(total)}</span>
+                  <span className="summary-row-label">
+                    {qty}x <span className="line-item-name">{name}</span>
+                  </span>
+                  <span className="summary-row-total">{formatPrice(total)}</span>
                 </div>
               );
             })}

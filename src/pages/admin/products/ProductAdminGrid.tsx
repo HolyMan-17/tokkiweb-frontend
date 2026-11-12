@@ -44,7 +44,7 @@ export function ProductAdminGrid({
               <img src={product.product_image_url} alt={product.product_name} loading="lazy" />
             ) : (
               <span className="product-thumb-letter">
-                {product.product_name.charAt(0)}
+                {product.product_name.charAt(0).toUpperCase()}
               </span>
             )}
             {!product.in_stock && (

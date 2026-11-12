@@ -426,6 +426,12 @@
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
+  text-transform: uppercase;
+}
+
+/* Product name inside the archive confirmation — caps only */
+.archive-product-name {
+  text-transform: uppercase;
 }
 
 .product-category {

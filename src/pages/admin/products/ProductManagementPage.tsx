@@ -203,7 +203,7 @@ export default function ProductManagementPage() {
         title="¿Archivar producto?"
         message={
           <>
-            <strong>{archiveTarget?.product_name}</strong> se quitará de la tienda.{' '}
+            <strong className="archive-product-name">{archiveTarget?.product_name}</strong> se quitará de la tienda.{' '}
             Esta acción <strong>no se puede revertir</strong>.
           </>
         }

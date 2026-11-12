@@ -157,12 +157,12 @@
   color: var(--color-text-secondary);
 }
 
-.order-summary-card .summary-row span:first-child {
+.order-summary-card .summary-row-label {
   font-weight: 600;
   color: var(--color-text);
 }
 
-.order-summary-card .summary-row span:last-child {
+.order-summary-card .summary-row-total {
   font-weight: 700;
   white-space: nowrap;
 }

@@ -90,7 +90,7 @@ describe('OrderConfirmationPage — confirmación por token de recibo', () => {
 
     expect(screen.getByText(/Pedido #101/)).toBeInTheDocument();
     expect(screen.getByText('Pendiente')).toBeInTheDocument();
-    expect(screen.getByText(/2x Tokki Sticker Pack/)).toBeInTheDocument();
+    expect(screen.getByText('2x')).toHaveTextContent('Tokki Sticker Pack');
     expect(screen.getAllByText('$10.00')).toHaveLength(2);
   });
 

@@ -34,7 +34,7 @@ export function ProductCard({ product }: { product: Product }) {
             />
           ) : (
             <div className="card-img-placeholder">
-              {product.product_name.charAt(0)}
+              {product.product_name.charAt(0).toUpperCase()}
             </div>
           )}
           {!product.in_stock && (

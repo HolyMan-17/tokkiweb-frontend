@@ -283,6 +283,7 @@
   color: var(--color-text);
   font-weight: 600;
   word-break: break-word;
+  text-transform: uppercase;
 }
 
 .item-price {

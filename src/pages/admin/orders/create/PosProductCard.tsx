@@ -46,7 +46,7 @@ export function PosProductCard({
           />
         ) : (
           <div className="pos-thumb-placeholder">
-            {product.product_name.charAt(0)}
+            {product.product_name.charAt(0).toUpperCase()}
           </div>
         )}
         {isOutOfStock && <span className="pos-sold-out-ribbon">Agotado</span>}

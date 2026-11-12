@@ -558,3 +558,11 @@ a:hover { color: var(--color-primary-hover); }
     --max-width: 1200px;
   }
 }
+
+/* ─── Product name display ──────────────────────────────────────
+   Product names render in CAPS across storefront + admin. The DOM
+   text stays as authored (backend casing preserved) — only the
+   visual rendering is uppercase. */
+.line-item-name {
+  text-transform: uppercase;
+}

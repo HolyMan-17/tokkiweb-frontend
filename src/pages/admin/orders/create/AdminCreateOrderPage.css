@@ -406,6 +406,7 @@
   overflow: hidden;
   text-overflow: ellipsis;
   margin: 0 0 2px 0;
+  text-transform: uppercase;
 }
 
 .item-unit-price {

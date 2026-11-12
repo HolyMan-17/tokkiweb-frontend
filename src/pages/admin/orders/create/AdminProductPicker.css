@@ -359,6 +359,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.6em;
+  text-transform: uppercase;
 }
 
 .pos-product-meta {
