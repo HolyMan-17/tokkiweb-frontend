@@ -14,6 +14,8 @@ import {
   type FormErrors,
 } from './ProductFormFields';
 
+export const RETRY_DELAY_MS = 1200;
+
 const EMPTY_FORM: ProductFormState = {
   product_name: '',
   product_price: '',
@@ -98,7 +100,9 @@ export function ProductFormModal({
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [previewUrl, setPreviewUrl] = useState<string>(() => editingProduct?.product_image_url ?? '');
   const [saving, setSaving] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const imageFileRef = useRef<File | null>(null);
+  const savedProductIdRef = useRef<number | null>(null);
 
   if (!open) return null;
 
@@ -137,6 +141,20 @@ export function ProductFormModal({
     onSuccess(editingProduct ? 'Producto actualizado' : 'Producto agregado');
   };
 
+  const successMessage = () =>
+    editingProduct ? 'Producto actualizado' : 'Producto agregado';
+
+  const attemptImageUpload = async (productId: number, file: File): Promise<boolean> => {
+    if (!auth) return false;
+    let uploaded = await uploadProductImage(productId, file, auth);
+    if (uploaded.ok) return true;
+    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
+    uploaded = await uploadProductImage(productId, file, auth);
+    if (uploaded.ok) return true;
+    setImageError(uploaded.message);
+    return false;
+  };
+
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const normalized: ProductFormState = {
@@ -156,6 +174,23 @@ export function ProductFormModal({
     setSaving(true);
 
     try {
+      // Un intento anterior ya confirmó el producto y solo falta resolver la
+      // imagen: reenviar no debe volver a crear ni actualizar el producto.
+      if (savedProductIdRef.current !== null) {
+        const pendingFile = imageFileRef.current;
+        if (pendingFile) {
+          const uploaded = await attemptImageUpload(savedProductIdRef.current, pendingFile);
+          if (uploaded) {
+            setImageError(null);
+            onSuccess(successMessage());
+          }
+          return;
+        }
+        setImageError(null);
+        onSuccess(successMessage());
+        return;
+      }
+
       const payload = {
         product_name: normalized.product_name,
         product_price: Number(normalized.product_price),
@@ -172,19 +207,47 @@ export function ProductFormModal({
         return;
       }
 
+      savedProductIdRef.current = saved.data.product_id;
+
       if (imageFileRef.current) {
-        const uploaded = await uploadProductImage(saved.data.product_id, imageFileRef.current, auth);
-        if (!uploaded.ok) {
-          showToast(`Producto guardado, pero la imagen falló: ${uploaded.message}`);
-          onSuccess('Producto guardado');
-          return;
+        const uploaded = await attemptImageUpload(saved.data.product_id, imageFileRef.current);
+        if (uploaded) {
+          setImageError(null);
+          onSuccess(successMessage());
         }
+        return;
       }
 
-      onSuccess(editingProduct ? 'Producto actualizado' : 'Producto agregado');
+      onSuccess(successMessage());
     } finally {
       setSaving(false);
     }
+  };
+
+  const handleRetryImage = async () => {
+    if (!auth || saving || savedProductIdRef.current === null) return;
+    const file = imageFileRef.current;
+    if (!file) {
+      setImageError(null);
+      onSuccess(successMessage());
+      return;
+    }
+    setSaving(true);
+    try {
+      const uploaded = await attemptImageUpload(savedProductIdRef.current, file);
+      if (uploaded) {
+        setImageError(null);
+        onSuccess(successMessage());
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveWithoutImage = () => {
+    setImageError(null);
+    showToast('Producto guardado, pero sin imagen');
+    onSuccess('Producto guardado');
   };
 
   return (
@@ -213,6 +276,30 @@ export function ProductFormModal({
             onChange={handleFieldChange}
             onBlur={handleBlur}
           />
+
+          {imageError && (
+            <div className="form-group" role="alert">
+              <span className="form-error">
+                No se pudo subir la imagen: {imageError}. El producto ya quedó guardado.
+              </span>
+              <button
+                type="button"
+                className="btn btn-outline"
+                onClick={handleRetryImage}
+                disabled={saving}
+              >
+                Reintentar imagen
+              </button>
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={handleSaveWithoutImage}
+                disabled={saving}
+              >
+                Guardar sin imagen
+              </button>
+            </div>
+          )}
 
           <div className="modal-actions">
             <button

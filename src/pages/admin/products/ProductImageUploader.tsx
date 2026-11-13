@@ -1,4 +1,5 @@
-import type { RefObject } from 'react';
+import { useRef, type RefObject } from 'react';
+import { compressImage } from '../../../utils/compressImage';
 
 const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
@@ -20,7 +21,9 @@ export function ProductImageUploader({
   onImageTooLarge,
   onRemoveCurrent,
 }: ProductImageUploaderProps) {
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const objectUrlRef = useRef<string | null>(null);
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
@@ -32,12 +35,14 @@ export function ProductImageUploader({
       onImageTooLarge();
       return;
     }
-    imageFileRef.current = file;
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setPreviewUrl(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
+    const processed = await compressImage(file);
+    imageFileRef.current = processed;
+    if (objectUrlRef.current) {
+      URL.revokeObjectURL(objectUrlRef.current);
+    }
+    const previewObjectUrl = URL.createObjectURL(processed);
+    objectUrlRef.current = previewObjectUrl;
+    setPreviewUrl(previewObjectUrl);
   };
 
   const handleRemove = () => {
