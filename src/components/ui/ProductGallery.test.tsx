@@ -80,6 +80,7 @@ describe('ProductGallery', () => {
     expect(thumbs).toHaveLength(3);
     expect(screen.getByRole('button', { name: 'Ver imagen 1 de 3' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ver imagen 3 de 3' })).toBeInTheDocument();
+    expect(screen.getByText('1 / 3')).toBeInTheDocument();
   });
 
   it('marca la primera miniatura como activa y salta a la elegida al hacer clic', async () => {
@@ -115,5 +116,43 @@ describe('ProductGallery', () => {
 
     const secondThumb = screen.getByRole('button', { name: 'Ver imagen 2 de 3' });
     expect(secondThumb).toHaveClass('active');
+  });
+
+  it('navega con las flechas de escritorio (anterior y siguiente)', async () => {
+    render(<ProductGallery name="Set Kawaii" images={IMAGES} />);
+
+    const nextBtn = screen.getByRole('button', { name: 'Imagen siguiente' });
+    const prevBtn = screen.getByRole('button', { name: 'Imagen anterior' });
+
+    expect(prevBtn).toBeDisabled();
+    expect(nextBtn).toBeEnabled();
+
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    expect(scrollToMock).toHaveBeenCalled();
+  });
+
+  it('activa y desactiva la visibilidad de controles al tocar/hacer clic', async () => {
+    vi.useFakeTimers();
+    const { container } = render(<ProductGallery name="Set Kawaii" images={IMAGES} />);
+
+    const gallery = container.querySelector('.product-gallery') as HTMLElement;
+    expect(gallery).not.toHaveClass('controls-visible');
+
+    // Tap/click shows controls
+    await act(async () => {
+      fireEvent.click(gallery);
+    });
+    expect(gallery).toHaveClass('controls-visible');
+
+    // Auto-hides after 3500ms idle
+    await act(async () => {
+      vi.advanceTimersByTime(3500);
+    });
+    expect(gallery).not.toHaveClass('controls-visible');
+
+    vi.useRealTimers();
   });
 });

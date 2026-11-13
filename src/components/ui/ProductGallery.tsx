@@ -10,9 +10,23 @@ interface ProductGalleryProps {
 export default function ProductGallery({ name, images }: ProductGalleryProps) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const rafRef = useRef<number | null>(null);
+  const hideTimerRef = useRef<number | null>(null);
+
   const [activeIndex, setActiveIndex] = useState(0);
+  const [controlsVisible, setControlsVisible] = useState(false);
 
   const gallery = images.length > 1;
+
+  const showControlsTemporarily = useCallback(() => {
+    setControlsVisible(true);
+    if (hideTimerRef.current !== null) {
+      window.clearTimeout(hideTimerRef.current);
+    }
+    hideTimerRef.current = window.setTimeout(() => {
+      setControlsVisible(false);
+      hideTimerRef.current = null;
+    }, 3500);
+  }, []);
 
   const handleScroll = useCallback(() => {
     if (rafRef.current !== null) return;
@@ -28,6 +42,7 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
   useEffect(() => {
     return () => {
       if (rafRef.current !== null) cancelAnimationFrame(rafRef.current);
+      if (hideTimerRef.current !== null) window.clearTimeout(hideTimerRef.current);
     };
   }, []);
 
@@ -43,17 +58,47 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
     );
   }
 
-  const handleThumbClick = (index: number) => {
-    setActiveIndex(index);
+  const scrollToIndex = (index: number) => {
+    const target = Math.min(Math.max(0, index), images.length - 1);
+    setActiveIndex(target);
     const track = trackRef.current;
-    const slide = track?.children[index] as HTMLElement | undefined;
+    const slide = track?.children[target] as HTMLElement | undefined;
     if (track && slide) {
       track.scrollTo?.({ left: slide.offsetLeft, behavior: 'smooth' });
     }
   };
 
+  const handleThumbClick = (index: number) => {
+    showControlsTemporarily();
+    scrollToIndex(index);
+  };
+
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    showControlsTemporarily();
+    scrollToIndex(activeIndex - 1);
+  };
+
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    showControlsTemporarily();
+    scrollToIndex(activeIndex + 1);
+  };
+
   return (
-    <div className="product-image-container product-gallery animate-scaleIn">
+    <div
+      className={`product-image-container product-gallery animate-scaleIn${controlsVisible ? ' controls-visible' : ''}`}
+      onClick={showControlsTemporarily}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          showControlsTemporarily();
+        }
+      }}
+      role="region"
+      tabIndex={0}
+      aria-label={`Galería de fotos de ${name}`}
+      onTouchStart={showControlsTemporarily}
+    >
       <div
         className="product-gallery-track"
         ref={trackRef}
@@ -74,25 +119,55 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
           </div>
         ))}
       </div>
-      <div className="product-gallery-thumbs" aria-label={`Miniaturas de ${name}`}>
-        {images.map((url, index) => (
-          <button
-            key={url}
-            type="button"
-            className={`product-gallery-thumb${index === activeIndex ? ' active' : ''}`}
-            onClick={() => handleThumbClick(index)}
-            aria-label={`Ver imagen ${index + 1} de ${images.length}`}
-            aria-current={index === activeIndex ? 'true' : undefined}
-          >
-            <img
-              src={url}
-              alt=""
-              className="product-gallery-thumb-img"
-              loading="lazy"
-              draggable={false}
-            />
-          </button>
-        ))}
+
+      <span className="product-gallery-counter" aria-hidden="true">
+        {activeIndex + 1} / {images.length}
+      </span>
+
+      <div className="product-gallery-controls">
+        <button
+          type="button"
+          className="product-gallery-arrow product-gallery-arrow-prev"
+          onClick={handlePrev}
+          disabled={activeIndex === 0}
+          aria-label="Imagen anterior"
+        >
+          ‹
+        </button>
+
+        <button
+          type="button"
+          className="product-gallery-arrow product-gallery-arrow-next"
+          onClick={handleNext}
+          disabled={activeIndex === images.length - 1}
+          aria-label="Imagen siguiente"
+        >
+          ›
+        </button>
+
+        <div className="product-gallery-thumbs" aria-label={`Miniaturas de ${name}`}>
+          {images.map((url, index) => (
+            <button
+              key={url}
+              type="button"
+              className={`product-gallery-thumb${index === activeIndex ? ' active' : ''}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleThumbClick(index);
+              }}
+              aria-label={`Ver imagen ${index + 1} de ${images.length}`}
+              aria-current={index === activeIndex ? 'true' : undefined}
+            >
+              <img
+                src={url}
+                alt=""
+                className="product-gallery-thumb-img"
+                loading="lazy"
+                draggable={false}
+              />
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ProductImagesUploader, MAX_PRODUCT_IMAGES, type GalleryItem } from './ProductImagesUploader';
@@ -44,32 +44,35 @@ function existingItem(index: number): GalleryItem {
 async function pickFiles(container: HTMLElement, files: File[]) {
   const input = container.querySelector('#product_images_input') as HTMLInputElement;
   const user = userEvent.setup({ applyAccept: false });
-  // user.upload acepta un archivo por llamada; en inputs [multiple] cada
-  // llamada añade al selection previo.
   for (const file of files) {
     await user.upload(input, file);
   }
   return user;
 }
 
-describe('ProductImagesUploader (integración con compressImage)', () => {
+describe('ProductImagesUploader (carrusel de gran tamaño con swipe y botón +)', () => {
+  let scrollToMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
     mockCompress.mockImplementation(async (file: File) =>
       new File([file], 'comprimido.webp', { type: 'image/webp' }));
+    scrollToMock = vi.fn();
+    (Element.prototype as unknown as { scrollTo: unknown }).scrollTo = scrollToMock;
   });
 
   afterEach(() => {
+    delete (Element.prototype as unknown as { scrollTo?: unknown }).scrollTo;
     vi.restoreAllMocks();
   });
 
-  it('muestra el estado vacío con la pista de formatos y el contador 0/5', () => {
+  it('muestra el estado vacío grande con la pista de formatos y el contador 0/5', () => {
     render(<ProductImagesUploader {...makeProps()} />);
 
     expect(screen.getByText('Fotos del Producto (0/5)')).toBeInTheDocument();
-    expect(screen.getByText('Agregar')).toBeInTheDocument();
-    expect(screen.getByText('JPG, PNG, WEBP')).toBeInTheDocument();
-    expect(document.querySelector('.images-uploader-slot')).toBeNull();
+    expect(screen.getByText('Subir fotos')).toBeInTheDocument();
+    expect(screen.getByText('JPG, PNG, WEBP (máx. 5 MB)')).toBeInTheDocument();
+    expect(document.querySelector('.images-carousel-slide')).toBeNull();
   });
 
   it('valida y comprime los archivos elegidos antes de entregarlos', async () => {
@@ -95,7 +98,6 @@ describe('ProductImagesUploader (integración con compressImage)', () => {
 
     const { container } = render(<ProductImagesUploader {...props} />);
     const input = container.querySelector('#product_images_input') as HTMLInputElement;
-    // Los navegadores entregan una selección múltiple como UN solo evento change.
     fireEvent.change(input, { target: { files: [a, b] } });
 
     await waitFor(() => {
@@ -135,13 +137,19 @@ describe('ProductImagesUploader (integración con compressImage)', () => {
     expect(props.onFilesSelected).not.toHaveBeenCalled();
   });
 
-  it('oculta el botón Agregar y avisa al llegar al máximo de 5 imágenes', () => {
-    const gallery: GalleryItem[] = [0, 1, 2, 3, 4].map(pendingItem);
-    render(<ProductImagesUploader {...makeProps({ gallery })} />);
+  it('muestra el botón + para agregar más fotos y avisa al llegar a 5', () => {
+    const gallery: GalleryItem[] = [pendingItem(1), pendingItem(2)];
+    const { rerender } = render(<ProductImagesUploader {...makeProps({ gallery })} />);
+
+    expect(screen.getByText(`Fotos del Producto (2/${MAX_PRODUCT_IMAGES})`)).toBeInTheDocument();
+    expect(screen.getByTitle('Agregar otra foto')).toBeInTheDocument();
+
+    const fullGallery: GalleryItem[] = [0, 1, 2, 3, 4].map(pendingItem);
+    rerender(<ProductImagesUploader {...makeProps({ gallery: fullGallery })} />);
 
     expect(screen.getByText(`Fotos del Producto (5/${MAX_PRODUCT_IMAGES})`)).toBeInTheDocument();
     expect(screen.getByText(`Máximo ${MAX_PRODUCT_IMAGES} imágenes`)).toBeInTheDocument();
-    expect(document.querySelector('#product_images_input')).toBeNull();
+    expect(screen.queryByTitle('Agregar otra foto')).toBeNull();
   });
 
   it('recorta la selección que exceda el espacio restante y avisa', async () => {
@@ -159,7 +167,7 @@ describe('ProductImagesUploader (integración con compressImage)', () => {
     expect(mockCompress).toHaveBeenCalledTimes(2);
   });
 
-  it('etiqueta la primera imagen como portada y pide el cambio con las demás', () => {
+  it('etiqueta la primera imagen como portada y permite hacer portada las demás', () => {
     const gallery: GalleryItem[] = [existingItem(1), existingItem(2), existingItem(3)];
     const props = makeProps({ gallery });
     render(<ProductImagesUploader {...props} />);
@@ -183,7 +191,30 @@ describe('ProductImagesUploader (integración con compressImage)', () => {
     expect(props.onRemoveItem).toHaveBeenCalledWith('pending-2');
   });
 
-  it('muestra el estado de subida fallida en la ranura pendiente', () => {
+  it('permite navegar entre imágenes con las flechas y los indicadores de punto', async () => {
+    const gallery: GalleryItem[] = [existingItem(1), existingItem(2), existingItem(3)];
+    render(<ProductImagesUploader {...makeProps({ gallery })} />);
+
+    const nextBtn = screen.getByRole('button', { name: 'Ver imagen siguiente' });
+    const prevBtn = screen.getByRole('button', { name: 'Ver imagen anterior' });
+
+    expect(prevBtn).toBeDisabled();
+    expect(nextBtn).toBeEnabled();
+
+    await act(async () => {
+      fireEvent.click(nextBtn);
+    });
+
+    expect(scrollToMock).toHaveBeenCalled();
+
+    const dot3 = screen.getByRole('button', { name: 'Ir a imagen 3' });
+    await act(async () => {
+      fireEvent.click(dot3);
+    });
+    expect(scrollToMock).toHaveBeenCalled();
+  });
+
+  it('muestra el estado de subida fallida en el elemento pendiente', () => {
     const failed: GalleryItem = { ...pendingItem(1), status: 'failed' };
     render(<ProductImagesUploader {...makeProps({ gallery: [failed] })} />);
 

@@ -76,9 +76,9 @@ export function useProductGallery({
   };
 
   useEffect(() => {
-    const urls = objectUrlsRef.current;
     return () => {
-      for (const url of urls) {
+      // eslint-disable-next-line react-hooks/exhaustive-deps -- Limpia todas las URLs acumuladas en la ref durante el ciclo de vida al desmontar
+      for (const url of objectUrlsRef.current) {
         URL.revokeObjectURL(url);
       }
     };
@@ -88,6 +88,7 @@ export function useProductGallery({
     const remaining = Math.max(0, MAX_PRODUCT_IMAGES - galleryRef.current.length);
     const accepted = files.slice(0, remaining);
     const items: GalleryItem[] = accepted.map(file => {
+      // react-doctor-disable-next-line react-doctor/no-create-object-url-without-revoke -- Revocados en unmount via objectUrlsRef y al descartar o quitar en revokePreview
       const previewUrl = URL.createObjectURL(file);
       objectUrlsRef.current.push(previewUrl);
       objectIdCounter.current += 1;
