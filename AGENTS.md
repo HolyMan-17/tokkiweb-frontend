@@ -75,7 +75,8 @@ src/
 │   ├── layout/            # CatalogTopNav, Header, Layout (+CSS each)
 │   └── ui/                # ProductCard, QuantitySelector, StatusBadge,
 │                          #   EmptyState, LoadingSpinner, ConfirmDialog,
-│                          #   CategoryIcons (+CSS each)
+│                          #   CategoryIcons, ProductGallery (+CSS each),
+│                          #   galleryUtils
 ├── constants/index.ts     # Categories, delivery/payment options, full
 │                          #   country-code list (digits+hints+validation),
 │                          #   formatPrice(), formatDate()
@@ -85,8 +86,8 @@ src/
 │   ├── auth.ts            # ADMIN_PATH (/tokki-admin), roles, Clerk config
 │   └── routes.ts          # ROUTES + ADMIN_ROUTES — single source of truth
 │                          #   for every path (no hardcoded strings in pages)
-├── store/localStore.ts    # localStorage-backed client cache (products cache &
-│                          #   cart persistence).
+├── store/localStore.ts    # localStorage cart persistence (tokki_cart_v1);
+│                          #   products/orders talk straight to the API
 ├── pages/
 │   ├── catalog/           # CatalogPage (standalone, full-bleed carousels,
 │   │                      #   animated hero bg, brand logo + gifs)
@@ -95,7 +96,8 @@ src/
 │   │                      #   (search/sort/stock/grid) reused by AllProductsPage
 │   ├── products/          # AllProductsPage ("Ver más" for the Todos carousel,
 │   │                      #   /productos — whole-inventory search/sort/filter)
-│   ├── product/           # ProductDetailPage (Layout variant="customer")
+│   ├── product/           # ProductDetailPage (Layout variant="customer",
+│   │                      #   ProductGallery carousel)
 │   ├── cart/              # CartPage
 │   ├── checkout/          # CheckoutPage (country-aware phone validation)
 │   ├── confirmation/      # OrderConfirmationPage (reads order via state)
@@ -103,7 +105,8 @@ src/
 │       ├── dashboard/     # AdminDashboardPage (recharts: bar + pie, top products)
 │       ├── orders/        # OrdersDashboardPage, OrderDetailPage
 │       │   └── create/    # AdminCreateOrderPage, AdminProductPicker (POS order creator)
-│       ├── products/      # ProductManagementPage (CRUD modal + filters)
+│       ├── products/      # ProductManagementPage (CRUD modal + filters),
+│       │                  #   ProductImagesUploader + useProductGallery
 │       ├── devtools/      # DevToolsPage (tech role only)
 │       └── signin/        # AdminSignInPage (Clerk, branded)
 ├── types/index.ts         # Product, OrderSummary, OrderDetail, CartItem,
@@ -146,6 +149,12 @@ src/
 - Category emojis on the storefront are replaced by brand gifs/pngs — use the shared `CATEGORY_ICONS` map (`src/components/ui/CategoryIcons.tsx`), never hand-roll per page.
 - Every confirmation pop-up uses the shared `<ConfirmDialog>` (`src/components/ui/ConfirmDialog.tsx`). Never use native `window.confirm()` / `window.alert()`.
 
+### Product Gallery
+
+- `<ProductGallery>` (`src/components/ui/ProductGallery.tsx`) is the single renderer for product imagery on the detail page — never hand-roll an `<img>` wall from `product.product_image_urls` (max 5, index 0 = cover).
+- **Desktop layout rule (do not regress):** the gallery is NEVER sticky/pinned. `.product-image-container` in `src/pages/product/ProductDetailPage.css` keeps `max-height: calc(100dvh - var(--nav-height) - 150px)` with no `position: sticky`, so it stays top-aligned with the info column and can never overflow the viewport bottom. `e2e/product-gallery.spec.ts` asserts both (≤2px top alignment, no viewport overflow).
+- Admin image editing goes through `ProductImagesUploader` + `useProductGallery` (≤5 images, cover = first slide); the old single-image `ProductImageUploader` was removed.
+
 ### API Patterns
 
 - All backend calls go through `api<T>(path, options)` from `src/api/client.ts`.
@@ -164,9 +173,11 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Admin Dashboard Analytics:** Interactive timeframe filters (`Días`, `Semanas`, `Meses`), metric toggle (`Ingresos ($)` vs `Pedidos (#)`), and distribution breakdown (`Por Estado`, `Por Pago`, `Por Entrega`). Highlights top best-selling products (`topProducts.ts`) and direct link to low stock items (`/tokki-admin/products?stock=low`).
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
-- **Cart & Products Cache:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists client-side state in `localStorage` (`tokki_cart_v1` and `tokki_products_v1`). All mock seed data has been removed from git and `.gitignore`d.
+- **Cart Persistence:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists the cart client-side in `localStorage` (`tokki_cart_v1`). Products and orders are not cached client-side — they talk directly to the backend API (`src/api/products.ts` / `src/api/orders.ts`). All mock seed data has been removed from git and `.gitignore`d.
 - **Product Share & Open Graph Embed Previews:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`). Dynamic `document.title` lifecycle syncs on mount and cleans up on unmount. For social crawlers that don't execute JS (WhatsApp, Telegram, Discord, Facebook/Instagram, Twitter/X, Slack, LinkedIn), `server/og-server.mjs` intercepts user-agent crawler patterns for `/products/:id`, fetches live product data (`GET /api/products/:id` via `BACKEND_URL`) and serves Open Graph & Twitter Card HTML with cache headers and automatic client redirect fallback for humans.
-- **Product Image Pipeline (admin):** `ProductImageUploader` pre-checks type/size (≤5 MB) then compresses before upload via `compressImage(file)` (`src/utils/compressImage.ts`): files ≤1 MB pass through untouched; larger files are canvas-downscaled to ≤1600 px and re-encoded as WebP q0.82 (JPEG fallback where WebP encoding is unsupported; one extra pass at q0.7 if still >1.5 MB; never throws — falls back to the original file). The ref stores the compressed `File` and the preview uses `URL.createObjectURL` (previous URL revoked on re-selection). In `ProductFormModal`, an upload failure after the product row was committed keeps the modal open with a `role="alert"` recovery block: one automatic retry after `RETRY_DELAY_MS` (1200 ms), then "Reintentar imagen" / "Guardar sin imagen" actions; re-submitting Guardar in that state retries only the image (`savedProductIdRef` prevents duplicate product creation). **Deploy note:** the SPA calls the API same-origin (`/api`), so the nginx server block serving the site must set `client_max_body_size 6M;` (nginx's 1 MB default 413s bigger uploads before Node sees them — Nov 2026 incident).
+- **Product Image Gallery (storefront):** `<ProductGallery>` (`src/components/ui/ProductGallery.tsx`, helper `galleryUtils.ts`) renders a swipeable scroll-snap carousel from `product.product_image_urls` (max 5; index 0 = cover / Portada) on the product detail page, with a counter badge (`1 / 3`), controls that auto-hide after a few seconds and reappear on tap/scroll, desktop prev/next arrows, and a floating frosted thumbnails pill tracking the active slide (`aria-current`). Products without a gallery fall back to the single legacy `product_image_url` (or the initial-letter placeholder). On desktop the gallery is NEVER sticky/pinned — `.product-image-container` in `src/pages/product/ProductDetailPage.css` uses `max-height: calc(100dvh - var(--nav-height) - 150px)` (no `position: sticky`) so the gallery stays top-aligned with the info column and can never overflow the viewport bottom; a Playwright regression test (`e2e/product-gallery.spec.ts`) asserts ≤2px alignment and no viewport overflow. Unit tests in `ProductGallery.test.tsx`.
+- **Product Image Pipeline (admin, multi-image):** `ProductImagesUploader` (`src/pages/admin/products/ProductImagesUploader.tsx`) accepts up to `MAX_PRODUCT_IMAGES = 5` files per picker (JPG/PNG/WEBP pre-check, ≤5 MB each), then compresses each via `compressImage(file)` (`src/utils/compressImage.ts`): files ≤1 MB pass through untouched; larger files are canvas-downscaled to ≤1600 px and re-encoded as WebP q0.82 (JPEG fallback where WebP encoding is unsupported; one extra pass at q0.7 if still >1.5 MB; never throws — falls back to the original file). Previews use `URL.createObjectURL` (revoked on remove/discard and on modal unmount). The uploader is a carousel with a "Portada" cover badge, per-image Portada/Quitar actions, and a floating "+" button; upload orchestration lives in `useProductGallery.ts` — on save, a sequential queue uploads each file with one automatic retry after `RETRY_DELAY_MS` (1200 ms), then `reorderProductImages` syncs the final order. In `ProductFormModal`, an upload failure after the product row was committed keeps the modal open with a `role="alert"` recovery block ("Reintentar" / "Continuar sin ellas"); re-submitting Guardar in that state retries only the unfinished images (`savedProductIdRef` prevents duplicate product creation). The old single-image `ProductImageUploader` component was deleted. **Deploy note:** the SPA calls the API same-origin (`/api`), so the nginx server block serving the site must set `client_max_body_size 6M;` (nginx's 1 MB default 413s bigger uploads before Node sees them — Nov 2026 incident).
+- **Product Gallery API:** `src/api/products.ts` mirrors the backend contract v0.10.0 §1.6–1.9 — `addProductImage` (multipart `POST /products/:id/images`, field `image`; the backend 409s beyond 5 images), `removeProductImageByUrl` (`DELETE /products/:id/images?url=` — removing the cover promotes the next image), and `reorderProductImages` (`PUT /products/:id/images/order`, body `{ urls }` must match the current set exactly; first URL = cover). The legacy single-image endpoints remain as compat wrappers (`uploadProductImage` / `removeProductImage` on `.../image`).
 
 ---
 
@@ -203,7 +214,7 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **42 Vitest test files / 336 tests green** + **52 Playwright E2E tests green**).
+- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **48 Vitest test files / 464 tests green** + **75 Playwright E2E tests green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
 - Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
@@ -320,5 +331,5 @@ To add a new category: add it to `CATEGORIES` in constants, add an entry + asset
 - Clerk roles come from `user.publicMetadata.role`: `owner` (full admin) and `tech` (full admin + Dev Tools at `/tokki-admin/dev`).
 - Auth is abstracted behind `useAdminAuth()` (`src/components/auth/useAdminAuth.ts`) + `<AuthProvider>` (`src/components/auth/AdminAuth.tsx`). Consumers NEVER call Clerk hooks directly, so the app also runs without Clerk (dev bypass via `VITE_ADMIN_DEV_BYPASS=true`).
 - Guard sections with `<RequireRole roles={[...]}>` (`src/components/auth/RequireRole.tsx`).
-- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`, `VITE_PUBLIC_SITE_URL` (injected into `index.html` OG/canonical tags — set as a Coolify build variable (see `Dockerfile` ARG); see `.env.example`).
+- Env: `VITE_CLERK_PUBLISHABLE_KEY` (required in prod), `VITE_ADMIN_DEV_BYPASS` (dev only, never prod), `VITE_API_URL`, `VITE_PUBLIC_SITE_URL` (runtime variable consumed by `server/og-server.mjs` for OG embed generation — the `index.html` OG/canonical tags ship hardcoded to the production domain; see `.env.example`).
 - See `.env.example` for the shape. Never commit a real publishable key.

@@ -1,6 +1,6 @@
 # Tokki Shop Frontend — Functional Requirements & API Contract
 
-**Version:** 1.2.0
+**Version:** 1.3.0
 **Backend base URL (dev):** `http://localhost:3000`
 **Frontend calls:** `/api/...` (Vite dev server proxies `/api` → `localhost:3000`)
 
@@ -8,6 +8,8 @@
 
 ## 0. Current implementation status
 
+> **Update (v1.3.0):** the app is fully wired to the live API — the localStorage-backed data layer and mock seed no longer exist. Products carry a multi-image gallery (`product_image_urls`, max 5) rendered by the storefront carousel and managed through the admin multi-image uploader; see the gallery endpoints in §4.1.
+>
 > **Update (v1.1.0):** the full shop flow (catalog, cart, checkout → order creation, admin
 > product CRUD + order approve/cancel, dashboard stats) is implemented against a
 > **localStorage-backed data layer** (`src/store/localStore.ts`, seeded from `src/mock/data.ts`
@@ -31,7 +33,7 @@ Two distinct audiences:
 1. **Customers (public):** browse catalog, add to cart, checkout with contact info.
 2. **Shop owner (admin):** manage products, review orders, approve/cancel orders.
 
-> Auth (Clerk) is deferred. Until it lands, all endpoints are unauthenticated. The admin pages will be built against the API now and locked down with `requireAuth()` later.
+> **Superseded (v1.1.0):** Clerk auth landed — see the status note below. (Original v1.0.0 plan: unauthenticated endpoints until auth shipped.)
 
 > **Status (v1.1.0):** Clerk auth has landed — admin panel lives at the hidden `/tokki-admin`
 > path, guarded by `RequireRole` with roles from `user.publicMetadata.role` (`owner`, `tech`).
@@ -61,7 +63,7 @@ Two distinct audiences:
 | FR-9 | **Order detail** — drill into a single order: header + client + line items with line totals. |
 | FR-10 | **Approve order** — move a `pending` order to `approved`. |
 | FR-11 | **Cancel order** — cancel a `pending` order (restores stock on the backend). |
-| FR-12 | **Product management** — create, edit (name/price/description/quantity), and archive products. |
+| FR-12 | **Product management** — create, edit (name/price/description/quantity), and archive products, including the per-product image gallery (≤ 5 images, cover = index 0, reorder/remove via the admin uploader). |
 | FR-13 | **In-Store & Manual Order Creator (POS)** — create orders directly from the admin panel (`/tokki-admin/orders/new`) for physical store or WhatsApp sales with live catalog search, category filters, quick-fill walk-in customer preset (`⚡ Cliente en Mostrador`), and instant auto-approval. |
 | FR-14 | **Order Export** — download currently filtered orders as an RFC 4180 CSV file with UTF-8 BOM encoding for clean opening in Microsoft Excel. |
 
@@ -73,14 +75,13 @@ Two distinct audiences:
 
 ### 2.4 Design language & typography (kawaii × streetwear)
 
-The store's marketing posts use cute handwritten-style fonts (e.g. "Lazy Dog", "Blueberry" — free download fonts not licensed for web embedding). The web app should **match that kawaii vibe** using web-licensed Google Fonts instead:
+The store's marketing posts use cute handwritten-style fonts (e.g. "Lazy Dog", "Blueberry" — free download fonts not licensed for web embedding). The web app matches that kawaii vibe with **shipped** web fonts, self-hosted via `@fontsource/*` packages loaded in `src/main.tsx` — never a Google Fonts CDN:
 
-- **Display / headings:** **Baloo 2** — chunky rounded poster feel (closest to the store's fat/rounded post typography). Fallback anchor: **Fredoka**, already used on the existing landing page.
-- **Handwritten accents** (if more Lazy Dog energy is desired): **Patrick Hand** or **Kalam** for doodle-style labels/annotations.
-- **Body / UI text (paragraphs, prices, forms):** **Quicksand** — soft rounded, readable at small sizes. Alternative: **Nunito** for a rounder, friendlier feel.
-- **Logo/wordmark:** keep **Fredoka** for brand-consistent accents.
+- **Display / headings / buttons / prices / labels:** **DynaPuff** (400–700) — chunky rounded poster feel.
+- **Body / UI text (paragraphs, form inputs, descriptions):** **Sour Gummy** (400–700) — soft rounded, readable at small sizes.
+- **Fallbacks only:** `Baloo 2` / `Fredoka` (display stack) and `Quicksand` (body stack), declared in the `src/index.css` tokens.
 
-**Recommended pairing:** `Baloo 2` (display) + `Quicksand` (body), with `Fredoka` reserved for the wordmark. All three are available on Google Fonts and as `@fontsource/*` packages for self-hosting.
+**Shipped pairing:** `DynaPuff` (display) + `Sour Gummy` (body), with `Fredoka` reserved for wordmark accents. `AGENTS.md → Typography` is the authoritative source.
 
 **Aesthetic direction (catalog + storefront):**
 - Pastel base (brand pink `#ffeded` family) with cream/white surfaces; a few bold accent colors for CTAs and status badges.
@@ -102,6 +103,8 @@ interface Product {
   qty_available: number;
   in_stock: boolean;
   product_image_url?: string | null; // absolute/relative URL; null = no image
+  product_image_urls?: string[];     // ordered gallery (max 5); index 0 = cover,
+                                     // mirrored by product_image_url
 }
 
 interface OrderSummary {
@@ -171,13 +174,16 @@ Optional query param: `?category=<name>` — exact, case-sensitive match against
       "category": "Ropa",
       "qty_available": 25,
       "in_stock": true,
-      "product_image_url": "http://localhost:3000/images/products/7c9e6679-7425-40de-944b-e07fc1f90ae7.webp"
+      "product_image_url": "http://localhost:3000/images/products/7c9e6679-7425-40de-944b-e07fc1f90ae7.webp",
+      "product_image_urls": [
+        "http://localhost:3000/images/products/7c9e6679-7425-40de-944b-e07fc1f90ae7.webp"
+      ]
     }
   ]
 }
 ```
 
-**Images:** every product payload carries `product_image_url` — an absolute URL (or `null` when no image). Render it directly in `<img src>`; never build image URLs yourself. Files are WebP, ≤1600px wide.
+**Images:** every product payload carries `product_image_url` — an absolute URL (or `null` when no image) — plus the ordered gallery `product_image_urls` (max 5; index 0 = the cover, and `product_image_url` always mirrors it). Render them directly in `<img src>`; never build image URLs yourself. Files are WebP, ≤1600px wide.
 
 Empty result: `{ "success": true, "message": "There's no registered products." }`
 
@@ -218,7 +224,7 @@ Soft-delete: sets `is_archived = true`, `qty_available = 0`, `in_stock = false` 
 `200` → `{ success: true, message: "Product successfully archived" }`
 `404` → `{ success: false, message: "Product ID is not valid." }`
 
-#### `POST /api/products/:product_id/image` — Upload / replace image (admin)
+#### `POST /api/products/:product_id/image` — Upload / replace image (admin, LEGACY)
 Multipart form (NOT JSON) with a single file under the **`image`** field:
 
 ```ts
@@ -229,16 +235,43 @@ await api(`/products/${id}/image`, { method: 'POST', body: form, getToken });
 
 > ⚠️ When sending a `FormData`, do **not** set `Content-Type` manually — the browser supplies the multipart boundary. Strip the default header for this call.
 
-Backend normalizes to WebP (≤1600px), so no client-side processing is required; optionally compress before upload to save bandwidth. Re-uploading replaces the old image atomically.
+Backend normalizes to WebP (≤1600px); the SPA also always pre-compresses client-side via `compressImage()` (`src/utils/compressImage.ts` — files ≤1 MB pass through untouched; larger files are downscaled to ≤1600 px and re-encoded as WebP q0.82). **Legacy semantics:** the new file takes index 0 (inserted when the gallery is empty, overwriting the cover key otherwise); other gallery images keep their positions. New code should use the gallery endpoint below.
 
-`200` → `{ success: true, data: { product_id, product_image_url } }`
+`200` → `{ success: true, data: { product_id, product_image_urls, product_image_url } }`
 `400` → size/type violations, e.g. `"Image exceeds the 5 MB size limit."`, `"File content is not a supported image (jpeg, png, webp)."`
 `404` → `"Product was not found."` or `"Product is archived."`
 
-#### `DELETE /api/products/:product_id/image` — Remove image (admin)
-`200` → `{ success: true, data: { product_id, product_image_url: null } }`
-Idempotent: returns success even if the product had no image.
+#### `DELETE /api/products/:product_id/image` — Remove image (admin, LEGACY)
+Removes the **cover** (index 0); idempotent no-op when the gallery is empty. Remaining images are reindexed.
+`200` → `{ success: true, data: { product_id, product_image_urls, product_image_url } }`
 `404` → `"Product was not found."` or `"Product is archived."`
+
+#### `POST /api/products/:product_id/images` — Add a gallery image (admin, max 5)
+Multipart form with the file under the **`image`** field (same constraints as above). Appends one image to the ordered gallery; the first image ever added becomes the cover (index 0).
+
+`200` → `{ success: true, data: { product_id, product_image_urls, product_image_url } }`
+`404` → `"Product was not found."` or `"Product is archived."`
+`409` → the product already has 5 images: `{ success: false, message: "This product already has the maximum of 5 images." }`
+
+Frontend wrapper: `addProductImage()` in `src/api/products.ts`.
+
+#### `DELETE /api/products/:product_id/images?url=<url>` — Remove a gallery image (admin)
+Removes one image by URL (exactly as returned in `product_image_urls`) and reindexes the rest; removing the cover promotes the next image to cover.
+
+`200` → `{ success: true, data: { product_id, product_image_urls, product_image_url } }`
+`400` → `"Unknown image URL."`
+`404` → `"Product was not found."`, `"Product is archived."`, or `"Image was not found."`
+
+Frontend wrapper: `removeProductImageByUrl()` in `src/api/products.ts`.
+
+#### `PUT /api/products/:product_id/images/order` — Reorder gallery / set cover (admin)
+JSON body `{ "urls": [...] }` containing **every** gallery image exactly once (same count, no duplicates, no unknown URLs) — otherwise `400`. The first URL becomes the cover.
+
+`200` → `{ success: true, data: { product_id, product_image_urls, product_image_url } }`
+`400` → `"Unknown image URL."` or `"Invalid image order."`
+`404` → `"Product was not found."` or `"Product is archived."`
+
+Frontend wrapper: `reorderProductImages()` in `src/api/products.ts`.
 
 ---
 
