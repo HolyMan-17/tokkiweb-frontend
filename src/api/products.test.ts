@@ -5,7 +5,10 @@ import {
   updateProduct,
   archiveProduct,
   uploadProductImage,
+  addProductImage,
   removeProductImage,
+  removeProductImageByUrl,
+  reorderProductImages,
 } from './products';
 
 const fetchMock = vi.fn();
@@ -65,6 +68,39 @@ describe('listProducts', () => {
     if (!result.ok) return;
     expect(result.data).toHaveLength(2);
     expect(result.data[1].product_image_url).toBe('http://localhost:3000/images/products/abc.webp');
+  });
+
+  test('maps the ordered gallery into Product.product_image_urls with cover alias', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: [
+          {
+            product_id: 3,
+            product_name: 'Gloss',
+            product_price: '4.50',
+            product_description: 'Gloss fresa',
+            category: 'Maquillaje',
+            qty_available: 5,
+            in_stock: true,
+            product_image_urls: [
+              'http://localhost:3000/images/products/cover.webp',
+              'http://localhost:3000/images/products/second.webp',
+            ],
+            product_image_url: 'http://localhost:3000/images/products/cover.webp',
+          },
+        ],
+      }),
+    );
+
+    const result = await listProducts();
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data[0].product_image_urls).toEqual([
+      'http://localhost:3000/images/products/cover.webp',
+      'http://localhost:3000/images/products/second.webp',
+    ]);
+    expect(result.data[0].product_image_url).toBe('http://localhost:3000/images/products/cover.webp');
   });
 
   test('empty-catalog quirk resolves ok with empty array', async () => {
@@ -159,5 +195,102 @@ describe('image endpoints (multipart, exact backend contract)', () => {
     expect(result.ok).toBe(false);
     if (result.ok) return;
     expect(result.message).toBe('Image exceeds the 5 MB size limit.');
+  });
+});
+
+describe('gallery endpoints (max 5 images per product)', () => {
+  test('addProductImage posts multipart "image" to /products/:id/images and returns the gallery', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          product_id: 5,
+          product_image_urls: ['http://x/images/products/a.webp', 'http://x/images/products/b.webp'],
+          product_image_url: 'http://x/images/products/a.webp',
+        },
+      }),
+    );
+    const file = new File(['bytes'], 'foto2.png', { type: 'image/png' });
+
+    const result = await addProductImage(5, file, { getToken: async () => 'clerk-token' });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/products/5/images');
+    expect(init.method).toBe('POST');
+    expect(init.body).toBeInstanceOf(FormData);
+    expect(init.body.get('image')).toBe(file);
+    expect(init.headers['Content-Type']).toBeUndefined();
+    expect(init.headers.Authorization).toBe('Bearer clerk-token');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data?.product_image_urls).toHaveLength(2);
+    expect(result.data?.product_image_url).toBe('http://x/images/products/a.webp');
+  });
+
+  test('addProductImage surfaces the 409 cap as ok:false with its message', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse(
+        { success: false, message: 'This product already has the maximum of 5 images.' },
+        409,
+      ),
+    );
+    const file = new File(['x'], 'foto6.png', { type: 'image/png' });
+
+    const result = await addProductImage(5, file, { getToken: async () => 'tok' });
+
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.message).toBe('This product already has the maximum of 5 images.');
+  });
+
+  test('removeProductImageByUrl DELETEs /products/:id/images?url= (URL-encoded, bearer)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: { product_id: 5, product_image_urls: [], product_image_url: null },
+      }),
+    );
+
+    const result = await removeProductImageByUrl(
+      5,
+      'http://x/images/products/a.webp',
+      { getToken: async () => 'tok' },
+    );
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(
+      `/api/products/5/images?url=${encodeURIComponent('http://x/images/products/a.webp')}`,
+    );
+    expect(init.method).toBe('DELETE');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data?.product_image_urls).toEqual([]);
+  });
+
+  test('reorderProductImages PUTs the ordered url list as JSON', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          product_id: 5,
+          product_image_urls: ['http://x/images/products/b.webp', 'http://x/images/products/a.webp'],
+          product_image_url: 'http://x/images/products/b.webp',
+        },
+      }),
+    );
+    const urls = ['http://x/images/products/b.webp', 'http://x/images/products/a.webp'];
+
+    const result = await reorderProductImages(5, urls, { getToken: async () => 'tok' });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe('/api/products/5/images/order');
+    expect(init.method).toBe('PUT');
+    expect(init.headers['Content-Type']).toBe('application/json');
+    expect(init.headers.Authorization).toBe('Bearer tok');
+    expect(JSON.parse(init.body)).toEqual({ urls });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data?.product_image_url).toBe('http://x/images/products/b.webp');
   });
 });

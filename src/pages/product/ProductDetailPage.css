@@ -98,7 +98,7 @@
     border-color 0.18s ease;
 }
 
-.product-image-container:hover {
+.product-image-container:not(.product-gallery):hover {
   transform: translateY(-3px) rotate(-0.6deg);
   border-color: var(--pink-400);
   box-shadow: 0 10px 32px rgba(230, 139, 190, 0.32);

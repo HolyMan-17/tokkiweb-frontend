@@ -115,6 +115,47 @@ describe('ProductDetailPage — temporizador del toast', () => {
     expect(screen.getByText('G')).toHaveClass('product-image-placeholder');
   });
 
+  it('renderiza la galería deslizable con miniaturas cuando trae product_image_urls', async () => {
+    mockFetchAllProducts.mockResolvedValue([
+      {
+        ...product,
+        product_image_urls: [
+          'https://example.com/foto-1.webp',
+          'https://example.com/foto-2.webp',
+          'https://example.com/foto-3.webp',
+        ],
+      },
+    ]);
+    renderPage();
+    await act(async () => {});
+
+    expect(document.querySelector('.product-gallery-track')).not.toBeNull();
+    expect(document.querySelectorAll('.product-gallery-slide')).toHaveLength(3);
+    expect(document.querySelectorAll('.product-gallery-thumb')).toHaveLength(3);
+    expect(screen.getByRole('button', { name: 'Ver imagen 1 de 3' })).toHaveClass('active');
+    // La portada (índice 0) es la diapositiva visible inicial
+    expect(screen.getByAltText('Gloss Fresa — imagen 1')).toHaveAttribute(
+      'src',
+      'https://example.com/foto-1.webp',
+    );
+  });
+
+  it('usa product_image_url como respaldo cuando no hay galería', async () => {
+    mockFetchAllProducts.mockResolvedValue([
+      {
+        ...product,
+        product_image_urls: [],
+        product_image_url: 'https://example.com/photo.jpg',
+      },
+    ]);
+    renderPage();
+    await act(async () => {});
+
+    expect(document.querySelector('.product-gallery-track')).toBeNull();
+    const img = screen.getByRole('img', { name: 'Gloss Fresa' });
+    expect(img).toHaveAttribute('src', 'https://example.com/photo.jpg');
+  });
+
   it('actualiza document.title con el nombre y precio del producto y lo restaura al desmontar', async () => {
     mockFetchAllProducts.mockResolvedValue([product]);
     const { unmount } = renderPage();

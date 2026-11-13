@@ -9,6 +9,7 @@ import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
+import ProductGallery from '../../components/ui/ProductGallery';
 import beatingHeart from '../../assets/beating_heart.gif';
 import sparklesGif from '../../assets/sparkles.gif';
 
@@ -37,6 +38,11 @@ export default function ProductDetailPage() {
   }, []);
 
   const product = products.find(p => p.product_id === Number(id));
+  const galleryImages = product?.product_image_urls?.length
+    ? product.product_image_urls
+    : product?.product_image_url
+      ? [product.product_image_url]
+      : [];
 
   // Dynamic document title update with cleanup on unmount
   useEffect(() => {
@@ -149,19 +155,7 @@ export default function ProductDetailPage() {
         </button>
       </nav>
 
-      <div className="product-image-container animate-scaleIn">
-        {product.product_image_url ? (
-          <img
-            src={product.product_image_url}
-            alt={product.product_name}
-            className="product-image"
-          />
-        ) : (
-          <div className="product-image-placeholder">
-            {product.product_name.charAt(0).toUpperCase()}
-          </div>
-        )}
-      </div>
+      <ProductGallery name={product.product_name} images={galleryImages} />
 
       <div className="product-info stagger">
         <h1 className="product-name">{product.product_name}</h1>

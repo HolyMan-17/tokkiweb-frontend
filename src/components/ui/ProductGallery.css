@@ -1,0 +1,121 @@
+/* ════════════════════════════════════════════════════════════
+   Tokki Shop · Product Gallery
+   Swipeable image carousel + thumbnail pills (max 5 images).
+   Inherits .product-image-container chrome from ProductDetailPage.css.
+   ════════════════════════════════════════════════════════════ */
+
+.product-gallery {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-lg);
+}
+
+/* ─── Swipe track ───────────────────────────────────────── */
+.product-gallery-track {
+  display: flex;
+  overflow-x: auto;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radius-xl);
+  border: 2.5px solid var(--pink-200);
+  background: var(--color-surface);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  box-shadow: 0 6px 24px rgba(230, 139, 190, 0.22);
+  transition:
+    box-shadow 0.25s ease,
+    border-color 0.18s ease;
+}
+
+.product-gallery-track::-webkit-scrollbar {
+  display: none;
+}
+
+.product-gallery-track:hover {
+  border-color: var(--pink-400);
+  box-shadow: 0 10px 32px rgba(230, 139, 190, 0.32);
+}
+
+.product-gallery-slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.product-gallery-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Thumbnail pills ───────────────────────────────────── */
+.product-gallery-thumbs {
+  display: flex;
+  gap: var(--space-sm);
+  overflow-x: auto;
+  padding: 2px;
+  scrollbar-width: none;
+}
+
+.product-gallery-thumbs::-webkit-scrollbar {
+  display: none;
+}
+
+.product-gallery-thumb {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  padding: 0;
+  border-radius: var(--radius-md);
+  border: 2px solid var(--pink-200);
+  background: var(--pink-100);
+  overflow: hidden;
+  cursor: pointer;
+  transition:
+    transform 0.18s var(--ease-spring),
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.product-gallery-thumb:hover {
+  transform: translateY(-2px) rotate(-2deg);
+  border-color: var(--pink-400);
+}
+
+.product-gallery-thumb:active {
+  transform: scale(0.94);
+}
+
+.product-gallery-thumb.active {
+  border-color: var(--pink-500);
+  box-shadow: 0 4px 12px rgba(230, 139, 190, 0.35);
+}
+
+.product-gallery-thumb.active:hover {
+  transform: none;
+}
+
+.product-gallery-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ─── Desktop: keep the sticky column tidy ──────────────── */
+@media (min-width: 768px) {
+  .product-gallery {
+    margin-bottom: 0;
+  }
+}
+
+/* ─── Reduced motion ────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .product-gallery-track,
+  .product-gallery-thumb {
+    transition: none !important;
+  }
+}

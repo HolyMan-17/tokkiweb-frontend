@@ -1,20 +1,16 @@
-import { useState, useRef } from 'react';
+import { useRef, useState } from 'react';
 import type { Product } from '../../../types';
 import { CATEGORIES } from '../../../constants';
-import {
-  createProduct,
-  updateProduct,
-  uploadProductImage,
-  removeProductImage,
-} from '../../../api/products';
-import { ProductImageUploader } from './ProductImageUploader';
+import { createProduct, updateProduct } from '../../../api/products';
+import { ProductImagesUploader } from './ProductImagesUploader';
 import {
   ProductFormFields,
   type ProductFormState,
   type FormErrors,
 } from './ProductFormFields';
+import { useProductGallery, RETRY_DELAY_MS } from './useProductGallery';
 
-export const RETRY_DELAY_MS = 1200;
+export { RETRY_DELAY_MS };
 
 const EMPTY_FORM: ProductFormState = {
   product_name: '',
@@ -66,6 +62,10 @@ function validateForm(form: ProductFormState): FormErrors {
   return errors;
 }
 
+function failureText(count: number): string {
+  return count === 1 ? 'No se pudo subir 1 imagen' : `No se pudieron subir ${count} imágenes`;
+}
+
 interface ProductFormModalProps {
   open: boolean;
   editingProduct: Product | null;
@@ -98,13 +98,14 @@ export function ProductFormModal({
   );
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
-  const [previewUrl, setPreviewUrl] = useState<string>(() => editingProduct?.product_image_url ?? '');
   const [saving, setSaving] = useState(false);
-  const [imageError, setImageError] = useState<string | null>(null);
-  const imageFileRef = useRef<File | null>(null);
+  const gallery = useProductGallery({ editingProduct, auth, showToast });
   const savedProductIdRef = useRef<number | null>(null);
 
   if (!open) return null;
+
+  const successMessage = () =>
+    editingProduct ? 'Producto actualizado' : 'Producto agregado';
 
   const handleFieldChange = (field: keyof ProductFormState, raw: string) => {
     let value = raw;
@@ -126,33 +127,13 @@ export function ProductFormModal({
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  const handleRemoveImage = async () => {
-    if (!editingProduct?.product_image_url || !auth) {
-      setPreviewUrl('');
-      return;
+  const resolvePendingUploads = async (productId: number): Promise<boolean> => {
+    const { failed, message } = await gallery.processUploadQueue(productId);
+    if (failed > 0) {
+      gallery.setUploadFailure({ count: failed, message: message ?? 'Error de red.' });
+      return false;
     }
-    const result = await removeProductImage(editingProduct.product_id, auth);
-    if (!result.ok) {
-      showToast(result.message);
-      return;
-    }
-    setPreviewUrl('');
-    showToast('Imagen eliminada');
-    onSuccess(editingProduct ? 'Producto actualizado' : 'Producto agregado');
-  };
-
-  const successMessage = () =>
-    editingProduct ? 'Producto actualizado' : 'Producto agregado';
-
-  const attemptImageUpload = async (productId: number, file: File): Promise<boolean> => {
-    if (!auth) return false;
-    let uploaded = await uploadProductImage(productId, file, auth);
-    if (uploaded.ok) return true;
-    await new Promise(resolve => setTimeout(resolve, RETRY_DELAY_MS));
-    uploaded = await uploadProductImage(productId, file, auth);
-    if (uploaded.ok) return true;
-    setImageError(uploaded.message);
-    return false;
+    return true;
   };
 
   const handleSave = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -175,19 +156,17 @@ export function ProductFormModal({
 
     try {
       // Un intento anterior ya confirmó el producto y solo falta resolver la
-      // imagen: reenviar no debe volver a crear ni actualizar el producto.
+      // subida pendiente: reenviar no debe volver a crear ni actualizar el producto.
       if (savedProductIdRef.current !== null) {
-        const pendingFile = imageFileRef.current;
-        if (pendingFile) {
-          const uploaded = await attemptImageUpload(savedProductIdRef.current, pendingFile);
-          if (uploaded) {
-            setImageError(null);
-            onSuccess(successMessage());
-          }
-          return;
+        const productId = savedProductIdRef.current;
+        if (gallery.hasUnfinishedUploads()) {
+          gallery.resetFailedToQueued();
+          const resolved = await resolvePendingUploads(productId);
+          if (!resolved) return;
         }
-        setImageError(null);
-        onSuccess(successMessage());
+        await gallery.finalize(productId, {
+          onDone: () => onSuccess(successMessage()),
+        });
         return;
       }
 
@@ -209,44 +188,41 @@ export function ProductFormModal({
 
       savedProductIdRef.current = saved.data.product_id;
 
-      if (imageFileRef.current) {
-        const uploaded = await attemptImageUpload(saved.data.product_id, imageFileRef.current);
-        if (uploaded) {
-          setImageError(null);
-          onSuccess(successMessage());
-        }
-        return;
+      if (gallery.hasUnfinishedUploads()) {
+        const resolved = await resolvePendingUploads(saved.data.product_id);
+        if (!resolved) return;
       }
-
-      onSuccess(successMessage());
+      await gallery.finalize(saved.data.product_id, {
+        onDone: () => onSuccess(successMessage()),
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleRetryImage = async () => {
+  const handleRetryUploads = async () => {
     if (!auth || saving || savedProductIdRef.current === null) return;
-    const file = imageFileRef.current;
-    if (!file) {
-      setImageError(null);
-      onSuccess(successMessage());
-      return;
-    }
     setSaving(true);
     try {
-      const uploaded = await attemptImageUpload(savedProductIdRef.current, file);
-      if (uploaded) {
-        setImageError(null);
-        onSuccess(successMessage());
-      }
+      const productId = savedProductIdRef.current;
+      gallery.resetFailedToQueued();
+      const resolved = await resolvePendingUploads(productId);
+      if (!resolved) return;
+      await gallery.finalize(productId, {
+        onDone: () => onSuccess(successMessage()),
+      });
     } finally {
       setSaving(false);
     }
   };
 
-  const handleSaveWithoutImage = () => {
-    setImageError(null);
-    showToast('Producto guardado, pero sin imagen');
+  const handleContinueWithoutFailed = () => {
+    const failedCount = gallery.discardFailed();
+    showToast(
+      failedCount === 1
+        ? 'Producto guardado; se descartó 1 imagen.'
+        : `Producto guardado; se descartaron ${failedCount} imágenes.`,
+    );
     onSuccess('Producto guardado');
   };
 
@@ -260,13 +236,13 @@ export function ProductFormModal({
           </button>
         </div>
         <form onSubmit={handleSave} className="modal-body" noValidate>
-          <ProductImageUploader
-            previewUrl={previewUrl}
-            imageFileRef={imageFileRef}
-            setPreviewUrl={setPreviewUrl}
+          <ProductImagesUploader
+            gallery={gallery.gallery}
+            onFilesSelected={gallery.handleFilesSelected}
+            onRemoveItem={gallery.removeItem}
+            onMakeCover={gallery.makeCover}
             showToast={showToast}
             onImageTooLarge={onImageTooLarge}
-            onRemoveCurrent={handleRemoveImage}
           />
 
           <ProductFormFields
@@ -277,26 +253,27 @@ export function ProductFormModal({
             onBlur={handleBlur}
           />
 
-          {imageError && (
+          {gallery.uploadFailure && (
             <div className="form-group" role="alert">
               <span className="form-error">
-                No se pudo subir la imagen: {imageError}. El producto ya quedó guardado.
+                {failureText(gallery.uploadFailure.count)}: {gallery.uploadFailure.message}.
+                El producto ya quedó guardado.
               </span>
               <button
                 type="button"
                 className="btn btn-outline"
-                onClick={handleRetryImage}
+                onClick={handleRetryUploads}
                 disabled={saving}
               >
-                Reintentar imagen
+                Reintentar
               </button>
               <button
                 type="button"
                 className="btn btn-primary"
-                onClick={handleSaveWithoutImage}
+                onClick={handleContinueWithoutFailed}
                 disabled={saving}
               >
-                Guardar sin imagen
+                Continuar sin ellas
               </button>
             </div>
           )}

@@ -1,14 +1,20 @@
 // ─── Products API client — mirrors the backend contract 1:1 ──────────────────
 // Endpoints (see tokkiweb-backend API_CONTRACT §1):
-//   GET    /products              public
-//   POST   /products              admin (Bearer)
-//   PATCH  /products/:id          admin — partial update, `updated_row` quirk
-//   DELETE /products/:id          admin — soft-archive, frees stock + image file
-//   POST   /products/:id/image    admin — multipart field "image", max 5 MB,
-//                                        jpeg/png/webp; backend re-encodes to WebP
-//   DELETE /products/:id/image    admin — idempotent no-op when there is none
+//   GET    /products                    public
+//   POST   /products                    admin (Bearer)
+//   PATCH  /products/:id                admin — partial update, `updated_row` quirk
+//   DELETE /products/:id                admin — soft-archive, frees stock + image files
+//   POST   /products/:id/images         admin — append gallery image (max 5),
+//                                              multipart field "image", max 5 MB,
+//                                              jpeg/png/webp; backend re-encodes to WebP
+//   DELETE /products/:id/images?url=    admin — remove one gallery image, reindexes
+//   PUT    /products/:id/images/order   admin — full reorder; first url = cover
+//   POST   /products/:id/image          admin — LEGACY: replaces the cover
+//   DELETE /products/:id/image          admin — LEGACY: removes the cover
 // Image URLs arrive pre-built as absolute `product_image_url` (backend
 // PUBLIC_BASE_URL) or relative `/images/...` — render them directly.
+// `product_image_urls` is the ordered gallery (index 0 = cover);
+// `product_image_url` mirrors `product_image_urls[0]`.
 
 import { api, type ApiResult } from './client';
 import type { Product } from '../types';
@@ -24,6 +30,7 @@ interface ProductRow {
   qty_available: number;
   in_stock: boolean;
   product_image_url?: string | null;
+  product_image_urls?: string[];
 }
 
 export interface CreateProductInput {
@@ -52,6 +59,7 @@ function toProduct(row: ProductRow): Product {
     qty_available: row.qty_available,
     in_stock: row.in_stock,
     product_image_url: row.product_image_url ?? undefined,
+    product_image_urls: row.product_image_urls ?? undefined,
   };
 }
 
@@ -126,4 +134,51 @@ export async function removeProductImage(
   auth?: AdminAuth,
 ): Promise<ApiResult<unknown>> {
   return api(`/products/${productId}/image`, { method: 'DELETE', getToken: auth?.getToken });
+}
+
+export interface GalleryPayload {
+  product_id: number;
+  product_image_urls?: string[];
+  product_image_url?: string | null;
+}
+
+/** Appends one image to the product gallery (max 5 — backend 409s beyond the cap). */
+export async function addProductImage(
+  productId: number,
+  file: File,
+  auth?: AdminAuth,
+): Promise<ApiResult<GalleryPayload>> {
+  const form = new FormData();
+  form.append('image', file);
+  return api<GalleryPayload>(`/products/${productId}/images`, {
+    method: 'POST',
+    body: form,
+    getToken: auth?.getToken,
+  });
+}
+
+/** Removes one gallery image by URL; the next image becomes the cover when the cover is removed. */
+export async function removeProductImageByUrl(
+  productId: number,
+  url: string,
+  auth?: AdminAuth,
+): Promise<ApiResult<GalleryPayload>> {
+  return api<GalleryPayload>(
+    `/products/${productId}/images?url=${encodeURIComponent(url)}`,
+    { method: 'DELETE', getToken: auth?.getToken },
+  );
+}
+
+/** Full gallery reorder — the first URL becomes the cover. Must match the current set exactly. */
+export async function reorderProductImages(
+  productId: number,
+  urls: string[],
+  auth?: AdminAuth,
+): Promise<ApiResult<GalleryPayload>> {
+  return api<GalleryPayload>(`/products/${productId}/images/order`, {
+    method: 'PUT',
+    body: JSON.stringify({ urls }),
+    headers: { 'Content-Type': 'application/json' },
+    getToken: auth?.getToken,
+  });
 }

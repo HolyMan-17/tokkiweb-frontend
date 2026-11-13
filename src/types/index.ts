@@ -8,6 +8,7 @@ export interface Product {
   in_stock: boolean;
   category: string;             // category slug or display name
   product_image_url?: string | null; // absolute/relative URL from the API (/images/<key>); null = no photo
+  product_image_urls?: string[];     // ordered gallery (max 5); index 0 = cover. product_image_url mirrors product_image_urls[0]
 }
 
 // ─── Orders ────────────────────────────────────────────────
