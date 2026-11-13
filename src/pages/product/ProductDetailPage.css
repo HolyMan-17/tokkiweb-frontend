@@ -277,10 +277,12 @@
     grid-column: 1 / -1;
   }
 
+  /* La galería vive alineada al inicio de su columna y nunca se pega a los
+     bordes de la pantalla: el tope de altura la deja siempre dentro del
+     viewport (el sticker cede un poco de altura en ventanas cortas). */
   .product-image-container {
     margin-bottom: 0;
-    position: sticky;
-    top: calc(var(--nav-height) + var(--space-lg));
+    max-height: calc(100dvh - var(--nav-height) - 150px);
   }
 
   .product-info {

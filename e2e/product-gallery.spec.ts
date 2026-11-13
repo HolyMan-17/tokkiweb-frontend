@@ -137,4 +137,37 @@ test.describe('Galería de producto — carrusel con portada y miniaturas', () =
     const single = page.locator('.product-image-container img').first();
     await expect(single).toHaveAttribute('src', URL_C);
   });
+
+  test('en desktop la galería queda alineada a su columna y nunca se pega al borde inferior', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockProducts(page, [PRODUCT_WITH_GALLERY]);
+    await page.goto('/products/1');
+
+    await expectGalleryReady(page);
+
+    // La entrada usa animate-scaleIn: medir antes de que termine daría
+    // rectángulos encogidos por el transform.
+    await page.waitForFunction(() => {
+      const el = document.querySelector('.product-image-container');
+      if (!el) return false;
+      return el.getAnimations().every((a) => a.playState === 'finished' || a.playState === 'idle');
+    });
+
+    const rects = await page.evaluate(() => {
+      const gallery = document.querySelector('.product-image-container')!.getBoundingClientRect();
+      const info = document.querySelector('.product-info')!.getBoundingClientRect();
+      return {
+        galleryTop: gallery.top,
+        galleryBottom: gallery.bottom,
+        infoTop: info.top,
+        viewportH: window.innerHeight,
+      };
+    });
+
+    // Regresión sticky-roto: sin desplazamiento relativo, la galería arranca
+    // alineada con el inicio de su columna.
+    expect(Math.abs(rects.galleryTop - rects.infoTop)).toBeLessThanOrEqual(2);
+    // Regla de la tarjeta: nunca sobresale por debajo del viewport al cargar.
+    expect(rects.galleryBottom).toBeLessThanOrEqual(rects.viewportH + 1);
+  });
 });
