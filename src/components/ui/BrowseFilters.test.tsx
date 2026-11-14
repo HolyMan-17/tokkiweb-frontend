@@ -43,12 +43,14 @@ describe('BrowseFilters', () => {
     const options = screen.getAllByRole('option');
     expect(options.map(o => o.textContent)).toEqual([
       'Más recientes',
+      'Más antiguos',
       'Precio: menor a mayor',
       'Precio: mayor a menor',
       'Nombre A–Z',
     ]);
     expect(options.map(o => (o as HTMLOptionElement).value)).toEqual([
       'recent',
+      'oldest',
       'price-asc',
       'price-desc',
       'name',

@@ -25,9 +25,10 @@ const MOCK_PRODUCTS = [
   },
 ];
 
-/** Product #1 — the one the cart / checkout / admin surfaces point at. */
+/** Product #1 — the one the cart / checkout surfaces point at. */
 const PRODUCT_ONE = 'Bálsamo Labial Fresa';
-/** Product #2 — first card of the catalog "Todos" carousel (newest first). */
+/** Product #2 — first card of the catalog "Todos" carousel and of the admin
+ *  product grid (both default to newest first). */
 const PRODUCT_TWO = 'Mochi Fresa Cream';
 
 const CART_KEY = 'tokki_cart_v1';
@@ -244,7 +245,8 @@ test.describe('Product names — CAPS rendering with untouched DOM text', () => 
     const name = page.locator('.product-name').first();
     await expectPresent(name);
 
-    await expectCaps(name, PRODUCT_ONE);
+    // The admin grid defaults to newest first, so id 2 renders first.
+    await expectCaps(name, PRODUCT_TWO);
   });
 
   test('surface 8 — POS picker card (.pos-product-name)', async ({ page }) => {

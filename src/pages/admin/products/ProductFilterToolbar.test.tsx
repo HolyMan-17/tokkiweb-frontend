@@ -1,18 +1,21 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import ProductFilterToolbar, { type StockFilter } from './ProductFilterToolbar';
+import type { SortOption } from '../../../utils/productSort';
 
 describe('ProductFilterToolbar', () => {
   const defaultProps = {
     search: '',
     category: 'Todos',
     stock: 'all' as StockFilter,
+    sort: 'recent' as SortOption,
     filteredCount: 5,
     totalCount: 10,
     onSearchChange: vi.fn(),
     onCategoryChange: vi.fn(),
     onStockChange: vi.fn(),
+    onSortChange: vi.fn(),
   };
 
   it('renderiza todos los botones de filtro de stock incluyendo Bajo stock (≤3)', () => {
@@ -76,5 +79,48 @@ describe('ProductFilterToolbar', () => {
     await user.click(catBtn);
 
     expect(onCategoryChange).toHaveBeenCalledWith('Maquillaje');
+  });
+
+  it('muestra el selector de orden con las cinco opciones', () => {
+    render(<ProductFilterToolbar {...defaultProps} />);
+
+    const select = screen.getByLabelText('Ordenar productos');
+    expect(select).toBeInTheDocument();
+    expect(select).toHaveValue('recent');
+
+    const optionLabels = within(select)
+      .getAllByRole('option')
+      .map(option => option.textContent);
+    expect(optionLabels).toEqual([
+      'Más recientes',
+      'Más antiguos',
+      'Precio: menor a mayor',
+      'Precio: mayor a menor',
+      'Nombre A–Z',
+    ]);
+  });
+
+  it('llama a onSortChange al cambiar el orden', async () => {
+    const user = userEvent.setup();
+    const onSortChange = vi.fn();
+    render(<ProductFilterToolbar {...defaultProps} onSortChange={onSortChange} />);
+
+    const select = screen.getByLabelText('Ordenar productos');
+    await user.selectOptions(select, 'price-desc');
+
+    expect(onSortChange).toHaveBeenCalledTimes(1);
+    expect(onSortChange).toHaveBeenCalledWith('price-desc');
+  });
+
+  it('llama a onSortChange con "oldest" al seleccionar Más antiguos', async () => {
+    const user = userEvent.setup();
+    const onSortChange = vi.fn();
+    render(<ProductFilterToolbar {...defaultProps} onSortChange={onSortChange} />);
+
+    const select = screen.getByLabelText('Ordenar productos');
+    await user.selectOptions(select, 'oldest');
+
+    expect(onSortChange).toHaveBeenCalledTimes(1);
+    expect(onSortChange).toHaveBeenCalledWith('oldest');
   });
 });

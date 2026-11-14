@@ -1,6 +1,7 @@
 import { CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
 import sparklesGif from '../../../assets/sparkles.gif';
+import { SORT_OPTIONS, type SortOption } from '../../../utils/productSort';
 
 export type StockFilter = 'all' | 'in' | 'low' | 'out';
 
@@ -8,22 +9,26 @@ interface ProductFilterToolbarProps {
   search: string;
   category: string;
   stock: StockFilter;
+  sort: SortOption;
   filteredCount: number;
   totalCount: number;
   onSearchChange: (value: string) => void;
   onCategoryChange: (category: string) => void;
   onStockChange: (stock: StockFilter) => void;
+  onSortChange: (sort: SortOption) => void;
 }
 
 export function ProductFilterToolbar({
   search,
   category,
   stock,
+  sort,
   filteredCount,
   totalCount,
   onSearchChange,
   onCategoryChange,
   onStockChange,
+  onSortChange,
 }: ProductFilterToolbarProps) {
   return (
     <div className="products-toolbar">
@@ -119,6 +124,17 @@ export function ProductFilterToolbar({
             Agotados
           </button>
         </div>
+
+        <select
+          className="sort-select"
+          value={sort}
+          onChange={e => onSortChange(e.target.value as SortOption)}
+          aria-label="Ordenar productos"
+        >
+          {SORT_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
 
         <p className="results-count">
           {filteredCount} de {totalCount} producto{totalCount !== 1 ? 's' : ''}

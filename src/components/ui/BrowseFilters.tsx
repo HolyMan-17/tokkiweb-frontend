@@ -1,14 +1,8 @@
 // Shared browse filters row (stock pills + sort select) used by the category
 // pages and the whole-inventory browser. Styles come from
 // src/pages/category/CategoryPage.css, imported by both consuming pages.
-export type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'name';
-
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'recent',     label: 'Más recientes' },
-  { value: 'price-asc',  label: 'Precio: menor a mayor' },
-  { value: 'price-desc', label: 'Precio: mayor a menor' },
-  { value: 'name',       label: 'Nombre A–Z' },
-];
+// Sort options live in src/utils/productSort.ts (shared with the pages).
+import { SORT_OPTIONS, type SortOption } from '../../utils/productSort';
 
 interface BrowseFiltersProps {
   stockOnly: boolean;

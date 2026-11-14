@@ -7,9 +7,10 @@ import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
-import BrowseFilters, { type SortOption } from '../../components/ui/BrowseFilters';
+import BrowseFilters from '../../components/ui/BrowseFilters';
 import { ROUTES } from '../../lib/routes';
 import { matchesSearch } from '../../utils/productSearch';
+import { sortProducts, type SortOption } from '../../utils/productSort';
 import sparklesImg from '../../assets/sparkles.gif';
 
 const SEARCH_SVG = (
@@ -72,20 +73,7 @@ export default function AllProductsPage() {
     }
 
     // Sort
-    switch (sort) {
-      case 'recent':
-        result.sort((a, b) => b.product_id - a.product_id);
-        break;
-      case 'price-asc':
-        result.sort((a, b) => Number(a.product_price) - Number(b.product_price));
-        break;
-      case 'price-desc':
-        result.sort((a, b) => Number(b.product_price) - Number(a.product_price));
-        break;
-      case 'name':
-        result.sort((a, b) => a.product_name.localeCompare(b.product_name));
-        break;
-    }
+    result = sortProducts(result, sort);
 
     return result;
   }, [allProducts, query, sort, stockOnly]);

@@ -93,6 +93,7 @@ function renderPage(initialEntries: string[] = ['/tokki-admin/products']) {
 beforeEach(() => {
   mockFetchAllProducts.mockReset();
   mockFetchAllProducts.mockResolvedValue(MOCK_PRODUCTS);
+  mockExportProductsToCsv.mockReset();
 });
 
 describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () => {
@@ -180,19 +181,26 @@ describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () =
     expect(exportBtn).toBeInTheDocument();
     expect(exportBtn).toBeEnabled();
 
-    // Clic en exportar sin filtros (debe exportar todos los productos)
+    // Clic en exportar sin filtros (debe exportar todos los productos,
+    // ordenados de más reciente a más antiguo por defecto)
     await user.click(exportBtn);
     expect(mockExportProductsToCsv).toHaveBeenCalledTimes(1);
-    expect(mockExportProductsToCsv).toHaveBeenCalledWith(MOCK_PRODUCTS);
+    expect(mockExportProductsToCsv).toHaveBeenCalledWith([
+      MOCK_PRODUCTS[4],
+      MOCK_PRODUCTS[3],
+      MOCK_PRODUCTS[2],
+      MOCK_PRODUCTS[1],
+      MOCK_PRODUCTS[0],
+    ]);
 
     // Filtrar por bajo stock
     const lowStockBtn = screen.getByRole('button', { name: /bajo stock/i });
     await user.click(lowStockBtn);
 
-    // Exportar nuevamente (solo productos con bajo stock: Serum y Mochi)
+    // Exportar nuevamente (solo productos con bajo stock: Mochi y Serum)
     await user.click(exportBtn);
     expect(mockExportProductsToCsv).toHaveBeenCalledTimes(2);
-    expect(mockExportProductsToCsv).toHaveBeenLastCalledWith([MOCK_PRODUCTS[1], MOCK_PRODUCTS[2]]);
+    expect(mockExportProductsToCsv).toHaveBeenLastCalledWith([MOCK_PRODUCTS[2], MOCK_PRODUCTS[1]]);
   });
 
   it('deshabilita el botón de exportar CSV cuando no hay productos coincidentes', async () => {
@@ -208,6 +216,128 @@ describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () =
 
     expect(exportBtn).toBeDisabled();
     expect(exportBtn).toHaveAttribute('title', 'No hay productos para exportar');
+  });
+});
+
+describe('ProductManagementPage — Orden de productos', () => {
+  function readCardNames(container: HTMLElement): string[] {
+    return Array.from(
+      container.querySelectorAll('.product-card-admin .product-name'),
+    ).map(el => el.textContent);
+  }
+
+  it('ordena por más recientes por defecto', async () => {
+    const { container } = renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    const names = readCardNames(container);
+    expect(names).toEqual([
+      'Lentes Contacto Rosa',
+      'Pin Kawaii Bunny',
+      'Mochi Dulce Matcha',
+      'Serum Facial Centella',
+      'Bálsamo Labial Fresa',
+    ]);
+  });
+
+  it('ordena por más antiguos al seleccionar Más antiguos', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    await user.selectOptions(screen.getByLabelText('Ordenar productos'), 'oldest');
+
+    const names = readCardNames(container);
+    expect(names[0]).toBe('Bálsamo Labial Fresa');
+    expect(names).toEqual([
+      'Bálsamo Labial Fresa',
+      'Serum Facial Centella',
+      'Mochi Dulce Matcha',
+      'Pin Kawaii Bunny',
+      'Lentes Contacto Rosa',
+    ]);
+  });
+
+  it('ordena por mayor precio al seleccionar Precio: mayor a menor', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    await user.selectOptions(screen.getByLabelText('Ordenar productos'), 'price-desc');
+
+    const names = readCardNames(container);
+    // Más caro: Lentes 15.00 → Serum 12.00 → Mochi 4.00 → Bálsamo 3.50 → Pin 2.50
+    expect(names[0]).toBe('Lentes Contacto Rosa');
+    expect(names).toEqual([
+      'Lentes Contacto Rosa',
+      'Serum Facial Centella',
+      'Mochi Dulce Matcha',
+      'Bálsamo Labial Fresa',
+      'Pin Kawaii Bunny',
+    ]);
+  });
+
+  it('ordena por nombre al seleccionar Nombre A–Z', async () => {
+    const user = userEvent.setup();
+    const { container } = renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    await user.selectOptions(screen.getByLabelText('Ordenar productos'), 'name');
+
+    const names = readCardNames(container);
+    expect(names[0]).toBe('Bálsamo Labial Fresa');
+    expect(names).toEqual([
+      'Bálsamo Labial Fresa',
+      'Lentes Contacto Rosa',
+      'Mochi Dulce Matcha',
+      'Pin Kawaii Bunny',
+      'Serum Facial Centella',
+    ]);
+  });
+
+  it('restablece el orden al limpiar filtros', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    await user.selectOptions(screen.getByLabelText('Ordenar productos'), 'oldest');
+
+    // La búsqueda sin resultados muestra el estado vacío con el botón limpiar
+    const searchInput = screen.getByLabelText('Buscar producto');
+    await user.type(searchInput, 'inexistente_123');
+
+    const clearFiltersBtn = await screen.findByRole('button', { name: /limpiar filtros/i });
+    await user.click(clearFiltersBtn);
+
+    expect(await screen.findByText('Bálsamo Labial Fresa')).toBeInTheDocument();
+    expect(screen.getByLabelText('Ordenar productos')).toHaveValue('recent');
+  });
+
+  it('exporta el CSV respetando el orden seleccionado', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    await user.selectOptions(screen.getByLabelText('Ordenar productos'), 'price-desc');
+
+    const exportBtn = screen.getByRole('button', { name: /exportar productos a csv/i });
+    await user.click(exportBtn);
+
+    expect(mockExportProductsToCsv).toHaveBeenCalledTimes(1);
+    // Lentes 15.00 → Serum 12.00 → Mochi 4.00 → Bálsamo 3.50 → Pin 2.50
+    expect(mockExportProductsToCsv).toHaveBeenLastCalledWith([
+      MOCK_PRODUCTS[4],
+      MOCK_PRODUCTS[1],
+      MOCK_PRODUCTS[2],
+      MOCK_PRODUCTS[0],
+      MOCK_PRODUCTS[3],
+    ]);
   });
 });
 

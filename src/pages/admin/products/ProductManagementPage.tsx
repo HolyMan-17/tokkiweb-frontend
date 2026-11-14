@@ -11,6 +11,7 @@ import ProductFormModal from './ProductFormModal';
 import { ProductFilterToolbar, type StockFilter } from './ProductFilterToolbar';
 import { ProductAdminGrid } from './ProductAdminGrid';
 import { exportProductsToCsv } from '../../../utils/exportProducts';
+import { sortProducts, type SortOption } from '../../../utils/productSort';
 import './ProductManagementPage.css';
 
 export default function ProductManagementPage() {
@@ -33,6 +34,7 @@ export default function ProductManagementPage() {
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState<string>('Todos');
+  const [sort, setSort] = useState<SortOption>('recent');
   const [toast, setToast] = useState<string | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<Product | null>(null);
   const [imageErrorOpen, setImageErrorOpen] = useState(false);
@@ -58,7 +60,7 @@ export default function ProductManagementPage() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return products.filter(p => {
+    const matches = products.filter(p => {
       if (category !== 'Todos' && p.category !== category) return false;
       if (stock === 'in' && (p.qty_available <= 0 || !p.in_stock)) return false;
       if (stock === 'low' && !(p.qty_available > 0 && p.qty_available <= 3)) return false;
@@ -66,7 +68,9 @@ export default function ProductManagementPage() {
       if (q && !p.product_name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [products, category, stock, search]);
+    // Newest-first default (storefront parity); the choice stays local, not in the URL
+    return sortProducts(matches, sort);
+  }, [products, category, stock, search, sort]);
 
   const openAddModal = () => {
     setEditingProduct(null);
@@ -108,10 +112,11 @@ export default function ProductManagementPage() {
   const clearFilters = () => {
     setSearch('');
     setCategory('Todos');
+    setSort('recent');
     handleStockChange('all');
   };
 
-  const hasActiveFilters = search.trim() !== '' || category !== 'Todos' || stock !== 'all';
+  const hasActiveFilters = search.trim() !== '' || category !== 'Todos' || stock !== 'all' || sort !== 'recent';
 
   useEffect(() => {
     return () => {
@@ -163,11 +168,13 @@ export default function ProductManagementPage() {
         search={search}
         category={category}
         stock={stock}
+        sort={sort}
         filteredCount={filtered.length}
         totalCount={products.length}
         onSearchChange={setSearch}
         onCategoryChange={setCategory}
         onStockChange={handleStockChange}
+        onSortChange={setSort}
       />
 
       <ProductAdminGrid
