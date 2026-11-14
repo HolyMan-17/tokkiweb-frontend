@@ -67,6 +67,11 @@
   flex-shrink: 0;
 }
 
+.category-page-title .category-cash {
+  width: 3.6rem;
+  height: 2rem;
+}
+
 .category-page-title .category-kpop {
   width: 4rem;
   height: 4rem;

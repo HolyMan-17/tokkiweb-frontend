@@ -287,6 +287,13 @@
   max-height: none;
 }
 
+/* Menos de un dolar cash icon — wide banner kept at aspect ratio so its
+   rendered height matches the neighboring square icons */
+.category-cash {
+  width: 3.8rem;
+  height: 2.1rem;
+}
+
 /* Skincare cosmetic icon — bigger and nudged up to sit visually aligned
    with the title. transform (not margin) keeps the layout box unchanged
    so other sections stay aligned. */

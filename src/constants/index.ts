@@ -1,5 +1,6 @@
 // ─── Categories (name → emoji) ────────────────────────────
 export const CATEGORIES: { name: string; emoji: string }[] = [
+  { name: 'Menos de un dolar',         emoji: '💵' },
   { name: 'Zona KPOP',                 emoji: '🎤' },
   { name: 'Albumes',                   emoji: '💿' },
   { name: 'Maquillaje',                emoji: '💄' },

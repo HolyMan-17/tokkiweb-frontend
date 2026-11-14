@@ -4,10 +4,10 @@ import { CATEGORY_ICONS, getCategoryIcon } from './CategoryIcons';
 import { CATEGORIES, slugify } from '../../constants';
 
 describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
-  it('CATEGORIES contains Zona KPOP as the first category with microphone emoji fallback', () => {
-    expect(CATEGORIES[0].name).toBe('Zona KPOP');
-    expect(CATEGORIES[0].emoji).toBe('🎤');
-    expect(slugify(CATEGORIES[0].name)).toBe('zona-kpop');
+  it('CATEGORIES contains Menos de un dolar as the first category with money emoji fallback', () => {
+    expect(CATEGORIES[0].name).toBe('Menos de un dolar');
+    expect(CATEGORIES[0].emoji).toBe('💵');
+    expect(slugify(CATEGORIES[0].name)).toBe('menos-de-un-dolar');
   });
 
   it('CATEGORY_ICONS contains an entry for Zona KPOP with kpop.png image', () => {
@@ -460,11 +460,11 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('bear');
   });
 
-  it('CATEGORIES contains Albumes directly below Zona KPOP (index 1)', () => {
-    expect(CATEGORIES[0].name).toBe('Zona KPOP');
-    expect(CATEGORIES[1].name).toBe('Albumes');
-    expect(CATEGORIES[1].emoji).toBe('💿');
-    expect(slugify(CATEGORIES[1].name)).toBe('albumes');
+  it('CATEGORIES contains Albumes directly below Zona KPOP (index 2)', () => {
+    expect(CATEGORIES[1].name).toBe('Zona KPOP');
+    expect(CATEGORIES[2].name).toBe('Albumes');
+    expect(CATEGORIES[2].emoji).toBe('💿');
+    expect(slugify(CATEGORIES[2].name)).toBe('albumes');
   });
 
   it('CATEGORY_ICONS contains an entry for Albumes with album_icon.png and category-albumes class', () => {
@@ -510,11 +510,11 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(c5.querySelector('img')?.getAttribute('src')).toContain('album_icon');
   });
 
-  it('CATEGORIES contains Llaveros directly below Accesorios (index 5)', () => {
-    expect(CATEGORIES[4].name).toBe('Accesorios');
-    expect(CATEGORIES[5].name).toBe('Llaveros');
-    expect(CATEGORIES[5].emoji).toBe('🔑');
-    expect(slugify(CATEGORIES[5].name)).toBe('llaveros');
+  it('CATEGORIES contains Llaveros directly below Accesorios (index 6)', () => {
+    expect(CATEGORIES[5].name).toBe('Accesorios');
+    expect(CATEGORIES[6].name).toBe('Llaveros');
+    expect(CATEGORIES[6].emoji).toBe('🔑');
+    expect(slugify(CATEGORIES[6].name)).toBe('llaveros');
   });
 
   it('CATEGORY_ICONS contains an entry for Llaveros with keychain_art.png and category-keychain class', () => {
@@ -562,5 +562,36 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
   it('returns null for completely unknown category with no match', () => {
     expect(getCategoryIcon('CategoriaInexistente12345')).toBeNull();
     expect(getCategoryIcon('')).toBeNull();
+  });
+});
+
+describe('Menos de un dolar support', () => {
+  it('CATEGORY_ICONS contains an entry for Menos de un dolar with cash.gif image', () => {
+    const icon = CATEGORY_ICONS['Menos de un dolar'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('cash');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-cash');
+  });
+
+  it('getCategoryIcon returns the cash icon for Menos de un dolar and aliases', () => {
+    const exact = getCategoryIcon('Menos de un dolar');
+    expect(exact).not.toBeNull();
+    const { container: c1 } = render(<>{exact}</>);
+    expect(c1.querySelector('img')?.getAttribute('src')).toContain('cash');
+
+    const lower = getCategoryIcon('menos de un dolar');
+    expect(lower).not.toBeNull();
+    const { container: c2 } = render(<>{lower}</>);
+    expect(c2.querySelector('img')?.getAttribute('src')).toContain('cash');
+
+    const slug = getCategoryIcon('menos-de-un-dolar');
+    expect(slug).not.toBeNull();
+    const { container: c3 } = render(<>{slug}</>);
+    expect(c3.querySelector('img')?.getAttribute('src')).toContain('cash');
   });
 });

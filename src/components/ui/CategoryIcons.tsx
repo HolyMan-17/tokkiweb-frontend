@@ -21,8 +21,10 @@ import legoHeartGif from '../../assets/lego_heart.gif';
 import luffyImg from '../../assets/luffy.png';
 import albumIcon from '../../assets/album_icon.png';
 import keychainArt from '../../assets/keychain_art.png';
+import cashGif from '../../assets/cash.gif';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'Menos de un dolar': <img src={cashGif} alt="" className="category-emoji-img category-cash" width={217} height={119} loading="lazy" />,
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
   Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={128} height={112} loading="lazy" />,
   Accesorios: <img src={ringImg} alt="" className="category-emoji-img category-ring" width={223} height={250} loading="lazy" />,
@@ -48,6 +50,8 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CATEGORY_ALIASES: Record<string, string> = {
+  'menos de un dolar': 'Menos de un dolar',
+  'menos-de-un-dolar': 'Menos de un dolar',
   albumes: 'Albumes',
   'álbumes': 'Albumes',
   album: 'Albumes',

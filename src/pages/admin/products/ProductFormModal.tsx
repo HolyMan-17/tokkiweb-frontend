@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import type { Product } from '../../../types';
-import { CATEGORIES } from '../../../constants';
 import { createProduct, updateProduct } from '../../../api/products';
 import { ProductImagesUploader } from './ProductImagesUploader';
 import {
@@ -17,7 +16,7 @@ const EMPTY_FORM: ProductFormState = {
   product_price: '',
   qty_available: '',
   product_description: '',
-  category: CATEGORIES[0].name,
+  category: 'Otros',
 };
 
 function sanitizeTextInput(value: string): string {

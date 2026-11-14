@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import CatalogPage from './CatalogPage';
@@ -137,5 +137,66 @@ describe('CatalogPage — carousels sorting & ver mas prompt card', () => {
     // Verify sparkles gif is rendered inside the card
     const sparklesImgs = moreCards[0].querySelectorAll('img.carousel-more-sparkle');
     expect(sparklesImgs.length).toBe(1);
+  });
+});
+
+describe('CatalogPage — Menos de un dolar carousel', () => {
+  it('renderiza la sección Menos de un dolar como primer carrusel tras Todos y enlaza Ver más a su categoría', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 5,
+        product_name: 'Gloss Mariposa',
+        category: 'Maquillaje',
+        product_price: '5.00',
+        product_description: 'Brillo hidratante con efecto espejo.',
+        qty_available: 5,
+        in_stock: true,
+      },
+      {
+        product_id: 12,
+        product_name: 'Photocard Set BTS',
+        category: 'Zona KPOP',
+        product_price: '6.50',
+        product_description: 'Set de photocards holográficas.',
+        qty_available: 20,
+        in_stock: true,
+      },
+      {
+        product_id: 30,
+        product_name: 'Sticker Kawaii Conejito',
+        category: 'Menos de un dolar',
+        product_price: '0.75',
+        product_description: 'Sticker de vinilo resistente al agua.',
+        qty_available: 40,
+        in_stock: true,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    // El producto aparece tanto en el carrusel Todos como en el de la
+    // categoría, por lo que se usa findAllByText.
+    const stickerCards = await screen.findAllByText('Sticker Kawaii Conejito');
+    expect(stickerCards.length).toBeGreaterThanOrEqual(1);
+
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const headings = sections.map(
+      s => s.querySelector('.category-title')?.textContent?.trim(),
+    );
+
+    expect(headings[0]).toBe('Todos');
+    expect(headings[1]).toBe('Menos de un dolar');
+    expect(headings.indexOf('Menos de un dolar')).toBeLessThan(
+      headings.indexOf('Zona KPOP'),
+    );
+    expect(headings).toContain('Maquillaje');
+
+    const verMas = within(sections[1] as HTMLElement).getByRole('link', { name: 'Ver más' });
+    expect(verMas).toHaveAttribute('href', '/categorias/menos-de-un-dolar');
   });
 });

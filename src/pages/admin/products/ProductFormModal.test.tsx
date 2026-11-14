@@ -540,3 +540,11 @@ describe('ProductFormModal — galería de varias imágenes', () => {
     expect(errorSpy).not.toHaveBeenCalled();
   });
 });
+
+describe('ProductFormModal — categoría por defecto', () => {
+  it('un producto nuevo inicia con la categoría Otros seleccionada', () => {
+    renderModal();
+    const select = screen.getByLabelText('Categoría') as HTMLSelectElement;
+    expect(select.value).toBe('Otros');
+  });
+});

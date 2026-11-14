@@ -255,3 +255,44 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(titleImg?.getAttribute('src')).toContain('album_icon');
   });
 });
+
+describe('CategoryPage — Menos de un dolar', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+    mockFetchAllProducts.mockResolvedValue([glossMariposa]);
+  });
+
+  it('renderiza la página de categoría Menos de un dolar con su icono cash.gif, su producto y el conteo correspondiente', async () => {
+    const stickerProduct: Product = {
+      product_id: 701,
+      product_name: 'Sticker Kawaii Conejito',
+      product_price: '0.75',
+      product_description: 'Sticker de vinilo resistente al agua.',
+      qty_available: 40,
+      in_stock: true,
+      category: 'Menos de un dolar',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, stickerProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/menos-de-un-dolar']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Menos de un dolar')).toBeInTheDocument();
+    expect(screen.getByText('Sticker Kawaii Conejito')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+    expect(screen.getByText('1 productos')).toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('cash');
+  });
+});
