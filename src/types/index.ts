@@ -105,6 +105,24 @@ export interface ApproveResult {
   status: 'approved';
 }
 
+// ─── Analytics ─────────────────────────────────────────────
+export type TopProductsSort = 'units' | 'revenue';
+export type TopProductsPeriod = 'all' | '7d' | '30d' | '90d';
+
+export interface TopProductStat {
+  product_id: number;
+  product_name: string;
+  category: string;
+  product_price: string;
+  qty_available: number;
+  in_stock: boolean;
+  product_image_urls?: string[];
+  product_image_url?: string | null;
+  units_sold: number;
+  orders_count: number;
+  total_revenue: string;
+}
+
 // ─── API envelope ──────────────────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean | string;  // always boolean today; union kept as legacy tolerance

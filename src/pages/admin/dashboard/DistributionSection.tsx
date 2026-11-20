@@ -105,7 +105,8 @@ export function DistributionSection({
 
         <div className="chart-summary-chip">
           <span>
-            Total registrado: <strong>{totalDistributionCount} pedidos</strong>
+            {distributionType === 'status' ? 'Total registrado:' : 'Pedidos activos:'}{' '}
+            <strong>{totalDistributionCount} pedidos</strong>
           </span>
         </div>
       </div>

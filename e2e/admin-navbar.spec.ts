@@ -45,6 +45,13 @@ function setupMocks(page: import('@playwright/test').Page) {
         body: JSON.stringify({ success: true, data: MOCK_ORDERS }),
       });
     }),
+    page.route('**/api/analytics/top-products*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    }),
   ]);
 }
 

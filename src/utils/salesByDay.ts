@@ -225,10 +225,11 @@ const DELIVERY_PALETTE: Record<string, string> = {
 const FALLBACK_COLORS = ['#e68bbe', '#f4b8da', '#4caf80', '#e8a44d', '#5b9bd5', '#a28089'];
 
 export function computePaymentDistribution(
-  orders: Pick<OrderSummary, 'payment_method'>[],
+  orders: (Pick<OrderSummary, 'payment_method'> & { status?: OrderSummary['status'] })[],
 ): DistributionPoint[] {
   const counts = new Map<string, number>();
   for (const order of orders) {
+    if (order.status === 'canceled') continue;
     const method = order.payment_method || 'no_especificado';
     counts.set(method, (counts.get(method) ?? 0) + 1);
   }
@@ -241,10 +242,11 @@ export function computePaymentDistribution(
 }
 
 export function computeDeliveryDistribution(
-  orders: Pick<OrderSummary, 'delivery_type'>[],
+  orders: (Pick<OrderSummary, 'delivery_type'> & { status?: OrderSummary['status'] })[],
 ): DistributionPoint[] {
   const counts = new Map<string, number>();
   for (const order of orders) {
+    if (order.status === 'canceled') continue;
     const type = order.delivery_type || 'no_especificado';
     counts.set(type, (counts.get(type) ?? 0) + 1);
   }

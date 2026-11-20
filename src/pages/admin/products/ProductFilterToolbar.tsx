@@ -3,7 +3,7 @@ import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
 import sparklesGif from '../../../assets/sparkles.gif';
 import { SORT_OPTIONS, type SortOption } from '../../../utils/productSort';
 
-export type StockFilter = 'all' | 'in' | 'low' | 'out';
+export type StockFilter = 'all' | 'in' | 'alert' | 'low' | 'out';
 
 interface ProductFilterToolbarProps {
   search: string;
@@ -108,6 +108,13 @@ export function ProductFilterToolbar({
             onClick={() => onStockChange('in')}
           >
             En stock
+          </button>
+          <button
+            type="button"
+            className={`stock-pill stock-pill-alert ${stock === 'alert' ? 'stock-pill-active stock-pill-alert-active' : ''}`}
+            onClick={() => onStockChange('alert')}
+          >
+            Alertas
           </button>
           <button
             type="button"

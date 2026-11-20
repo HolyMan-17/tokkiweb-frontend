@@ -18,11 +18,12 @@ describe('ProductFilterToolbar', () => {
     onSortChange: vi.fn(),
   };
 
-  it('renderiza todos los botones de filtro de stock incluyendo Bajo stock (≤3)', () => {
+  it('renderiza todos los botones de filtro de stock incluyendo Alertas y Bajo stock (≤3)', () => {
     render(<ProductFilterToolbar {...defaultProps} />);
 
     expect(screen.getByRole('button', { name: 'Todos' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'En stock' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Alertas' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /bajo stock/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Agotados' })).toBeInTheDocument();
   });
@@ -32,11 +33,25 @@ describe('ProductFilterToolbar', () => {
     const lowBtn = screen.getByRole('button', { name: /bajo stock/i });
     expect(lowBtn).toHaveClass('stock-pill-active');
 
+    rerender(<ProductFilterToolbar {...defaultProps} stock="alert" />);
+    expect(screen.getByRole('button', { name: 'Alertas' })).toHaveClass('stock-pill-active');
+
     rerender(<ProductFilterToolbar {...defaultProps} stock="in" />);
     expect(screen.getByRole('button', { name: 'En stock' })).toHaveClass('stock-pill-active');
 
     rerender(<ProductFilterToolbar {...defaultProps} stock="out" />);
     expect(screen.getByRole('button', { name: 'Agotados' })).toHaveClass('stock-pill-active');
+  });
+
+  it('llama a onStockChange con "alert" al hacer clic en Alertas', async () => {
+    const user = userEvent.setup();
+    const onStockChange = vi.fn();
+    render(<ProductFilterToolbar {...defaultProps} onStockChange={onStockChange} />);
+
+    await user.click(screen.getByRole('button', { name: 'Alertas' }));
+
+    expect(onStockChange).toHaveBeenCalledTimes(1);
+    expect(onStockChange).toHaveBeenCalledWith('alert');
   });
 
   it('llama a onStockChange con "low" al hacer clic en Bajo stock', async () => {

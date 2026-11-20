@@ -107,6 +107,35 @@ describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () =
     expect(screen.getByText('Lentes Contacto Rosa')).toBeInTheDocument();
   });
 
+  it('inicializa con el filtro de alertas combinadas cuando la URL tiene ?stock=alert', async () => {
+    renderPage(['/tokki-admin/products?stock=alert']);
+
+    expect(await screen.findByText('Serum Facial Centella')).toBeInTheDocument();
+    expect(screen.getByText('Mochi Dulce Matcha')).toBeInTheDocument();
+    expect(screen.getByText('Pin Kawaii Bunny')).toBeInTheDocument();
+    expect(screen.getByText('Lentes Contacto Rosa')).toBeInTheDocument();
+
+    expect(screen.queryByText('Bálsamo Labial Fresa')).not.toBeInTheDocument();
+  });
+
+  it('abre automáticamente el modal de edición cuando la URL tiene ?edit=<id> y limpia el parámetro al cerrar', async () => {
+    const user = userEvent.setup();
+    renderPage(['/tokki-admin/products?edit=2']);
+
+    expect(await screen.findByText('Editar Producto')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Serum Facial Centella')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /cerrar modal/i }));
+    expect(screen.queryByText('Editar Producto')).not.toBeInTheDocument();
+  });
+
+  it('no abre ningún modal si ?edit=<id> apunta a un producto inexistente', async () => {
+    renderPage(['/tokki-admin/products?edit=999']);
+
+    await screen.findByText('Bálsamo Labial Fresa');
+    expect(screen.queryByText('Editar Producto')).not.toBeInTheDocument();
+  });
+
   it('inicializa con el filtro de bajo stock cuando la URL tiene ?stock=low', async () => {
     renderPage(['/tokki-admin/products?stock=low']);
 

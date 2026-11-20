@@ -14,6 +14,29 @@ import { exportProductsToCsv } from '../../../utils/exportProducts';
 import { sortProducts, type SortOption } from '../../../utils/productSort';
 import './ProductManagementPage.css';
 
+function parseStockFilter(raw: string | null): StockFilter {
+  if (raw === 'alert' || raw === 'low' || raw === 'in' || raw === 'out') {
+    return raw;
+  }
+  return 'all';
+}
+
+function matchesStockFilter(product: Product, stock: StockFilter): boolean {
+  if (stock === 'all') return true;
+  const isOut = product.qty_available === 0 || !product.in_stock;
+  const isLow = product.in_stock && product.qty_available > 0 && product.qty_available <= 3;
+  if (stock === 'in') return !isOut;
+  if (stock === 'low') return isLow;
+  if (stock === 'out') return isOut;
+  return isLow || isOut;
+}
+
+function findProductByEditParam(products: Product[], editParam: string | null): Product | null {
+  if (!editParam || !/^\d+$/.test(editParam)) return null;
+  const id = Number(editParam);
+  return products.find(p => p.product_id === id) ?? null;
+}
+
 export default function ProductManagementPage() {
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
@@ -24,11 +47,8 @@ export default function ProductManagementPage() {
     [getAdminToken],
   );
   const [searchParams, setSearchParams] = useSearchParams();
-  const stockParam = searchParams.get('stock');
-  const stock: StockFilter =
-    stockParam === 'low' || stockParam === 'in' || stockParam === 'out'
-      ? stockParam
-      : 'all';
+  const stock = parseStockFilter(searchParams.get('stock'));
+  const editParam = searchParams.get('edit');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -58,13 +78,28 @@ export default function ProductManagementPage() {
     }, { replace: true });
   }, [setSearchParams]);
 
+  const clearEditParam = useCallback(() => {
+    setSearchParams(prev => {
+      if (!prev.has('edit')) return prev;
+      const next = new URLSearchParams(prev);
+      next.delete('edit');
+      return next;
+    }, { replace: true });
+  }, [setSearchParams]);
+
+  const urlEditingProduct = useMemo(
+    () => findProductByEditParam(products, editParam),
+    [editParam, products],
+  );
+
+  const activeEditingProduct = editingProduct ?? urlEditingProduct;
+  const modalOpen = isModalOpen || urlEditingProduct !== null;
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     const matches = products.filter(p => {
       if (category !== 'Todos' && p.category !== category) return false;
-      if (stock === 'in' && (p.qty_available <= 0 || !p.in_stock)) return false;
-      if (stock === 'low' && !(p.qty_available > 0 && p.qty_available <= 3)) return false;
-      if (stock === 'out' && !(p.qty_available === 0 || !p.in_stock)) return false;
+      if (!matchesStockFilter(p, stock)) return false;
       if (q && !p.product_name.toLowerCase().includes(q)) return false;
       return true;
     });
@@ -73,11 +108,13 @@ export default function ProductManagementPage() {
   }, [products, category, stock, search, sort]);
 
   const openAddModal = () => {
+    clearEditParam();
     setEditingProduct(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (product: Product) => {
+    clearEditParam();
     setEditingProduct(product);
     setIsModalOpen(true);
   };
@@ -85,6 +122,7 @@ export default function ProductManagementPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
+    clearEditParam();
   };
 
   const handleModalSuccess = (message: string) => {
@@ -185,11 +223,11 @@ export default function ProductManagementPage() {
         onArchive={handleArchive}
       />
 
-      {isModalOpen && (
+      {modalOpen && (
         <ProductFormModal
-          key={editingProduct ? String(editingProduct.product_id) : 'new'}
-          open={isModalOpen}
-          editingProduct={editingProduct}
+          key={activeEditingProduct ? String(activeEditingProduct.product_id) : 'new'}
+          open={modalOpen}
+          editingProduct={activeEditingProduct}
           auth={auth}
           onClose={closeModal}
           onSuccess={handleModalSuccess}

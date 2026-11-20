@@ -381,6 +381,42 @@ Only `pending` orders can be approved.
 
 ---
 
+### 4.3 Analytics API
+
+#### `GET /api/analytics/top-products` — Top Selling Products (admin)
+Aggregates `units_sold`, `orders_count`, and historical `total_revenue` across `approved` orders for active non-archived products (`is_archived = false`), keeping active out-of-stock items visible for restock tracking.
+
+Optional query params:
+- `sort`: `units` *(default)* | `revenue`
+- `period`: `all` *(default)* | `7d` | `30d` | `90d`
+- `limit`: whole number `1`–`20` *(default `5`)*
+
+`200`:
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "product_id": 12,
+      "product_name": "Bálsamo Labial Fresa",
+      "category": "Maquillaje",
+      "product_price": "5.00",
+      "qty_available": 2,
+      "in_stock": true,
+      "product_image_urls": ["http://localhost:3000/images/products/...webp"],
+      "product_image_url": "http://localhost:3000/images/products/...webp",
+      "units_sold": 24,
+      "orders_count": 14,
+      "total_revenue": "120.00"
+    }
+  ]
+}
+```
+Empty result → `{ "success": true, "data": [] }`.
+`400` → validation error for invalid `sort`, `period`, or `limit`.
+
+---
+
 ## 5. Delivery types & payment methods
 
 - **Delivery (backend-enforced):** `delivery_type` must be exactly one of three canonical slugs —

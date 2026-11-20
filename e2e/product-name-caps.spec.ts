@@ -262,6 +262,24 @@ test.describe('Product names — CAPS rendering with untouched DOM text', () => 
   test('surface 9 — dashboard top products (.tp-name)', async ({ page }) => {
     await mockProducts(page);
     await mockOrders(page);
+    await page.route('**/api/analytics/top-products*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          success: true,
+          data: [
+            {
+              ...MOCK_PRODUCTS[0],
+              product_image_urls: [],
+              units_sold: 10,
+              orders_count: 5,
+              total_revenue: '35.00',
+            },
+          ],
+        }),
+      });
+    });
     await page.goto('/tokki-admin');
 
     const name = page.locator('.tp-name').first();

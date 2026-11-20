@@ -7,11 +7,10 @@ import { useAdminAuth } from '../../../components/auth/useAdminAuth';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ErrorState from '../../../components/ui/ErrorState';
-import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
+import TopProductsCard from './TopProductsCard';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
 import { computeSalesByDay } from '../../../utils/salesByDay';
-import { computeTopProducts } from '../../../utils/topProducts';
 import bunnyGif from '../../../assets/bunny.gif';
 import './AdminDashboardPage.css';
 
@@ -38,15 +37,14 @@ export default function AdminDashboardPage() {
   const canceledCount = orders.filter(o => o.status === 'canceled').length;
   const totalOrders = orders.length;
   const totalProducts = products.length;
-  const inStockCount = products.filter(p => p.qty_available > 0).length;
-  const lowStockCount = products.filter(p => p.qty_available > 0 && p.qty_available <= 3).length;
+  const inStockCount = products.filter(p => p.qty_available > 0 && p.in_stock).length;
   const outOfStockCount = products.filter(p => p.qty_available === 0 || !p.in_stock).length;
+  const lowStockCount = products.filter(p => p.in_stock && p.qty_available > 0 && p.qty_available <= 3).length;
   const totalSales = orders
     .filter(o => o.status === 'approved')
     .reduce((s, o) => s + Number(o.total_amount), 0);
 
   const salesByDay = computeSalesByDay(orders);
-  const topProducts = useMemo(() => computeTopProducts(products, orders, 5), [products, orders]);
   const recentOrders = orders.slice(0, 5);
 
   if (isLoading || isError) {
@@ -116,7 +114,7 @@ export default function AdminDashboardPage() {
         </div>
 
         <Link
-          to={`${ADMIN_ROUTES.products}?stock=low`}
+          to={`${ADMIN_ROUTES.products}?stock=alert`}
           className="card stat-card stat-card-link animate-slideUp"
           aria-label="Ver alertas de stock"
         >
@@ -148,101 +146,7 @@ export default function AdminDashboardPage() {
       </Suspense>
 
       <div className="dashboard-bottom-grid">
-        {/* Top Best-Selling & Inventory Movement Products */}
-        <section className="dashboard-section card top-products-card animate-slideUp">
-          <div className="section-header">
-            <div className="section-header-title-wrap">
-              <h2 className="section-title">Productos Destacados / Top Inventario</h2>
-              <span className="section-subtitle text-muted">Más vendidos y mayor rotación</span>
-            </div>
-            <Link to={ADMIN_ROUTES.products} className="section-link-action">
-              Ver catálogo &rarr;
-            </Link>
-          </div>
-
-          {topProducts.length === 0 ? (
-            <div className="empty-top-products text-muted">
-              No hay productos registrados en el catálogo aún.
-            </div>
-          ) : (
-            <div className="top-products-list">
-              {topProducts.map((item) => (
-                <div key={item.product_id} className="top-product-item">
-                  <div className="tp-left">
-                    <span
-                      className={`tp-rank font-display ${
-                        item.badgeRank?.startsWith('🥇')
-                          ? 'tp-rank-gold'
-                          : item.badgeRank?.startsWith('🥈')
-                          ? 'tp-rank-silver'
-                          : item.badgeRank?.startsWith('🥉')
-                          ? 'tp-rank-bronze'
-                          : ''
-                      }`}
-                    >
-                      {item.badgeRank}
-                    </span>
-                    <div className="tp-thumb">
-                      {item.product_image_url ? (
-                        <img src={item.product_image_url} alt={item.product_name} />
-                      ) : (
-                        <span className="tp-thumb-letter font-display">
-                          {item.product_name.charAt(0).toUpperCase()}
-                        </span>
-                      )}
-                    </div>
-                    <div className="tp-info">
-                      <span className="tp-name">{item.product_name}</span>
-                      <div className="tp-meta">
-                        <span className="tp-category-chip">
-                          {getCategoryIcon(item.category)}
-                          {item.category}
-                        </span>
-                        {item.soldCount != null && (
-                          <span className="tp-sold-tag">
-                            {item.soldCount} {item.soldCount === 1 ? 'vendido' : 'vendidos'}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="tp-right">
-                    <div className="tp-pricing">
-                      <span className="tp-price font-display">{formatPrice(item.product_price)}</span>
-                      <span
-                        className={`tp-stock-badge ${
-                          item.qty_available === 0 || item.in_stock === false
-                            ? 'tp-stock-out'
-                            : item.qty_available <= 3
-                            ? 'tp-stock-low'
-                            : 'tp-stock-ok'
-                        }`}
-                      >
-                        {item.qty_available === 0 || item.in_stock === false
-                          ? 'Agotado (0)'
-                          : `${item.qty_available} en stock`}
-                      </span>
-                    </div>
-                    <Link
-                      to={ADMIN_ROUTES.products}
-                      className="btn btn-outline btn-sm tp-edit-btn"
-                      aria-label={`Editar ${item.product_name}`}
-                    >
-                      Editar
-                    </Link>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <div className="section-footer">
-            <Link to={ADMIN_ROUTES.products} className="btn btn-outline btn-block">
-              Gestionar productos
-            </Link>
-          </div>
-        </section>
+        <TopProductsCard auth={auth} />
 
         {/* Recent Orders */}
         <section className="dashboard-section recent-orders card animate-slideUp">
@@ -257,7 +161,11 @@ export default function AdminDashboardPage() {
           </div>
           <div className="recent-orders-list">
             {recentOrders.map((order) => (
-              <div key={order.order_id} className="recent-order-item">
+              <Link
+                key={order.order_id}
+                to={ADMIN_ROUTES.orderDetail(order.order_id)}
+                className="recent-order-item recent-order-link"
+              >
                 <div className="ro-left">
                   <span className="ro-id">#{order.order_id}</span>
                   <span className="ro-name">{order.name} {order.last_name}</span>
@@ -267,7 +175,7 @@ export default function AdminDashboardPage() {
                   <StatusBadge status={order.status} />
                   <span className="ro-total font-display">{formatPrice(order.total_amount)}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
           <div className="section-footer">

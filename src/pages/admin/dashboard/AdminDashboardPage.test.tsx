@@ -4,8 +4,9 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AdminDashboardPage from './AdminDashboardPage';
 import { fetchOrderSummaries } from '../../../api/orders';
 import { fetchAllProducts } from '../../../api/products';
+import { fetchTopProducts } from '../../../api/analytics';
 import { AdminAuthContext } from '../../../components/auth/AdminAuthContext';
-import type { OrderSummary, Product } from '../../../types';
+import type { OrderSummary, Product, TopProductStat } from '../../../types';
 
 vi.mock('../../../api/orders', async importOriginal => ({
   ...(await importOriginal<typeof import('../../../api/orders')>()),
@@ -16,8 +17,13 @@ vi.mock('../../../api/products', () => ({
   fetchAllProducts: vi.fn(),
 }));
 
+vi.mock('../../../api/analytics', () => ({
+  fetchTopProducts: vi.fn(),
+}));
+
 const mockFetchOrderSummaries = vi.mocked(fetchOrderSummaries);
 const mockFetchAllProducts = vi.mocked(fetchAllProducts);
+const mockFetchTopProducts = vi.mocked(fetchTopProducts);
 
 // jsdom no implementa ResizeObserver; recharts lo necesita para medir.
 class ResizeObserverStub {
@@ -62,6 +68,21 @@ const PRODUCTS: Product[] = [
   },
 ];
 
+const TOP_PRODUCTS: TopProductStat[] = [
+  {
+    product_id: 1,
+    product_name: 'Bálsamo de Fresa',
+    category: 'Maquillaje',
+    product_price: '3.50',
+    qty_available: 10,
+    in_stock: true,
+    product_image_url: null,
+    units_sold: 10,
+    orders_count: 5,
+    total_revenue: '35.00',
+  },
+];
+
 function renderPage() {
   return render(
     <AdminAuthContext.Provider
@@ -83,12 +104,14 @@ function renderPage() {
 beforeEach(() => {
   mockFetchOrderSummaries.mockReset();
   mockFetchAllProducts.mockReset();
+  mockFetchTopProducts.mockReset();
   mockFetchOrderSummaries.mockResolvedValue(SUMMARIES);
   mockFetchAllProducts.mockResolvedValue(PRODUCTS);
+  mockFetchTopProducts.mockResolvedValue(TOP_PRODUCTS);
 });
 
 describe('AdminDashboardPage — resumen vía API', () => {
-  it('renderiza las estadísticas y los pedidos recientes desde listOrders', async () => {
+  it('renderiza las estadísticas y los pedidos recientes navegables desde listOrders', async () => {
     renderPage();
 
     expect(await screen.findByText('Pedidos Recientes')).toBeInTheDocument();
@@ -99,26 +122,31 @@ describe('AdminDashboardPage — resumen vía API', () => {
     expect(screen.getByText('Ventas Totales')).toBeInTheDocument();
     // 1 aprobado de 2 pedidos totales; 1 producto en stock.
     expect(screen.getAllByText('1').length).toBeGreaterThan(0);
+
+    const recentOrderLink = screen.getByText('#7').closest('a');
+    expect(recentOrderLink).toHaveAttribute('href', '/tokki-admin/orders/7');
   });
 
-  it('renderiza la tarjeta de Productos Destacados / Top Inventario con medallas y links de edición', async () => {
+  it('renderiza la tarjeta de Productos Destacados con medallas, métricas reales y links ?edit', async () => {
     renderPage();
 
-    expect(await screen.findByText('Productos Destacados / Top Inventario')).toBeInTheDocument();
-    expect(screen.getByText('Bálsamo de Fresa')).toBeInTheDocument();
+    expect(await screen.findByText('Productos Destacados')).toBeInTheDocument();
+    expect(await screen.findByText('Bálsamo de Fresa')).toBeInTheDocument();
     expect(screen.getByText('🥇 #1')).toBeInTheDocument();
+    expect(screen.getByText('10 vendidos')).toBeInTheDocument();
+    expect(screen.getByText('$35.00')).toBeInTheDocument();
     expect(screen.getByText('10 en stock')).toBeInTheDocument();
 
     const editLinks = screen.getAllByRole('link', { name: /Editar Bálsamo de Fresa/i });
     expect(editLinks.length).toBeGreaterThan(0);
-    expect(editLinks[0]).toHaveAttribute('href', '/tokki-admin/products');
+    expect(editLinks[0]).toHaveAttribute('href', '/tokki-admin/products?edit=1');
   }, 15000);
 
-  it('conecta la tarjeta de Alertas Stock con la ruta /tokki-admin/products?stock=low', async () => {
+  it('conecta la tarjeta de Alertas Stock con la ruta /tokki-admin/products?stock=alert', async () => {
     renderPage();
 
     const stockAlertLink = await screen.findByRole('link', { name: /ver alertas de stock/i });
-    expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=low');
+    expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=alert');
   }, 15000);
 
   it('pide el listado de pedidos con el token de admin', async () => {

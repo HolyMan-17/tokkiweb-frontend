@@ -122,6 +122,18 @@ describe('computePaymentDistribution', () => {
     expect(pagoMovil?.value).toBe(2);
     expect(zelle?.value).toBe(1);
   });
+
+  test('excludes canceled orders while keeping approved and pending orders', () => {
+    const orders = [
+      makeOrder({ status: 'approved', payment_method: 'pago_movil' }),
+      makeOrder({ status: 'pending', payment_method: 'pago_movil' }),
+      makeOrder({ status: 'canceled', payment_method: 'zelle' }),
+      makeOrder({ status: 'canceled', payment_method: 'pago_movil' }),
+    ];
+    const dist = computePaymentDistribution(orders);
+    expect(dist.find(d => d.name === 'Pago Móvil')?.value).toBe(2);
+    expect(dist.find(d => d.name === 'Zelle')).toBeUndefined();
+  });
 });
 
 describe('computeDeliveryDistribution', () => {
@@ -136,5 +148,17 @@ describe('computeDeliveryDistribution', () => {
     const delivery = dist.find(d => d.name === 'Delivery');
     expect(envio?.value).toBe(1);
     expect(delivery?.value).toBe(2);
+  });
+
+  test('excludes canceled orders while keeping approved and pending orders', () => {
+    const orders = [
+      makeOrder({ status: 'approved', delivery_type: 'delivery' }),
+      makeOrder({ status: 'pending', delivery_type: 'retiro_tienda' }),
+      makeOrder({ status: 'canceled', delivery_type: 'envio_nacional' }),
+    ];
+    const dist = computeDeliveryDistribution(orders);
+    expect(dist.find(d => d.name === 'Delivery')?.value).toBe(1);
+    expect(dist.find(d => d.name.includes('Retiro'))?.value).toBe(1);
+    expect(dist.find(d => d.name.includes('Envío Nacional'))).toBeUndefined();
   });
 });

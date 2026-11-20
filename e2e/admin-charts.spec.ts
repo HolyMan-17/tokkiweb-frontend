@@ -76,6 +76,14 @@ test.describe('Admin Dashboard Sales Analysis Charts', () => {
         }),
       });
     });
+
+    await page.route('**/api/analytics/top-products*', async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ success: true, data: [] }),
+      });
+    });
   });
 
   test('renders all day, week, and month labels without skipping', async ({ page }) => {
