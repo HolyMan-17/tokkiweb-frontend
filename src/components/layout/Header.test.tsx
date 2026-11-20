@@ -136,4 +136,19 @@ describe('Header', () => {
     expect(screen.getByRole('link', { name: 'Carrito' })).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Panel de control' })).not.toBeInTheDocument();
   });
+
+  it('renders Tokki Shop Admin brand wordmark in admin variant and Tokki Shop in customer variant', async () => {
+    const { container, unmount } = await renderHeader({ variant: 'admin', initialEntries: [ADMIN_ROUTES.root] });
+
+    const adminLogo = container.querySelector('.nav-logo');
+    expect(adminLogo?.querySelector('.logo-text')).toHaveTextContent('Tokki Shop');
+    expect(adminLogo?.querySelector('.logo-store')).toHaveTextContent('Admin');
+
+    unmount();
+
+    const customer = await renderHeader({ variant: 'customer', initialEntries: ['/'] });
+    const customerLogo = customer.container.querySelector('.nav-logo');
+    expect(customerLogo?.querySelector('.logo-text')).toHaveTextContent('Tokki');
+    expect(customerLogo?.querySelector('.logo-store')).toHaveTextContent('Shop');
+  });
 });

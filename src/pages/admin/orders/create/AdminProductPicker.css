@@ -128,6 +128,8 @@
   width: 18px;
   height: 18px;
   object-fit: contain;
+  transform: none;
+  flex-shrink: 0;
 }
 
 .pos-chip .category-kpop {

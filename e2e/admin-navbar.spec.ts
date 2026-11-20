@@ -130,11 +130,17 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
       await page.goto('/tokki-admin');
 
       const header = page.locator('header.top-nav-admin');
+      const logoText = header.locator('.logo-text');
+      const logoStore = header.locator('.logo-store');
       const dashboardBtn = header.getByRole('link', { name: 'Panel de control', exact: true });
       const ordersBtn = header.getByRole('link', { name: 'Pedidos', exact: true });
       const productsBtn = header.getByRole('link', { name: 'Productos', exact: true });
       const logoutBtn = header.getByRole('link', { name: 'Volver a la tienda', exact: true });
 
+      await expect(logoText).toBeVisible();
+      await expect(logoText).toHaveText('Tokki Shop');
+      await expect(logoStore).toBeVisible();
+      await expect(logoStore).toHaveText(/admin/i);
       await expect(dashboardBtn).toBeVisible();
       await expect(dashboardBtn).toHaveAttribute('aria-current', 'page');
       await expect(dashboardBtn).toHaveClass(/nav-icon-btn--active/);
@@ -144,16 +150,22 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
 
       const metrics = await header.evaluate((el) => {
         const logo = el.querySelector('.nav-logo');
+        const text = el.querySelector('.logo-text');
+        const store = el.querySelector('.logo-store');
         const actions = el.querySelector('.nav-actions');
         const buttons = Array.from(el.querySelectorAll('.nav-actions a')).map((a) => {
           const r = a.getBoundingClientRect();
           return { left: r.left, right: r.right, width: r.width, height: r.height };
         });
-        if (!logo || !actions) return null;
+        if (!logo || !text || !store || !actions) return null;
         const lr = logo.getBoundingClientRect();
+        const tr = text.getBoundingClientRect();
+        const sr = store.getBoundingClientRect();
         const ar = actions.getBoundingClientRect();
         return {
           logoRight: lr.right,
+          textBox: { left: tr.left, right: tr.right, width: tr.width, height: tr.height },
+          storeBox: { left: sr.left, right: sr.right, width: sr.width, height: sr.height },
           actionsLeft: ar.left,
           viewportWidth: window.innerWidth,
           scrollWidth: document.documentElement.scrollWidth,
@@ -164,6 +176,14 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
 
       expect(metrics).not.toBeNull();
       if (metrics) {
+        expect(metrics.textBox.width).toBeGreaterThan(0);
+        expect(metrics.textBox.height).toBeGreaterThan(0);
+        expect(metrics.textBox.left).toBeGreaterThanOrEqual(0);
+        expect(metrics.textBox.right).toBeLessThanOrEqual(metrics.actionsLeft + 1);
+        expect(metrics.storeBox.width).toBeGreaterThan(0);
+        expect(metrics.storeBox.height).toBeGreaterThan(0);
+        expect(metrics.storeBox.left).toBeGreaterThanOrEqual(0);
+        expect(metrics.storeBox.right).toBeLessThanOrEqual(metrics.actionsLeft + 1);
         expect(metrics.actionsLeft).toBeGreaterThanOrEqual(metrics.logoRight - 1);
         expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 2);
         for (const btn of metrics.buttons) {
@@ -175,6 +195,9 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
 
       if (viewport.width === 375) {
         await header.screenshot({ path: 'test-results/admin-navbar-mobile.png' });
+      }
+      if (viewport.width === 360) {
+        await header.screenshot({ path: 'test-results/admin-navbar-mobile-360.png' });
       }
     }
   });

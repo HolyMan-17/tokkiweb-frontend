@@ -612,6 +612,8 @@
   width: 14px;
   height: 14px;
   object-fit: contain;
+  transform: none;
+  flex-shrink: 0;
 }
 
 .tp-sold-tag {
