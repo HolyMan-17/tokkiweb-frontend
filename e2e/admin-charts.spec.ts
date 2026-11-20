@@ -161,4 +161,37 @@ test.describe('Admin Dashboard Sales Analysis Charts', () => {
     const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
   });
+
+  test('steps backward across periods and resets back to current window', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto('/tokki-admin');
+    await page.waitForLoadState('networkidle');
+
+    const salesCard = page.locator('.chart-card').first();
+    const prevBtn = salesCard.getByRole('button', { name: 'Período anterior' });
+    const nextBtn = salesCard.getByRole('button', { name: 'Período siguiente' });
+    const label = salesCard.locator('.period-nav-label');
+
+    await expect(nextBtn).toBeDisabled();
+
+    // Semanas: step to previous month, then reset via Actual
+    await salesCard.locator('button.pill-btn:has-text("Semanas")').click();
+    const currentMonthLabel = (await label.textContent()) ?? '';
+    await prevBtn.click();
+    await expect(nextBtn).toBeEnabled();
+    await expect(label).not.toHaveText(currentMonthLabel);
+
+    await salesCard.getByRole('button', { name: 'Actual' }).click();
+    await expect(label).toHaveText(currentMonthLabel);
+    await expect(nextBtn).toBeDisabled();
+
+    // Meses: step to prior year, then back with Período siguiente
+    await salesCard.locator('button.pill-btn:has-text("Meses")').click();
+    const currentYear = (await label.textContent()) ?? '';
+    await prevBtn.click();
+    await expect(label).toHaveText(String(Number(currentYear) - 1));
+    await nextBtn.click();
+    await expect(label).toHaveText(currentYear);
+    await expect(nextBtn).toBeDisabled();
+  });
 });

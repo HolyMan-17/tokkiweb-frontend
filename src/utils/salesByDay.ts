@@ -36,6 +36,75 @@ const fullMonthFormatter = new Intl.DateTimeFormat('es-VE', {
   year: 'numeric',
 });
 
+const shortMonthDayFormatter = new Intl.DateTimeFormat('es-VE', {
+  day: 'numeric',
+  month: 'short',
+});
+
+function formatShortDayMonth(date: Date): string {
+  return shortMonthDayFormatter.format(date).replace('.', '');
+}
+
+/**
+ * Shifts a reference date backward by whole period steps (`offset <= 0`),
+ * constructing month/year boundaries safely on day 1 so month-end dates
+ * (e.g. March 31) never roll forward across shorter months.
+ */
+export function shiftReferenceDate(
+  period: TimePeriod,
+  offset: number,
+  baseDate: Date = new Date(),
+): Date {
+  const safeOffset = Math.min(0, Number.isFinite(offset) ? Math.trunc(offset) : 0);
+
+  if (period === 'day') {
+    return new Date(
+      baseDate.getFullYear(),
+      baseDate.getMonth(),
+      baseDate.getDate() + safeOffset * 7,
+      12,
+      0,
+      0,
+      0,
+    );
+  }
+
+  if (period === 'week') {
+    return new Date(baseDate.getFullYear(), baseDate.getMonth() + safeOffset, 1, 12, 0, 0, 0);
+  }
+
+  return new Date(baseDate.getFullYear() + safeOffset, 0, 1, 12, 0, 0, 0);
+}
+
+/**
+ * Formats a compact Spanish window label matching the active chart period.
+ */
+export function formatPeriodWindowLabel(
+  period: TimePeriod,
+  referenceDate: Date,
+  days = 7,
+): string {
+  if (period === 'day') {
+    const start = new Date(
+      referenceDate.getFullYear(),
+      referenceDate.getMonth(),
+      referenceDate.getDate() - (days - 1),
+      12,
+      0,
+      0,
+      0,
+    );
+    return `${formatShortDayMonth(start)} – ${formatShortDayMonth(referenceDate)}`;
+  }
+
+  if (period === 'week') {
+    const raw = fullMonthFormatter.format(referenceDate);
+    return raw.charAt(0).toUpperCase() + raw.slice(1);
+  }
+
+  return String(referenceDate.getFullYear());
+}
+
 function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }

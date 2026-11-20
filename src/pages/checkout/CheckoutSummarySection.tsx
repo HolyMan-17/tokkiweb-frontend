@@ -1,5 +1,6 @@
 import type { CartItem } from '../../types';
 import { formatPrice } from '../../constants';
+import ShippingCostNote from '../../components/ui/ShippingCostNote';
 
 interface CheckoutSummarySectionProps {
   items: CartItem[];
@@ -27,6 +28,7 @@ export function CheckoutSummarySection({ items, total }: CheckoutSummarySectionP
         <span>Total</span>
         <span className="text-primary">{formatPrice(total)}</span>
       </div>
+      <ShippingCostNote className="mt-sm" />
     </section>
   );
 }

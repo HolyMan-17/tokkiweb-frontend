@@ -76,6 +76,18 @@ beforeEach(() => {
   });
 });
 
+describe('CheckoutPage — aviso de costos de envío', () => {
+  it('muestra en el resumen del pedido que Delivery y Envío Nacional se cotizan aparte', () => {
+    const { container } = renderPage();
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent(/env[ií]o nacional/i);
+    expect(note).toHaveTextContent(/no est[aá]n incluidos/i);
+    const summary = screen.getByRole('heading', { name: /resumen del pedido/i }).closest('section');
+    expect(summary).toContainElement(note);
+    expect(container.querySelectorAll('.shipping-cost-note')).toHaveLength(1);
+  });
+});
+
 describe('CheckoutPage — campo Cédula', () => {
   it('muestra el campo cédula con un selector V, E, J, G (por defecto V)', () => {
     renderPage();

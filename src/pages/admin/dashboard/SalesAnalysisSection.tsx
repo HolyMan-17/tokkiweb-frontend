@@ -35,9 +35,16 @@ export function SalesAnalysisSection({
 }: SalesAnalysisSectionProps) {
   const [period, setPeriod] = useState<TimePeriod>('day');
   const [metric, setMetric] = useState<ChartMetric>('revenue');
+  const [periodOffset, setPeriodOffset] = useState(0);
   const [selectedPoint, setSelectedPoint] = useState<SalesByDayPoint | null>(null);
 
-  const { barData, periodTotal } = useSalesChartData(orders, salesByDay, period, metric);
+  const { barData, periodTotal, windowLabel } = useSalesChartData(
+    orders,
+    salesByDay,
+    period,
+    metric,
+    periodOffset,
+  );
 
   const handleMetricChange = (nextMetric: ChartMetric) => {
     setMetric(nextMetric);
@@ -46,6 +53,22 @@ export function SalesAnalysisSection({
 
   const handlePeriodChange = (nextPeriod: TimePeriod) => {
     setPeriod(nextPeriod);
+    setPeriodOffset(0);
+    setSelectedPoint(null);
+  };
+
+  const handlePrevPeriod = () => {
+    setPeriodOffset((prev) => prev - 1);
+    setSelectedPoint(null);
+  };
+
+  const handleNextPeriod = () => {
+    setPeriodOffset((prev) => Math.min(0, prev + 1));
+    setSelectedPoint(null);
+  };
+
+  const handleResetPeriod = () => {
+    setPeriodOffset(0);
     setSelectedPoint(null);
   };
 
@@ -71,12 +94,46 @@ export function SalesAnalysisSection({
           </div>
         </div>
 
-        <SalesSummaryChip
-          metric={metric}
-          periodTotal={periodTotal}
-          selectedPoint={selectedPoint}
-          onClearSelection={() => setSelectedPoint(null)}
-        />
+        <div className="chart-subheader-row">
+          <SalesSummaryChip
+            metric={metric}
+            periodTotal={periodTotal}
+            selectedPoint={selectedPoint}
+            onClearSelection={() => setSelectedPoint(null)}
+          />
+
+          <div className="period-nav" aria-label="Navegación de períodos">
+            <button
+              type="button"
+              className="period-nav-btn"
+              onClick={handlePrevPeriod}
+              aria-label="Período anterior"
+              title="Período anterior"
+            >
+              ‹
+            </button>
+            <span className="period-nav-label">{windowLabel}</span>
+            <button
+              type="button"
+              className="period-nav-btn"
+              onClick={handleNextPeriod}
+              disabled={periodOffset >= 0}
+              aria-label="Período siguiente"
+              title="Período siguiente"
+            >
+              ›
+            </button>
+            {periodOffset < 0 && (
+              <button
+                type="button"
+                className="period-reset-btn"
+                onClick={handleResetPeriod}
+              >
+                Actual
+              </button>
+            )}
+          </div>
+        </div>
       </div>
 
       <SalesBarChart

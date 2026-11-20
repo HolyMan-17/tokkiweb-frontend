@@ -4,6 +4,8 @@ import {
   computeSalesByPeriod,
   computePaymentDistribution,
   computeDeliveryDistribution,
+  shiftReferenceDate,
+  formatPeriodWindowLabel,
 } from './salesByDay';
 import type { OrderSummary } from '../types';
 
@@ -160,5 +162,52 @@ describe('computeDeliveryDistribution', () => {
     expect(dist.find(d => d.name === 'Delivery')?.value).toBe(1);
     expect(dist.find(d => d.name.includes('Retiro'))?.value).toBe(1);
     expect(dist.find(d => d.name.includes('Envío Nacional'))).toBeUndefined();
+  });
+});
+
+describe('shiftReferenceDate & formatPeriodWindowLabel', () => {
+  test('clamps positive offsets to 0 across all periods', () => {
+    const base = new Date(2026, 7, 25, 12, 0, 0);
+    expect(shiftReferenceDate('day', 2, base).getTime()).toBe(shiftReferenceDate('day', 0, base).getTime());
+    expect(shiftReferenceDate('week', 3, base).getTime()).toBe(shiftReferenceDate('week', 0, base).getTime());
+    expect(shiftReferenceDate('month', 1, base).getTime()).toBe(shiftReferenceDate('month', 0, base).getTime());
+  });
+
+  test('shifts day periods by 7-day steps', () => {
+    const base = new Date(2026, 7, 25, 12, 0, 0); // Aug 25
+    const prev = shiftReferenceDate('day', -1, base);
+    expect(prev.getFullYear()).toBe(2026);
+    expect(prev.getMonth()).toBe(7);
+    expect(prev.getDate()).toBe(18);
+  });
+
+  test('shifts week (monthly view) cleanly without month-end rollover on March 31', () => {
+    const march31 = new Date(2026, 2, 31, 12, 0, 0); // Mar 31, 2026
+    const feb = shiftReferenceDate('week', -1, march31);
+    expect(feb.getFullYear()).toBe(2026);
+    expect(feb.getMonth()).toBe(1); // February, never March
+    expect(feb.getDate()).toBe(1);
+  });
+
+  test('shifts month (yearly view) by whole years', () => {
+    const base = new Date(2026, 10, 20, 12, 0, 0);
+    const prevYear = shiftReferenceDate('month', -1, base);
+    expect(prevYear.getFullYear()).toBe(2025);
+    expect(prevYear.getMonth()).toBe(0);
+    expect(prevYear.getDate()).toBe(1);
+  });
+
+  test('formats human-readable labels for day, week, and month windows', () => {
+    const nov20 = new Date(2026, 10, 20, 12, 0, 0);
+    const dayLabel = formatPeriodWindowLabel('day', nov20);
+    expect(dayLabel).toContain('14');
+    expect(dayLabel).toContain('20');
+    expect(dayLabel).toContain('–');
+
+    const weekLabel = formatPeriodWindowLabel('week', new Date(2026, 10, 1, 12, 0, 0));
+    expect(weekLabel).toMatch(/^Noviembre( de)? 2026$/i);
+
+    const monthLabel = formatPeriodWindowLabel('month', new Date(2025, 0, 1, 12, 0, 0));
+    expect(monthLabel).toBe('2025');
   });
 });

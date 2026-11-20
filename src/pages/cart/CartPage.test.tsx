@@ -111,3 +111,30 @@ describe('CartPage — reconciliación de stock al montar', () => {
     expect(screen.getByText(p1.product_name)).toBeInTheDocument();
   });
 });
+
+describe('CartPage — aviso de costos de envío', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+    mockFetchAllProducts.mockResolvedValue([p1]);
+  });
+
+  it('muestra en el resumen que Delivery y Envío Nacional se cotizan aparte', async () => {
+    window.localStorage.setItem(
+      'tokki_cart_v1',
+      JSON.stringify([{ product: p1, quantity: 1 }]),
+    );
+    const { container } = renderPage();
+
+    await screen.findByText('Mi Carrito');
+    const note = screen.getByRole('note');
+    expect(note).toHaveTextContent(/no est[aá]n incluidos/i);
+    expect(container.querySelector('.cart-summary')).toContainElement(note);
+  });
+
+  it('no muestra el aviso cuando el carrito está vacío', async () => {
+    renderPage();
+    await screen.findByText('Tu carrito está vacío');
+    expect(screen.queryByRole('note')).not.toBeInTheDocument();
+  });
+});

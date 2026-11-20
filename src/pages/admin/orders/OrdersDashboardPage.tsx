@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useCallback, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { fetchOrderSummaries } from '../../../api/orders';
 import { useAsync } from '../../../hooks/useAsync';
 import { useAdminAuth } from '../../../components/auth/useAdminAuth';
@@ -12,6 +12,7 @@ import {
 import { getWhatsAppLink } from '../../../utils/whatsapp';
 import { exportOrdersToCsv } from '../../../utils/exportOrders';
 import { ADMIN_ROUTES } from '../../../lib/routes';
+import type { OrderSummary } from '../../../types';
 import StatusBadge from '../../../components/ui/StatusBadge';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
 import ErrorState from '../../../components/ui/ErrorState';
@@ -19,9 +20,57 @@ import './OrdersDashboardPage.css';
 
 type FilterStatus = 'all' | 'pending' | 'approved' | 'canceled';
 
+const STATUS_TABS: readonly { value: FilterStatus; label: string }[] = [
+  { value: 'all', label: 'Todos' },
+  { value: 'pending', label: 'Pendientes' },
+  { value: 'approved', label: 'Aprobados' },
+  { value: 'canceled', label: 'Cancelados' },
+];
+
+function computeOrderStatusCounts(orders: OrderSummary[]): Record<FilterStatus, number> {
+  const counts: Record<FilterStatus, number> = {
+    all: orders.length,
+    pending: 0,
+    approved: 0,
+    canceled: 0,
+  };
+  for (const order of orders) {
+    if (order.status === 'pending' || order.status === 'approved' || order.status === 'canceled') {
+      counts[order.status] += 1;
+    }
+  }
+  return counts;
+}
+
+function parseStatusFilter(raw: string | null): FilterStatus {
+  if (raw === 'pending' || raw === 'approved' || raw === 'canceled') {
+    return raw;
+  }
+  return 'all';
+}
+
 export default function OrdersDashboardPage() {
-  const [filter, setFilter] = useState<FilterStatus>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const filter = parseStatusFilter(searchParams.get('status'));
   const [searchQuery, setSearchQuery] = useState('');
+
+  const handleFilterChange = useCallback(
+    (nextFilter: FilterStatus) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (nextFilter === 'all') {
+            next.delete('status');
+          } else {
+            next.set('status', nextFilter);
+          }
+          return next;
+        },
+        { replace: true },
+      );
+    },
+    [setSearchParams],
+  );
   const { getAdminToken } = useAdminAuth();
   // Stable auth handle for API calls (Bearer via Clerk when mounted)
   const auth = useMemo(
@@ -33,6 +82,7 @@ export default function OrdersDashboardPage() {
     [auth],
   );
   const orders = useMemo(() => data ?? [], [data]);
+  const statusCounts = useMemo(() => computeOrderStatusCounts(orders), [orders]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((order) => {
@@ -142,31 +192,29 @@ export default function OrdersDashboardPage() {
         </div>
 
         <div className="filter-tabs-container">
-          <div className="filter-tabs">
-            <button 
-              className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
-              onClick={() => setFilter('all')}
-            >
-              Todos
-            </button>
-            <button 
-              className={`filter-tab ${filter === 'pending' ? 'active' : ''}`}
-              onClick={() => setFilter('pending')}
-            >
-              Pendientes
-            </button>
-            <button 
-              className={`filter-tab ${filter === 'approved' ? 'active' : ''}`}
-              onClick={() => setFilter('approved')}
-            >
-              Aprobados
-            </button>
-            <button 
-              className={`filter-tab ${filter === 'canceled' ? 'active' : ''}`}
-              onClick={() => setFilter('canceled')}
-            >
-              Cancelados
-            </button>
+          <div className="filter-tabs" role="group" aria-label="Filtrar pedidos por estado">
+            {STATUS_TABS.map((tab) => {
+              const count = statusCounts[tab.value];
+              const isPendingAlert = tab.value === 'pending' && count > 0;
+              return (
+                <button
+                  key={tab.value}
+                  type="button"
+                  className={`filter-tab ${filter === tab.value ? 'active' : ''}`}
+                  aria-pressed={filter === tab.value}
+                  title={`${tab.label}: ${count}`}
+                  onClick={() => handleFilterChange(tab.value)}
+                >
+                  <span>{tab.label}</span>
+                  <span
+                    className={`filter-tab-count${isPendingAlert ? ' filter-tab-count--pending' : ''}`}
+                    aria-hidden="true"
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

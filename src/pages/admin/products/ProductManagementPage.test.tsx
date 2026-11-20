@@ -1,9 +1,9 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import ProductManagementPage from './ProductManagementPage';
-import { fetchAllProducts } from '../../../api/products';
+import { fetchAllProducts, updateProduct } from '../../../api/products';
 import { exportProductsToCsv } from '../../../utils/exportProducts';
 import { AdminAuthContext } from '../../../components/auth/AdminAuthContext';
 import type { Product } from '../../../types';
@@ -11,6 +11,7 @@ import type { Product } from '../../../types';
 vi.mock('../../../api/products', () => ({
   fetchAllProducts: vi.fn(),
   archiveProduct: vi.fn(),
+  updateProduct: vi.fn(),
 }));
 
 vi.mock('../../../utils/exportProducts', async (importOriginal) => {
@@ -23,6 +24,7 @@ vi.mock('../../../utils/exportProducts', async (importOriginal) => {
 
 const mockFetchAllProducts = vi.mocked(fetchAllProducts);
 const mockExportProductsToCsv = vi.mocked(exportProductsToCsv);
+const mockUpdateProduct = vi.mocked(updateProduct);
 
 const MOCK_PRODUCTS: Product[] = [
   {
@@ -94,6 +96,7 @@ beforeEach(() => {
   mockFetchAllProducts.mockReset();
   mockFetchAllProducts.mockResolvedValue(MOCK_PRODUCTS);
   mockExportProductsToCsv.mockReset();
+  mockUpdateProduct.mockReset();
 });
 
 describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () => {
@@ -134,6 +137,16 @@ describe('ProductManagementPage — Low Stock Quick-Filter y Query Params', () =
 
     await screen.findByText('Bálsamo Labial Fresa');
     expect(screen.queryByText('Editar Producto')).not.toBeInTheDocument();
+  });
+
+  it('abre automáticamente el modal Nuevo Producto cuando la URL tiene ?new=1 y lo cierra al salir', async () => {
+    const user = userEvent.setup();
+    renderPage(['/tokki-admin/products?new=1']);
+
+    expect(await screen.findByText('Nuevo Producto')).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /cerrar modal/i }));
+    expect(screen.queryByText('Nuevo Producto')).not.toBeInTheDocument();
   });
 
   it('inicializa con el filtro de bajo stock cuando la URL tiene ?stock=low', async () => {
@@ -367,6 +380,120 @@ describe('ProductManagementPage — Orden de productos', () => {
       MOCK_PRODUCTS[0],
       MOCK_PRODUCTS[3],
     ]);
+  });
+});
+
+describe('ProductManagementPage — Stepper rápido de stock', () => {
+  function getProductCard(name: string): HTMLElement {
+    const heading = screen.getByText(name);
+    const card = heading.closest('.product-card-admin');
+    if (!card) throw new Error(`Card not found for ${name}`);
+    return card as HTMLElement;
+  }
+
+  it('muestra botones - y + por tarjeta y deshabilita - cuando el stock es 0', async () => {
+    renderPage();
+    await screen.findByText('Pin Kawaii Bunny');
+
+    const zeroCard = getProductCard('Pin Kawaii Bunny');
+    expect(within(zeroCard).getByRole('button', { name: /disminuir stock de pin kawaii bunny/i })).toBeDisabled();
+    expect(within(zeroCard).getByRole('button', { name: /aumentar stock de pin kawaii bunny/i })).toBeEnabled();
+    expect(within(zeroCard).getByText('0')).toHaveClass('stock-stepper-value');
+
+    const fullCard = getProductCard('Bálsamo Labial Fresa');
+    expect(within(fullCard).getByRole('button', { name: /disminuir stock de bálsamo labial fresa/i })).toBeEnabled();
+    expect(within(fullCard).getByText('10')).toHaveClass('stock-stepper-value');
+  });
+
+  it('etiqueta visiblemente el stepper como "Stock" en cada tarjeta', async () => {
+    renderPage();
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    const card = getProductCard('Bálsamo Labial Fresa');
+    const label = within(card).getByText(/^stock$/i);
+    expect(label).toHaveClass('stock-stepper-label');
+    expect(label).toBeVisible();
+
+    const group = within(card).getByRole('group', { name: /stock de bálsamo labial fresa/i });
+    expect(group).toContainElement(within(card).getByText('10'));
+    expect(within(card).getByText(/unidades/i)).toBeInTheDocument();
+  });
+
+  it('agrupa clics rápidos en + y envía un único updateProduct con toast de confirmación', async () => {
+    const user = userEvent.setup();
+    mockUpdateProduct.mockResolvedValue({
+      ok: true,
+      data: { ...MOCK_PRODUCTS[0], qty_available: 13, in_stock: true },
+    });
+
+    renderPage();
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    const card = getProductCard('Bálsamo Labial Fresa');
+    const plusBtn = within(card).getByRole('button', { name: /aumentar stock de bálsamo labial fresa/i });
+
+    await user.click(plusBtn);
+    await user.click(plusBtn);
+    await user.click(plusBtn);
+
+    expect(within(card).getByText('13')).toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(mockUpdateProduct).toHaveBeenCalledTimes(1);
+    });
+    expect(mockUpdateProduct).toHaveBeenCalledWith(
+      1,
+      { qty_available: 13 },
+      expect.objectContaining({ getToken: expect.any(Function) }),
+    );
+    expect(await screen.findByText('Stock actualizado: 13')).toBeInTheDocument();
+  });
+
+  it('mantiene visible un producto agotado al reabastecer en ?stock=out y limpia el anclaje al cambiar de filtro', async () => {
+    const user = userEvent.setup();
+    mockUpdateProduct.mockResolvedValue({
+      ok: true,
+      data: { ...MOCK_PRODUCTS[3], qty_available: 1, in_stock: true },
+    });
+
+    renderPage(['/tokki-admin/products?stock=out']);
+    await screen.findByText('Pin Kawaii Bunny');
+
+    const card = getProductCard('Pin Kawaii Bunny');
+    expect(within(card).getByText('Agotado')).toBeInTheDocument();
+
+    const plusBtn = within(card).getByRole('button', { name: /aumentar stock de pin kawaii bunny/i });
+    await user.click(plusBtn);
+
+    // Card remains visible under ?stock=out so user can keep tapping +, while Agotado ribbon clears immediately
+    expect(screen.getByText('Pin Kawaii Bunny')).toBeInTheDocument();
+    expect(within(card).queryByText('Agotado')).not.toBeInTheDocument();
+    expect(within(card).getByText('1')).toBeInTheDocument();
+
+    // Switching filters clears adjusted pins: switching to Todos then back to Agotados hides Pin Kawaii Bunny (now stock 1)
+    await user.click(screen.getByRole('button', { name: /^todos$/i }));
+    await user.click(screen.getByRole('button', { name: /^agotados$/i }));
+    expect(screen.queryByText('Pin Kawaii Bunny')).not.toBeInTheDocument();
+  });
+
+  it('revierte el stock optimista y muestra el mensaje de error cuando updateProduct falla', async () => {
+    const user = userEvent.setup();
+    mockUpdateProduct.mockResolvedValue({
+      ok: false,
+      message: 'Error al guardar stock',
+    });
+
+    renderPage();
+    await screen.findByText('Bálsamo Labial Fresa');
+
+    const card = getProductCard('Bálsamo Labial Fresa');
+    const plusBtn = within(card).getByRole('button', { name: /aumentar stock de bálsamo labial fresa/i });
+
+    await user.click(plusBtn);
+    expect(within(card).getByText('11')).toBeInTheDocument();
+
+    expect(await screen.findByText('Error al guardar stock')).toBeInTheDocument();
+    expect(within(card).getByText('10')).toBeInTheDocument();
   });
 });
 

@@ -1,0 +1,28 @@
+.shipping-cost-note {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-sm);
+  margin: 0;
+  padding: 10px 12px;
+  background: var(--color-surface-alt);
+  border: 2px dashed var(--color-border-strong);
+  border-radius: var(--radius-md);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.shipping-cost-note-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+  color: var(--color-primary);
+}
+
+@media (min-width: 768px) {
+  .shipping-cost-note {
+    font-size: var(--text-sm);
+  }
+}

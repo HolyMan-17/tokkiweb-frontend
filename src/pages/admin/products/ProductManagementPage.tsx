@@ -10,6 +10,7 @@ import ErrorState from '../../../components/ui/ErrorState';
 import ProductFormModal from './ProductFormModal';
 import { ProductFilterToolbar, type StockFilter } from './ProductFilterToolbar';
 import { ProductAdminGrid } from './ProductAdminGrid';
+import { useQuickStockUpdate } from './useQuickStockUpdate';
 import { exportProductsToCsv } from '../../../utils/exportProducts';
 import { sortProducts, type SortOption } from '../../../utils/productSort';
 import './ProductManagementPage.css';
@@ -31,6 +32,18 @@ function matchesStockFilter(product: Product, stock: StockFilter): boolean {
   return isLow || isOut;
 }
 
+function matchesVisibleProduct(
+  product: Product,
+  category: string,
+  stock: StockFilter,
+  queryLower: string,
+  adjustedIds: ReadonlySet<number>,
+): boolean {
+  if (category !== 'Todos' && product.category !== category) return false;
+  if (queryLower && !product.product_name.toLowerCase().includes(queryLower)) return false;
+  return adjustedIds.has(product.product_id) || matchesStockFilter(product, stock);
+}
+
 function findProductByEditParam(products: Product[], editParam: string | null): Product | null {
   if (!editParam || !/^\d+$/.test(editParam)) return null;
   const id = Number(editParam);
@@ -49,6 +62,7 @@ export default function ProductManagementPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const stock = parseStockFilter(searchParams.get('stock'));
   const editParam = searchParams.get('edit');
+  const isNewFromUrl = searchParams.get('new') === '1';
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -60,13 +74,23 @@ export default function ProductManagementPage() {
   const [imageErrorOpen, setImageErrorOpen] = useState(false);
   const toastTimer = useRef<number | null>(null);
 
-  const showToast = (message: string) => {
+  const showToast = useCallback((message: string) => {
     setToast(message);
     if (toastTimer.current) window.clearTimeout(toastTimer.current);
     toastTimer.current = window.setTimeout(() => setToast(null), 2500);
-  };
+  }, []);
+
+  const {
+    displayProducts,
+    savingIds,
+    adjustedIds,
+    adjustStock,
+    clearAdjustedPins,
+    resetOverrides,
+  } = useQuickStockUpdate({ products, auth, onToast: showToast });
 
   const handleStockChange = useCallback((newStock: StockFilter) => {
+    clearAdjustedPins();
     setSearchParams(prev => {
       const next = new URLSearchParams(prev);
       if (newStock === 'all') {
@@ -76,45 +100,43 @@ export default function ProductManagementPage() {
       }
       return next;
     }, { replace: true });
-  }, [setSearchParams]);
+  }, [clearAdjustedPins, setSearchParams]);
 
-  const clearEditParam = useCallback(() => {
+  const clearModalParams = useCallback(() => {
     setSearchParams(prev => {
-      if (!prev.has('edit')) return prev;
+      if (!prev.has('edit') && !prev.has('new')) return prev;
       const next = new URLSearchParams(prev);
       next.delete('edit');
+      next.delete('new');
       return next;
     }, { replace: true });
   }, [setSearchParams]);
 
   const urlEditingProduct = useMemo(
-    () => findProductByEditParam(products, editParam),
-    [editParam, products],
+    () => findProductByEditParam(displayProducts, editParam),
+    [editParam, displayProducts],
   );
 
-  const activeEditingProduct = editingProduct ?? urlEditingProduct;
-  const modalOpen = isModalOpen || urlEditingProduct !== null;
+  const activeEditingProduct = editingProduct ?? (isNewFromUrl ? null : urlEditingProduct);
+  const modalOpen = isModalOpen || urlEditingProduct !== null || isNewFromUrl;
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matches = products.filter(p => {
-      if (category !== 'Todos' && p.category !== category) return false;
-      if (!matchesStockFilter(p, stock)) return false;
-      if (q && !p.product_name.toLowerCase().includes(q)) return false;
-      return true;
-    });
+    const matches = displayProducts.filter(p =>
+      matchesVisibleProduct(p, category, stock, q, adjustedIds),
+    );
     // Newest-first default (storefront parity); the choice stays local, not in the URL
     return sortProducts(matches, sort);
-  }, [products, category, stock, search, sort]);
+  }, [displayProducts, category, stock, search, sort, adjustedIds]);
 
   const openAddModal = () => {
-    clearEditParam();
+    clearModalParams();
     setEditingProduct(null);
     setIsModalOpen(true);
   };
 
   const openEditModal = (product: Product) => {
-    clearEditParam();
+    clearModalParams();
     setEditingProduct(product);
     setIsModalOpen(true);
   };
@@ -122,11 +144,12 @@ export default function ProductManagementPage() {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingProduct(null);
-    clearEditParam();
+    clearModalParams();
   };
 
   const handleModalSuccess = (message: string) => {
     closeModal();
+    resetOverrides();
     retry();
     showToast(message);
   };
@@ -218,9 +241,11 @@ export default function ProductManagementPage() {
       <ProductAdminGrid
         products={filtered}
         hasActiveFilters={hasActiveFilters}
+        savingProductIds={savingIds}
         onClearFilters={clearFilters}
         onEdit={openEditModal}
         onArchive={handleArchive}
+        onAdjustStock={adjustStock}
       />
 
       {modalOpen && (

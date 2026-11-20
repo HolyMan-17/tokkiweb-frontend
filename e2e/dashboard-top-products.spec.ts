@@ -153,6 +153,19 @@ const MOCK_ORDERS = [
     delivery_type: 'envio_nacional',
     payment_method: 'pago_movil',
   },
+  {
+    order_id: 11,
+    name: 'Sofía',
+    last_name: 'Hernández',
+    cedula: 'V-25111222',
+    tlf_num: '+584147778899',
+    total_amount: '15.00',
+    status: 'pending',
+    item_count: 1,
+    created_at: '2026-11-18T10:15:00.000Z',
+    delivery_type: 'delivery',
+    payment_method: 'zelle',
+  },
 ];
 
 const MOCK_ORDER_DETAIL = {
@@ -389,5 +402,42 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
     await expect(page.getByText('Sérum Vitamina C')).toBeVisible();
     await expect(page.getByText('Collar Sakura Dorado')).toBeVisible();
     await expect(page.getByText('Bálsamo Labial Bunny Kawaii Edición Limitada')).not.toBeVisible();
+  });
+
+  test('quick actions, pending banner deep-link, and overview layout across desktop & mobile', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await setupMocks(page);
+    await page.goto('/tokki-admin');
+
+    const pendingBanner = page.getByRole('link', {
+      name: /tienes 1 pedido pendiente por revisar/i,
+    });
+    await expect(pendingBanner).toBeVisible();
+    await expect(pendingBanner).toContainText('$15.00 por cobrar');
+
+    await page.screenshot({ path: 'test-results/admin-dashboard-overview-desktop.png' });
+
+    // + Agregar Producto opens /tokki-admin/products?new=1 with Nuevo Producto modal
+    await page.getByRole('link', { name: '+ Agregar Producto' }).click();
+    await expect(page).toHaveURL(/\/tokki-admin\/products\?new=1$/);
+    await expect(page.getByRole('heading', { name: 'Nuevo Producto' })).toBeVisible();
+
+    // Pending banner opens /tokki-admin/orders?status=pending pre-filtered
+    await page.goto('/tokki-admin');
+    await page.getByRole('link', { name: /tienes 1 pedido pendiente por revisar/i }).click();
+    await expect(page).toHaveURL(/\/tokki-admin\/orders\?status=pending$/);
+    await expect(page.getByRole('button', { name: /^pendientes$/i })).toHaveClass(/active/);
+    await expect(page.getByText('Sofía Hernández')).toBeVisible();
+    await expect(page.getByText('María González')).not.toBeVisible();
+
+    // Mobile overview layout check + screenshot
+    await page.setViewportSize({ width: 375, height: 812 });
+    await page.goto('/tokki-admin');
+    await expect(page.getByRole('link', { name: '+ Nuevo Pedido' })).toBeVisible();
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(2);
+    await page.screenshot({ path: 'test-results/admin-dashboard-overview-mobile.png' });
   });
 });

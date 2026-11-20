@@ -52,7 +52,7 @@ const SUMMARIES: OrderSummary[] = [
   },
 ];
 
-function renderPage() {
+function renderPage(initialEntries: string[] = [ADMIN_ROUTES.orders]) {
   return render(
     <AdminAuthContext.Provider
       value={{
@@ -63,7 +63,7 @@ function renderPage() {
         getAdminToken: async () => 'clerk-token',
       }}
     >
-      <MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>
         <OrdersDashboardPage />
       </MemoryRouter>
     </AdminAuthContext.Provider>,
@@ -211,6 +211,60 @@ describe('OrdersDashboardPage — listado vía API', () => {
     const createOrderBtn = await screen.findByRole('link', { name: /\+ nuevo pedido/i });
     expect(createOrderBtn).toBeInTheDocument();
     expect(createOrderBtn).toHaveAttribute('href', ADMIN_ROUTES.createOrder);
+  });
+
+  it('inicializa el filtro desde el query param ?status=pending', async () => {
+    mockFetchOrderSummaries.mockResolvedValue(SUMMARIES);
+    renderPage([`${ADMIN_ROUTES.orders}?status=pending`]);
+
+    expect(await screen.findByText('María González')).toBeInTheDocument();
+    expect(screen.queryByText('Sofía Hernández')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^pendientes$/i })).toHaveClass('active');
+  });
+
+  it('muestra el conteo de pedidos por estado en las pestañas y resalta Pendientes cuando hay pendientes', async () => {
+    mockFetchOrderSummaries.mockResolvedValue([
+      ...SUMMARIES,
+      {
+        order_id: 8,
+        name: 'Carlos',
+        last_name: 'Pérez',
+        tlf_num: '+584121112233',
+        total_amount: '10.00',
+        status: 'canceled',
+        item_count: 1,
+        created_at: '2026-08-15T10:00:00.000Z',
+        delivery_type: 'retiro_tienda',
+        payment_method: 'cash',
+      },
+    ]);
+    renderPage();
+
+    await screen.findByText('#7');
+
+    const allTab = screen.getByRole('button', { name: /^todos$/i });
+    const pendingTab = screen.getByRole('button', { name: /^pendientes$/i });
+    const approvedTab = screen.getByRole('button', { name: /^aprobados$/i });
+    const canceledTab = screen.getByRole('button', { name: /^cancelados$/i });
+
+    expect(allTab.querySelector('.filter-tab-count')).toHaveTextContent('3');
+    const pendingCountPill = pendingTab.querySelector('.filter-tab-count');
+    expect(pendingCountPill).toHaveTextContent('1');
+    expect(pendingCountPill).toHaveClass('filter-tab-count--pending');
+    expect(approvedTab.querySelector('.filter-tab-count')).toHaveTextContent('1');
+    expect(canceledTab.querySelector('.filter-tab-count')).toHaveTextContent('1');
+  });
+
+  it('no resalta el conteo de Pendientes cuando no hay pedidos pendientes', async () => {
+    mockFetchOrderSummaries.mockResolvedValue([SUMMARIES[1]]);
+    renderPage();
+
+    await screen.findByText('#6');
+
+    const pendingTab = screen.getByRole('button', { name: /^pendientes$/i });
+    const pendingCountPill = pendingTab.querySelector('.filter-tab-count');
+    expect(pendingCountPill).toHaveTextContent('0');
+    expect(pendingCountPill).not.toHaveClass('filter-tab-count--pending');
   });
 });
 

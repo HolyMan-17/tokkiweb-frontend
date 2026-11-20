@@ -128,4 +128,43 @@ describe('DashboardCharts — interactividad de métricas y filtros', { timeout:
     fireEvent.click(entregaBtn);
     expect(entregaBtn).toHaveClass('pill-btn--active');
   });
+
+  it('permite navegar a períodos anteriores, volver al actual y reinicia al cambiar tipo de período', async () => {
+    const { container } = render(
+      <DashboardCharts
+        orders={ORDERS}
+        pendingCount={1}
+        approvedCount={1}
+        canceledCount={0}
+      />,
+    );
+
+    await screen.findByText('Análisis de Ventas');
+
+    const prevBtn = screen.getByRole('button', { name: /período anterior/i });
+    const nextBtn = screen.getByRole('button', { name: /período siguiente/i });
+    const labelEl = container.querySelector('.period-nav-label');
+    expect(labelEl).not.toBeNull();
+    const initialLabel = labelEl?.textContent;
+
+    expect(nextBtn).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^actual$/i })).not.toBeInTheDocument();
+
+    fireEvent.click(prevBtn);
+    expect(nextBtn).toBeEnabled();
+    expect(labelEl?.textContent).not.toBe(initialLabel);
+
+    const actualBtn = screen.getByRole('button', { name: /^actual$/i });
+    fireEvent.click(actualBtn);
+    expect(nextBtn).toBeDisabled();
+    expect(labelEl?.textContent).toBe(initialLabel);
+    expect(screen.queryByRole('button', { name: /^actual$/i })).not.toBeInTheDocument();
+
+    // Stepping back then switching to Meses resets offset back to current year
+    fireEvent.click(prevBtn);
+    expect(nextBtn).toBeEnabled();
+    fireEvent.click(screen.getByRole('button', { name: /meses/i }));
+    expect(nextBtn).toBeDisabled();
+    expect(screen.queryByRole('button', { name: /^actual$/i })).not.toBeInTheDocument();
+  });
 });

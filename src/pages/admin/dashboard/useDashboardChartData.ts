@@ -3,6 +3,8 @@ import {
   computeSalesByPeriod,
   computePaymentDistribution,
   computeDeliveryDistribution,
+  shiftReferenceDate,
+  formatPeriodWindowLabel,
   type TimePeriod,
   type ChartMetric,
   type DistributionPoint,
@@ -20,6 +22,7 @@ const PIE_COLORS = {
 export interface SalesChartData {
   barData: SalesByDayPoint[] | DaySales[];
   periodTotal: number;
+  windowLabel: string;
 }
 
 export interface DistributionChartData {
@@ -36,19 +39,37 @@ export function useSalesChartData(
   salesByDay: DaySales[] | undefined,
   period: TimePeriod,
   metric: ChartMetric,
+  periodOffset = 0,
 ): SalesChartData {
+  const referenceDate = useMemo(
+    () => shiftReferenceDate(period, periodOffset),
+    [period, periodOffset],
+  );
+
+  const windowLabel = useMemo(
+    () => formatPeriodWindowLabel(period, referenceDate),
+    [period, referenceDate],
+  );
+
   const barData = useMemo(() => {
-    if (orders && orders.length > 0) {
-      return computeSalesByPeriod(orders, { period, metric });
+    if (
+      period === 'day' &&
+      metric === 'revenue' &&
+      periodOffset === 0 &&
+      orders.length === 0 &&
+      salesByDay &&
+      salesByDay.length > 0
+    ) {
+      return salesByDay;
     }
-    return salesByDay ?? [];
-  }, [orders, period, metric, salesByDay]);
+    return computeSalesByPeriod(orders, { period, metric, referenceDate });
+  }, [orders, period, metric, periodOffset, referenceDate, salesByDay]);
 
   const periodTotal = useMemo(() => {
     return barData.reduce((acc, p) => acc + p.total, 0);
   }, [barData]);
 
-  return { barData, periodTotal };
+  return { barData, periodTotal, windowLabel };
 }
 
 /**

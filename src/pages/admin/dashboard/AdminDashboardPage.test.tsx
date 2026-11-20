@@ -149,6 +149,46 @@ describe('AdminDashboardPage — resumen vía API', () => {
     expect(stockAlertLink).toHaveAttribute('href', '/tokki-admin/products?stock=alert');
   }, 15000);
 
+  it('renderiza botones de acción rápida, tarjetas KPI enlazadas, sub-métricas de ventas y banner de pedidos pendientes', async () => {
+    renderPage();
+
+    const newOrderLink = await screen.findByRole('link', { name: /\+ nuevo pedido/i });
+    expect(newOrderLink).toHaveAttribute('href', '/tokki-admin/orders/new');
+
+    const newProductLink = screen.getByRole('link', { name: /\+ agregar producto/i });
+    expect(newProductLink).toHaveAttribute('href', '/tokki-admin/products?new=1');
+
+    const pendingBanner = screen.getByRole('link', {
+      name: /tienes 1 pedido pendiente por revisar/i,
+    });
+    expect(pendingBanner).toHaveAttribute('href', '/tokki-admin/orders?status=pending');
+    expect(pendingBanner).toHaveTextContent('$15.50 por cobrar');
+
+    const ordersKpiLink = screen.getByRole('link', { name: /^ver pedidos$/i });
+    expect(ordersKpiLink).toHaveAttribute('href', '/tokki-admin/orders?status=pending');
+
+    const productsKpiLink = screen.getByRole('link', { name: /^ver productos$/i });
+    expect(productsKpiLink).toHaveAttribute('href', '/tokki-admin/products');
+    expect(productsKpiLink).toHaveTextContent('1 en stock • 10 uds.');
+
+    expect(screen.getByText(/Este mes:/)).toBeInTheDocument();
+    expect(screen.getByText(/Prom\.:/)).toBeInTheDocument();
+  });
+
+  it('oculta el banner de pendientes y enlaza la tarjeta Pedidos a /tokki-admin/orders cuando no hay pendientes', async () => {
+    mockFetchOrderSummaries.mockResolvedValue([SUMMARIES[0]]);
+    renderPage();
+
+    await screen.findByText('Pedidos Recientes');
+    expect(
+      screen.queryByRole('link', { name: /pendiente.*por revisar/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^ver pedidos$/i })).toHaveAttribute(
+      'href',
+      '/tokki-admin/orders',
+    );
+  });
+
   it('pide el listado de pedidos con el token de admin', async () => {
     renderPage();
     await screen.findByText('Pedidos Recientes');

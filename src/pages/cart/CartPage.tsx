@@ -6,6 +6,7 @@ import { formatPrice } from '../../constants';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import StockNotice from '../../components/ui/StockNotice';
+import ShippingCostNote from '../../components/ui/ShippingCostNote';
 import { fetchAllProducts } from '../../api/products';
 import cartImg from '../../assets/cart.avif';
 
@@ -118,6 +119,7 @@ export default function CartPage() {
           <span className="summary-label">Subtotal</span>
           <span className="summary-value">{formatPrice(total)}</span>
         </div>
+        <ShippingCostNote className="mt-sm" />
         <button 
           className="btn btn-primary btn-lg btn-block mt-md" 
           onClick={() => navigate(ROUTES.checkout)}
