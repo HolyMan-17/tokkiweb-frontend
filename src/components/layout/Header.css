@@ -75,7 +75,12 @@
   border-radius: 50%;
   background: var(--color-surface);
   border: 2px solid var(--pink-200);
-  transition: background 0.18s, border-color 0.18s, color 0.18s;
+  transition:
+    background 0.18s,
+    border-color 0.18s,
+    color 0.18s,
+    transform var(--duration-fast) var(--ease-spring),
+    box-shadow 0.18s;
   text-decoration: none;
 }
 
@@ -83,6 +88,25 @@
   background: var(--pink-100);
   border-color: var(--pink-300);
   color: var(--color-text);
+  transform: translateY(-2px);
+}
+
+.nav-icon-btn:focus-visible {
+  outline: 2.5px solid var(--pink-400);
+  outline-offset: 2px;
+}
+
+.nav-icon-btn--active {
+  background: var(--color-primary);
+  border-color: var(--pink-600);
+  color: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+.nav-icon-btn--active:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--pink-600);
+  color: var(--color-surface);
 }
 
 /* Admin logout button — soft red tint so it reads as "exit" */
@@ -169,6 +193,20 @@
     padding: 0 12px;
   }
 
+  .top-nav-admin .nav-logo {
+    flex-shrink: 0;
+  }
+
+  .top-nav-admin .logo-bunny img {
+    width: 2.2rem;
+    height: 2.2rem;
+  }
+
+  .top-nav-admin .logo-text {
+    font-size: 1.15rem;
+    white-space: nowrap;
+  }
+
   .top-nav-admin .logo-store {
     display: none;
   }
@@ -191,7 +229,8 @@
   }
 
   .top-nav-admin .nav-actions {
-    gap: 6px;
+    gap: 5px;
+    flex-shrink: 0;
   }
 }
 
@@ -205,8 +244,8 @@
   }
 }
 
-/* Ultra-narrow phones: drop the logo text entirely so the actions fit */
-@media (max-width: 359.98px) {
+/* Narrow phones: drop the logo text so all admin buttons + avatar fit without crowding */
+@media (max-width: 440px) {
   .top-nav-admin .logo-text {
     display: none;
   }
@@ -217,6 +256,12 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .nav-icon-btn,
+  .nav-icon-btn:hover {
+    transition: none !important;
+    transform: none !important;
+  }
+
   .cart-badge {
     animation: none !important;
     transition: none !important;

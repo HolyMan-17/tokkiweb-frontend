@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useCart } from '../../context/CartContext';
 import { ROLES, CLERK_PUBLISHABLE_KEY, ADMIN_DEV_BYPASS } from '../../lib/auth';
 import { ROUTES, ADMIN_ROUTES } from '../../lib/routes';
@@ -18,22 +18,32 @@ interface HeaderProps {
 
 const DEV_SVG = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
   </svg>
 );
 
 const HOME_SVG = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
     <polyline points="9 22 9 12 15 12 15 22" />
   </svg>
 );
 
+const DASHBOARD_SVG = (
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <path d="M3 3v18h18" />
+    <path d="M18 17V9" />
+    <path d="M13 17V5" />
+    <path d="M8 17v-3" />
+  </svg>
+);
+
 const ORDERS_SVG = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
     <polyline points="14 2 14 8 20 8" />
     <line x1="16" y1="13" x2="8" y2="13" />
@@ -44,7 +54,7 @@ const ORDERS_SVG = (
 
 const PRODUCTS_SVG = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
     <polyline points="3.27 6.96 12 12.01 20.73 6.96" />
     <line x1="12" y1="22.08" x2="12" y2="12" />
@@ -53,12 +63,16 @@ const PRODUCTS_SVG = (
 
 const LOGOUT_SVG = (
   <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
-    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+    stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
     <polyline points="16 17 21 12 16 7" />
     <line x1="21" y1="12" x2="9" y2="12" />
   </svg>
 );
+
+function adminNavClassName({ isActive }: { isActive: boolean }): string {
+  return isActive ? 'nav-icon-btn nav-icon-btn--active' : 'nav-icon-btn';
+}
 
 export function Header({ variant = 'customer' }: HeaderProps) {
   const { items } = useCart();
@@ -104,16 +118,40 @@ export function Header({ variant = 'customer' }: HeaderProps) {
             </>
           ) : (
             <>
-              <Link to={ADMIN_ROUTES.orders} className="nav-icon-btn" aria-label="Pedidos" title="Pedidos">
+              <NavLink
+                to={ADMIN_ROUTES.root}
+                end
+                className={adminNavClassName}
+                aria-label="Panel de control"
+                title="Panel de control"
+              >
+                {DASHBOARD_SVG}
+              </NavLink>
+              <NavLink
+                to={ADMIN_ROUTES.orders}
+                className={adminNavClassName}
+                aria-label="Pedidos"
+                title="Pedidos"
+              >
                 {ORDERS_SVG}
-              </Link>
-              <Link to={ADMIN_ROUTES.products} className="nav-icon-btn" aria-label="Productos" title="Productos">
+              </NavLink>
+              <NavLink
+                to={ADMIN_ROUTES.products}
+                className={adminNavClassName}
+                aria-label="Productos"
+                title="Productos"
+              >
                 {PRODUCTS_SVG}
-              </Link>
+              </NavLink>
               {(isTech || !clerkConfigured) && (
-                <Link to={ADMIN_ROUTES.dev} className="nav-icon-btn" aria-label="Herramientas de desarrollo" title="Herramientas de desarrollo">
+                <NavLink
+                  to={ADMIN_ROUTES.dev}
+                  className={adminNavClassName}
+                  aria-label="Herramientas de desarrollo"
+                  title="Herramientas de desarrollo"
+                >
                   {DEV_SVG}
-                </Link>
+                </NavLink>
               )}
               <Link to={ROUTES.home} className="nav-icon-btn nav-logout" aria-label="Volver a la tienda" title="Volver a la tienda">
                 {LOGOUT_SVG}
