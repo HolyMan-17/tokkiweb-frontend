@@ -200,3 +200,113 @@ describe('CatalogPage — Menos de un dolar carousel', () => {
     expect(verMas).toHaveAttribute('href', '/categorias/menos-de-un-dolar');
   });
 });
+
+describe('CatalogPage — aviso de envíos nacionales', () => {
+  it('muestra el aviso legible de envíos nacionales por ZOOM y Tealca con cobro a destino', async () => {
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const note = await screen.findByRole('note');
+    expect(note).toBeInTheDocument();
+    expect(note).toHaveTextContent(/Envíos nacionales/i);
+    expect(note).toHaveTextContent(/todos los días/i);
+    expect(note).toHaveTextContent(/ZOOM/);
+    expect(note).toHaveTextContent(/Tealca/);
+    expect(note).toHaveTextContent(/Cobro a destino/i);
+  });
+
+  it('ubica el aviso fuera del banner inicial y justo antes de la sección Todos', async () => {
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const note = await screen.findByRole('note');
+    const hero = document.querySelector('.catalog-hero');
+    const todosSection = document.querySelector('.category-section');
+
+    expect(hero).not.toBeNull();
+    expect(todosSection).not.toBeNull();
+    expect(hero!.contains(note)).toBe(false);
+    expect(hero!.compareDocumentPosition(note) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(note.compareDocumentPosition(todosSection!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it('se lee como una frase natural, con el conejito Tokki decorativo y los couriers como stickers', async () => {
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const note = await screen.findByRole('note');
+    expect(note).toHaveTextContent(
+      'Envíos nacionales todos los días por ZOOM y Tealca Cobro a destino',
+    );
+
+    // Mascot and cash badge are purely decorative: present, but hidden from assistive tech.
+    const mascot = note.querySelector('img.catalog-shipping-bunny');
+    expect(mascot).not.toBeNull();
+    expect(mascot).toHaveAttribute('src', expect.stringMatching(/bunny_dancing/));
+    expect(mascot).toHaveAttribute('alt', '');
+
+    const cashBadge = note.querySelector('img.catalog-shipping-cash');
+    expect(cashBadge).not.toBeNull();
+    expect(cashBadge).toHaveAttribute('src', expect.stringMatching(/cash_flying/));
+    expect(cashBadge).toHaveAttribute('alt', '');
+
+    expect(within(note).getByText('ZOOM')).toHaveClass('catalog-shipping-chip');
+    expect(within(note).getByText('Tealca')).toHaveClass('catalog-shipping-chip');
+    expect(within(note).getByText('Cobro a destino')).toHaveClass('catalog-shipping-stamp-text');
+  });
+});
+
+describe('CatalogPage — postal de contacto WhatsApp', () => {
+  it('renderiza la postal clicable con el enlace de WhatsApp y el texto esperado', async () => {
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const link = await screen.findByRole('link', { name: /Resolvemos todas tus dudas/i });
+    expect(link).toHaveClass('catalog-whatsapp');
+    expect(link).toHaveAttribute('href', 'https://wa.me/584122698243');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noreferrer');
+    expect(link).toHaveTextContent(
+      'Resolvemos todas tus dudas por WhatsApp ¡Escríbenos!',
+    );
+  });
+
+  it('usa letter_envelope.gif decorativo y deja solo Instagram y TikTok en social-circles', async () => {
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    const link = await screen.findByRole('link', { name: /Resolvemos todas tus dudas/i });
+    const envelope = link.querySelector('img.catalog-whatsapp-envelope');
+    expect(envelope).not.toBeNull();
+    expect(envelope).toHaveAttribute('src', expect.stringMatching(/letter_envelope/));
+    expect(envelope).toHaveAttribute('alt', '');
+
+    const carousels = document.querySelector('.carousels-wrapper');
+    const socials = document.querySelector('.social-circles');
+    expect(carousels).not.toBeNull();
+    expect(socials).not.toBeNull();
+    expect(carousels!.compareDocumentPosition(link) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(link.compareDocumentPosition(socials!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const socialLinks = within(socials as HTMLElement).getAllByRole('link');
+    expect(socialLinks).toHaveLength(2);
+    expect(socials!.querySelector('.social-whatsapp')).toBeNull();
+    expect(within(socials as HTMLElement).getByRole('link', { name: 'Instagram' })).toBeInTheDocument();
+    expect(within(socials as HTMLElement).getByRole('link', { name: 'TikTok' })).toBeInTheDocument();
+  });
+});

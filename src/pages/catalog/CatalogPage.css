@@ -205,6 +205,397 @@
   letter-spacing: 0.5px;
 }
 
+/* ── National shipping notice ──────────────────────────────────────────────── */
+/* A polka-dot sticker "taped" onto the page: washi tape on top, the Tokki
+   delivery bunny in a round badge, couriers as mini stickers and a white
+   "Cobro a destino" sticker. Sits between the hero and "Todos" so the hero
+   itself stays untouched. */
+.catalog-shipping-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 26px 16px 6px;
+}
+
+.catalog-shipping {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "badge content"
+    "badge stamp";
+  align-items: center;
+  column-gap: 14px;
+  row-gap: 10px;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 18px 16px 16px;
+  background:
+    radial-gradient(circle, color-mix(in srgb, var(--p3) 38%, transparent) 1.3px, transparent 1.8px) 0 0 / 16px 16px,
+    linear-gradient(135deg, var(--color-surface) 0%, var(--p1) 100%);
+  border: 2.5px solid var(--p3);
+  border-radius: var(--radius-card);
+  box-shadow: 0 4px 0 var(--p2), var(--shadow-card);
+  rotate: -0.6deg;
+  animation: shipping-pop 0.6s var(--ease-spring) both;
+}
+
+/* Washi tape strip holding the sticker in place */
+.catalog-shipping::before {
+  content: '';
+  position: absolute;
+  top: -13px;
+  left: 50%;
+  width: 88px;
+  height: 22px;
+  translate: -50% 0;
+  rotate: -4deg;
+  background: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--p4) 80%, transparent) 0 7px,
+    color-mix(in srgb, var(--color-surface) 80%, transparent) 7px 14px
+  );
+  border-radius: 3px;
+  box-shadow: var(--shadow-sm);
+  pointer-events: none;
+}
+
+/* Round mascot badge + truck mini-badge */
+.catalog-shipping-badge {
+  grid-area: badge;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--color-surface);
+  border: 2.5px solid var(--p3);
+  box-shadow: 0 3px 0 var(--p2);
+  rotate: -6deg;
+}
+
+.catalog-shipping-bunny {
+  width: 52px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+}
+
+.catalog-shipping-truck {
+  position: absolute;
+  right: -7px;
+  bottom: -5px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--p5);
+  color: var(--color-surface);
+  border: 2px solid var(--color-surface);
+  box-shadow: var(--shadow-md);
+  rotate: 6deg;
+}
+
+/* Copy */
+.catalog-shipping-content {
+  grid-area: content;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.catalog-shipping-title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--color-text);
+}
+
+.catalog-shipping-title strong {
+  font-weight: 700;
+  color: var(--pink-700);
+}
+
+/* Highlighter-marker swipe under "todos los días" */
+.catalog-shipping-highlight {
+  padding: 0 3px;
+  border-radius: 4px;
+  background: linear-gradient(transparent 56%, var(--p2) 56%, var(--p2) 94%, transparent 94%);
+  white-space: nowrap;
+}
+
+.catalog-shipping-couriers {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--color-text-secondary);
+}
+
+.catalog-shipping-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 11px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--p3);
+  box-shadow: 0 2px 0 var(--p2);
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--color-text);
+  rotate: -2deg;
+}
+
+.catalog-shipping-chip + .catalog-shipping-chip {
+  rotate: 2deg;
+}
+
+/* White "Cobro a destino" sticker pill matching ZOOM and Tealca */
+.catalog-shipping-stamp {
+  grid-area: stamp;
+  justify-self: start;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 13px 4px 9px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2px solid var(--p3);
+  box-shadow: 0 2px 0 var(--p2);
+  color: var(--color-text);
+  line-height: 1.1;
+  rotate: 1.5deg;
+}
+
+.catalog-shipping-cash {
+  width: 28px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+}
+
+.catalog-shipping-stamp-text {
+  font-family: var(--font-display);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+@keyframes shipping-pop {
+  0%   { opacity: 0; transform: translateY(10px) scale(0.96); }
+  100% { opacity: 1; transform: none; }
+}
+
+/* ── WhatsApp contact postcard ─────────────────────────────────────────────── */
+/* Distinct from the light scrapbook shipping note: a lush pink die-cut
+   airmail postcard bookending the hero banner, with a curved candy-stripe
+   airmail trim, tilted postage-stamp envelope frame, and pop-out white CTA. */
+.catalog-whatsapp-wrap {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 16px 0;
+}
+
+.catalog-whatsapp {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-areas:
+    "stamp content"
+    "cta cta";
+  align-items: center;
+  column-gap: 16px;
+  row-gap: 14px;
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 25px 18px 18px;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  border: 3px solid var(--color-surface);
+  background:
+    radial-gradient(circle at 90% 18%, color-mix(in srgb, var(--color-surface) 45%, transparent) 0 26%, transparent 58%),
+    radial-gradient(circle at 12% 88%, color-mix(in srgb, var(--p1) 60%, transparent) 0 24%, transparent 56%),
+    linear-gradient(135deg, var(--p2) 0%, var(--p3) 55%, var(--p4) 100%);
+  box-shadow:
+    0 0 0 2.5px var(--p4),
+    0 6px 0 2px var(--p3),
+    var(--shadow-xl);
+  color: var(--color-text);
+  text-decoration: none;
+  transition:
+    translate 0.25s var(--ease-spring),
+    rotate 0.25s var(--ease-spring),
+    box-shadow 0.25s ease;
+}
+
+/* Curved airmail candy-stripe trim along the top edge */
+.catalog-whatsapp::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 9px;
+  background: repeating-linear-gradient(
+    -55deg,
+    var(--color-surface) 0 10px,
+    var(--p5) 10px 20px,
+    var(--color-surface) 20px 30px,
+    var(--p1) 30px 40px
+  );
+  border-bottom: 2px solid color-mix(in srgb, var(--color-surface) 75%, transparent);
+  pointer-events: none;
+}
+
+.catalog-whatsapp:hover {
+  color: var(--color-text);
+  translate: 0 -5px;
+  rotate: -0.6deg;
+  box-shadow:
+    0 0 0 2.5px var(--p5),
+    0 10px 0 2px var(--p3),
+    var(--shadow-card-hover);
+}
+
+.catalog-whatsapp:active {
+  translate: 0 -1px;
+}
+
+.catalog-whatsapp:focus-visible {
+  outline: 3px solid var(--pink-700);
+  outline-offset: 6px;
+}
+
+/* Tilted dashed-square postage stamp holding the pixel love letter */
+.catalog-whatsapp-stamp {
+  grid-area: stamp;
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  padding: 8px;
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 2.5px dashed var(--p4);
+  box-shadow: 0 4px 0 color-mix(in srgb, var(--pink-600) 35%, transparent);
+  rotate: -5deg;
+  transition: rotate 0.28s var(--ease-spring), scale 0.28s var(--ease-spring);
+}
+
+.catalog-whatsapp:hover .catalog-whatsapp-stamp {
+  rotate: 4deg;
+  scale: 1.06;
+}
+
+.catalog-whatsapp-envelope {
+  width: 48px;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  image-rendering: pixelated;
+}
+
+.catalog-whatsapp-content {
+  grid-area: content;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.catalog-whatsapp-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.12rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--color-text);
+  text-shadow: 0 1px 0 color-mix(in srgb, var(--color-surface) 65%, transparent);
+}
+
+.catalog-whatsapp-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--pink-900);
+}
+
+.catalog-whatsapp-channel {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  background: color-mix(in srgb, var(--color-surface) 78%, transparent);
+  border: 1.5px solid var(--color-surface);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--pink-800);
+}
+
+/* Pop-out white CTA pill — full-width tap target on mobile, right-aligned pill on desktop */
+.catalog-whatsapp-cta {
+  grid-area: cta;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 20px;
+  border-radius: var(--radius-full);
+  background: var(--color-surface);
+  border: 2.5px solid var(--color-surface);
+  box-shadow:
+    0 4px 0 color-mix(in srgb, var(--pink-700) 40%, transparent),
+    var(--shadow-md);
+  color: var(--pink-800);
+  font-family: var(--font-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  white-space: nowrap;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.catalog-whatsapp-cta svg {
+  flex-shrink: 0;
+  transition: translate 0.25s var(--ease-spring);
+}
+
+.catalog-whatsapp:hover .catalog-whatsapp-cta {
+  background: var(--p1);
+  border-color: var(--color-surface);
+  color: var(--color-text);
+}
+
+.catalog-whatsapp:hover .catalog-whatsapp-cta svg {
+  translate: 4px 0;
+}
+
 /* ── Category section ───────────────────────────────────────────────────────── */
 .carousels-wrapper {
   display: flex;
@@ -619,7 +1010,7 @@
   align-items: center;
   justify-content: center;
   gap: 18px;
-  padding: 36px 16px 8px;
+  padding: 24px 16px 8px;
 }
 
 .social-circle {
@@ -714,6 +1105,77 @@
 
   .hero-sub { font-size: 1rem; }
 
+  /* Single row on desktop: badge · copy · postage-style stamp */
+  .catalog-shipping-wrap {
+    padding: 34px 32px 8px;
+  }
+
+  .catalog-shipping {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "badge content stamp";
+    column-gap: 22px;
+    padding: 18px 26px 18px 20px;
+  }
+
+  .catalog-shipping-badge {
+    width: 76px;
+    height: 76px;
+  }
+
+  .catalog-shipping-bunny { width: 62px; }
+
+  .catalog-shipping-title { font-size: 1.25rem; }
+
+  .catalog-shipping-couriers { font-size: 0.95rem; }
+
+  .catalog-shipping-chip { font-size: 0.85rem; }
+
+  .catalog-shipping-stamp {
+    flex-direction: column;
+    gap: 4px;
+    padding: 8px 16px 10px;
+    border-radius: var(--radius-lg);
+    box-shadow: 0 3px 0 var(--p2);
+    text-align: center;
+    rotate: 3deg;
+  }
+
+  .catalog-shipping-cash {
+    width: 38px;
+  }
+
+  .catalog-shipping-stamp-text { font-size: 0.85rem; }
+
+  .catalog-whatsapp-wrap {
+    padding: 52px 32px 0;
+  }
+
+  .catalog-whatsapp {
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "stamp content cta";
+    column-gap: 24px;
+    padding: 28px 28px 22px 24px;
+  }
+
+  .catalog-whatsapp-stamp {
+    width: 80px;
+    height: 80px;
+  }
+
+  .catalog-whatsapp-envelope { width: 58px; }
+
+  .catalog-whatsapp-title { font-size: 1.38rem; }
+
+  .catalog-whatsapp-sub { font-size: 0.98rem; }
+
+  .catalog-whatsapp-channel { font-size: 0.88rem; }
+
+  .catalog-whatsapp-cta {
+    width: auto;
+    padding: 12px 22px 12px 24px;
+    font-size: 1rem;
+  }
+
   .carousels-wrapper {
     gap: 16px;
     padding-top: 16px;
@@ -742,7 +1204,7 @@
 
   .see-more-btn { font-size: 0.85rem; }
 
-  .social-circles { padding: 48px 16px 16px; }
+  .social-circles { padding: 28px 16px 16px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -750,6 +1212,8 @@
   .hero-logo,
   .hero-cherry, .hero-branch,
   .hero-aurora, .hero-blob, .hero-bubble,
+  .catalog-shipping,
+  .catalog-whatsapp, .catalog-whatsapp-stamp, .catalog-whatsapp-cta, .catalog-whatsapp-cta svg,
   .carousel-btn, .social-circle { animation: none !important; transition: none !important; }
 
   .hero-bubble { opacity: 0.5; }
