@@ -67,7 +67,7 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(screen.getByText('Mostrando 1 de 2 productos')).toBeInTheDocument();
   });
 
-  it('renderiza la página de categoría Zona KPOP con su icono kpop.png y productos correspondientes', async () => {
+  it('renderiza la página de categoría Zona KPOP con su icono kpop.avif y productos correspondientes', async () => {
     const kpopProduct: Product = {
       product_id: 201,
       product_name: 'Photocard Set BTS',
@@ -99,7 +99,7 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(titleImg?.getAttribute('src')).toContain('kpop');
   });
 
-  it('renderiza la página de categoría Bolsas o cajas de regalo con su icono gift.gif y productos correspondientes', async () => {
+  it('renderiza la página de categoría Bolsas o cajas de regalo con su icono gift.webp y productos correspondientes', async () => {
     const giftProduct: Product = {
       product_id: 301,
       product_name: 'Caja de Regalo Kawaii Corazones',
@@ -223,7 +223,7 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     );
   });
 
-  it('renderiza la página de categoría Albumes con su icono album_icon.png y productos correspondientes', async () => {
+  it('renderiza la página de categoría Albumes con su icono album_icon.avif y productos correspondientes', async () => {
     const albumProduct: Product = {
       product_id: 601,
       product_name: 'NewJeans 2nd EP Get Up Bunny Beach Bag',
@@ -263,7 +263,7 @@ describe('CategoryPage — Menos de un dolar', () => {
     mockFetchAllProducts.mockResolvedValue([glossMariposa]);
   });
 
-  it('renderiza la página de categoría Menos de un dolar con su icono cash.gif, su producto y el conteo correspondiente', async () => {
+  it('renderiza la página de categoría Menos de un dolar con su icono cash.webp, su producto y el conteo correspondiente', async () => {
     const stickerProduct: Product = {
       product_id: 701,
       product_name: 'Sticker Kawaii Conejito',

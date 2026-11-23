@@ -1,7 +1,7 @@
 import type { FormEvent } from 'react';
 import type { Product } from '../../../../types';
 import { formatPrice } from '../../../../constants';
-import sparklesGif from '../../../../assets/sparkles.gif';
+import sparklesGif from '../../../../assets/sparkles.webp';
 
 export interface SelectedOrderItem {
   product: Product;

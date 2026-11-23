@@ -6,7 +6,7 @@ import { ROUTES, ADMIN_ROUTES } from '../../lib/routes';
 import { useAdminAuth } from '../auth/useAdminAuth';
 import { CartIcon, GearIcon } from '../ui/icons';
 import './Header.css';
-import hoppingBunny from '../../assets/hopping_bunny.gif';
+import hoppingBunny from '../../assets/hopping_bunny.webp';
 
 // Clerk's <UserButton> is lazy so @clerk/react stays out of the customer
 // (and catalog) bundle — it only loads when the admin header renders it.

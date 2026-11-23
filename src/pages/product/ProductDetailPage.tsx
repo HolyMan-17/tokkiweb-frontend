@@ -10,8 +10,8 @@ import QuantitySelector from '../../components/ui/QuantitySelector';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ProductGallery from '../../components/ui/ProductGallery';
-import beatingHeart from '../../assets/beating_heart.gif';
-import sparklesGif from '../../assets/sparkles.gif';
+import beatingHeart from '../../assets/beating_heart.webp';
+import sparklesGif from '../../assets/sparkles.webp';
 
 const DEFAULT_DOC_TITLE = 'Tokki Shop — Accesorios y Dulces Coreanos';
 

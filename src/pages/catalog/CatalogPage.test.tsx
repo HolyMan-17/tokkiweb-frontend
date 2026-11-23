@@ -283,7 +283,7 @@ describe('CatalogPage — postal de contacto WhatsApp', () => {
     );
   });
 
-  it('usa letter_envelope.gif decorativo y deja solo Instagram y TikTok en social-circles', async () => {
+  it('usa letter_envelope.webp decorativo y deja solo Instagram y TikTok en social-circles', async () => {
     render(
       <MemoryRouter>
         <CatalogPage />

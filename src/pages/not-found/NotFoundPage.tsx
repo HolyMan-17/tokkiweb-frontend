@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ROUTES } from '../../lib/routes';
-import hoppingBunny from '../../assets/hopping_bunny.gif';
+import hoppingBunny from '../../assets/hopping_bunny.webp';
 import './NotFoundPage.css';
 
 // Branded 404 — unknown URLs used to silently redirect home, hiding broken

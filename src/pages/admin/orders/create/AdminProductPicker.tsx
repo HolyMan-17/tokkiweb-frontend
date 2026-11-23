@@ -3,7 +3,7 @@ import type { Product } from '../../../../types';
 import { CATEGORIES } from '../../../../constants';
 import { getCategoryIcon } from '../../../../components/ui/CategoryIcons';
 import { PosProductCard } from './PosProductCard';
-import sparklesGif from '../../../../assets/sparkles.gif';
+import sparklesGif from '../../../../assets/sparkles.webp';
 import './AdminProductPicker.css';
 
 export interface AdminProductPickerProps {

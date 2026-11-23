@@ -7,7 +7,7 @@ import { CartIcon, GearIcon } from '../ui/icons';
 import { GlobalSearchBar } from '../ui/GlobalSearchBar';
 import type { Product } from '../../types';
 import './CatalogTopNav.css';
-import hoppingBunny from '../../assets/hopping_bunny.gif';
+import hoppingBunny from '../../assets/hopping_bunny.webp';
 
 interface CatalogTopNavProps {
   products?: Product[];

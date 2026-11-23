@@ -46,20 +46,20 @@
   background-size: contain;
 }
 
-/* Bunny dance gif — left of the check icon */
+/* Bunny dance animated webp — left of the check icon */
 .success-icon-container::before {
   content: '';
   left: -100px;
-  background-image: url('../../assets/bunny_dance.gif');
+  background-image: url('../../assets/bunny_dance.webp');
   width: 5rem;
   height: 5rem;
 }
 
-/* Sparkles gif — right of the check icon */
+/* Sparkles animated webp — right of the check icon */
 .success-icon-container::after {
   content: '';
   right: -88px;
-  background-image: url('../../assets/sparkles.gif');
+  background-image: url('../../assets/sparkles.webp');
   width: 3.4rem;
   height: 3.4rem;
 }

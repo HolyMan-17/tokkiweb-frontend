@@ -1,6 +1,6 @@
 import { CATEGORIES } from '../../../constants';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
-import sparklesGif from '../../../assets/sparkles.gif';
+import sparklesGif from '../../../assets/sparkles.webp';
 import { SORT_OPTIONS, type SortOption } from '../../../utils/productSort';
 
 export type StockFilter = 'all' | 'in' | 'alert' | 'low' | 'out';

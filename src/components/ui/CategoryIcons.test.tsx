@@ -10,7 +10,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(CATEGORIES[0].name)).toBe('menos-de-un-dolar');
   });
 
-  it('CATEGORY_ICONS contains an entry for Zona KPOP with kpop.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Zona KPOP with kpop.avif image', () => {
     const icon = CATEGORY_ICONS['Zona KPOP'];
     expect(icon).toBeDefined();
 
@@ -73,7 +73,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(giftCat!.name)).toBe('bolsas-o-cajas-de-regalo');
   });
 
-  it('CATEGORY_ICONS contains an entry for Bolsas o cajas de regalo with gift.gif image', () => {
+  it('CATEGORY_ICONS contains an entry for Bolsas o cajas de regalo with gift.webp image', () => {
     const icon = CATEGORY_ICONS['Bolsas o cajas de regalo'];
     expect(icon).toBeDefined();
 
@@ -114,7 +114,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(dulcesCat!.name)).toBe('dulces-&-comida-asiatica');
   });
 
-  it('CATEGORY_ICONS contains an entry for Dulces & Comida Asiatica with treat.gif image', () => {
+  it('CATEGORY_ICONS contains an entry for Dulces & Comida Asiatica with treat.webp image', () => {
     const icon = CATEGORY_ICONS['Dulces & Comida Asiatica'];
     expect(icon).toBeDefined();
 
@@ -155,7 +155,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(purseCat!.name)).toBe('bolsos-y-carteras');
   });
 
-  it('CATEGORY_ICONS contains an entry for Bolsos y Carteras with purse.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Bolsos y Carteras with purse.avif image', () => {
     const icon = CATEGORY_ICONS['Bolsos y Carteras'];
     expect(icon).toBeDefined();
 
@@ -201,7 +201,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(cosplayCat!.name)).toBe('cosplays');
   });
 
-  it('CATEGORY_ICONS contains an entry for Cosplays with cosplay.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Cosplays with cosplay.avif image', () => {
     const icon = CATEGORY_ICONS['Cosplays'];
     expect(icon).toBeDefined();
 
@@ -242,7 +242,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(ellosCat!.name)).toBe('para-ellos');
   });
 
-  it('CATEGORY_ICONS contains an entry for Para ellos with spiderman.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Para ellos with spiderman.avif image', () => {
     const icon = CATEGORY_ICONS['Para ellos'];
     expect(icon).toBeDefined();
 
@@ -283,7 +283,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(parejaCat!.name)).toBe('regalos-de-pareja');
   });
 
-  it('CATEGORY_ICONS contains an entry for Regalos de pareja with couple.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Regalos de pareja with couple.avif image', () => {
     const icon = CATEGORY_ICONS['Regalos de pareja'];
     expect(icon).toBeDefined();
 
@@ -380,7 +380,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(figurasCat!.name)).toBe('figuras');
   });
 
-  it('CATEGORY_ICONS contains an entry for Figuras with luffy.png image', () => {
+  it('CATEGORY_ICONS contains an entry for Figuras with luffy.avif image', () => {
     const icon = CATEGORY_ICONS['Figuras'];
     expect(icon).toBeDefined();
 
@@ -426,7 +426,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(peluchesCat!.name)).toBe('peluches');
   });
 
-  it('CATEGORY_ICONS contains an entry for Peluches with hopping_bear.gif image', () => {
+  it('CATEGORY_ICONS contains an entry for Peluches with hopping_bear.webp image', () => {
     const icon = CATEGORY_ICONS['Peluches'];
     expect(icon).toBeDefined();
 
@@ -467,7 +467,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(CATEGORIES[2].name)).toBe('albumes');
   });
 
-  it('CATEGORY_ICONS contains an entry for Albumes with album_icon.png and category-albumes class', () => {
+  it('CATEGORY_ICONS contains an entry for Albumes with album_icon.avif and category-albumes class', () => {
     const icon = CATEGORY_ICONS['Albumes'];
     expect(icon).toBeDefined();
 
@@ -517,7 +517,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(CATEGORIES[6].name)).toBe('llaveros');
   });
 
-  it('CATEGORY_ICONS contains an entry for Llaveros with keychain_art.png and category-keychain class', () => {
+  it('CATEGORY_ICONS contains an entry for Llaveros with keychain_art.avif and category-keychain class', () => {
     const icon = CATEGORY_ICONS['Llaveros'];
     expect(icon).toBeDefined();
 
@@ -566,7 +566,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
 });
 
 describe('Menos de un dolar support', () => {
-  it('CATEGORY_ICONS contains an entry for Menos de un dolar with cash.gif image', () => {
+  it('CATEGORY_ICONS contains an entry for Menos de un dolar with cash.webp image', () => {
     const icon = CATEGORY_ICONS['Menos de un dolar'];
     expect(icon).toBeDefined();
 

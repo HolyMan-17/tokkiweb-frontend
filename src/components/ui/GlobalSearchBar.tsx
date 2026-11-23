@@ -6,7 +6,7 @@ import { matchesSearch } from '../../utils/productSearch';
 import { CATEGORIES, slugify, formatPrice } from '../../constants';
 import { getCategoryIcon } from './CategoryIcons';
 import { ROUTES } from '../../lib/routes';
-import sparklesGif from '../../assets/sparkles.gif';
+import sparklesGif from '../../assets/sparkles.webp';
 import './GlobalSearchBar.css';
 
 // ── Module-level helpers & cache ──────────────────────────────────────────────

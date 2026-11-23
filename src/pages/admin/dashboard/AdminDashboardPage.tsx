@@ -13,7 +13,7 @@ import { ADMIN_ROUTES } from '../../../lib/routes';
 import { formatPrice, formatDate } from '../../../constants';
 import { computeSalesByDay } from '../../../utils/salesByDay';
 import { computeDashboardMetrics } from '../../../utils/dashboardMetrics';
-import bunnyGif from '../../../assets/bunny.gif';
+import bunnyGif from '../../../assets/bunny.webp';
 import './AdminDashboardPage.css';
 
 const DashboardCharts = lazy(() => import('./DashboardCharts'));

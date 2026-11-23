@@ -11,7 +11,7 @@ import BrowseFilters from '../../components/ui/BrowseFilters';
 import { ROUTES } from '../../lib/routes';
 import { matchesSearch } from '../../utils/productSearch';
 import { sortProducts, type SortOption } from '../../utils/productSort';
-import sparklesImg from '../../assets/sparkles.gif';
+import sparklesImg from '../../assets/sparkles.webp';
 
 const SEARCH_SVG = (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none"

@@ -1,7 +1,7 @@
 import { SignIn } from '@clerk/react';
 import { ADMIN_ROUTES } from '../../../lib/routes';
 import { CLERK_PUBLISHABLE_KEY, ADMIN_DEV_BYPASS } from '../../../lib/auth';
-import hoppingBunny from '../../../assets/hopping_bunny.gif';
+import hoppingBunny from '../../../assets/hopping_bunny.webp';
 import './AdminSignInPage.css';
 
 export default function AdminSignInPage() {

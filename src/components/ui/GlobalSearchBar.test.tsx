@@ -72,7 +72,7 @@ describe('GlobalSearchBar', () => {
     vi.clearAllMocks();
   });
 
-  it('1. focus on empty input opens listbox and displays "Últimas Novedades" with sparkles.gif and latest products', () => {
+  it('1. focus on empty input opens listbox and displays "Últimas Novedades" with sparkles.webp and latest products', () => {
     render(
       <MemoryRouter>
         <GlobalSearchBar products={MOCK_PRODUCTS} />

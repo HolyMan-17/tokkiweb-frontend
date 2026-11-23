@@ -1,27 +1,27 @@
 // ─── Category icons — single source of truth ────────────────────────────────
-// Maps each category name to its brand asset (gif/png). Used by both the
+// Maps each category name to its brand asset (webp/avif/gif). Used by both the
 // catalog carousels and the category page header so they always match.
 
-import lipstickGif from '../../assets/lipstick.gif';
+import lipstickGif from '../../assets/lipstick.webp';
 import cosmeticImg from '../../assets/cosmetic.avif';
 import ringImg from '../../assets/ring.avif';
 import lentesImg from '../../assets/lentes_contacto.avif';
 import dressImg from '../../assets/dress.avif';
 import pinImg from '../../assets/pin.avif';
-import treatGif from '../../assets/treat.gif';
-import hoppingBear from '../../assets/hopping_bear.gif';
-import beatingHeart from '../../assets/beating_heart.gif';
-import kpopImg from '../../assets/kpop.png';
-import giftGif from '../../assets/gift.gif';
-import purseImg from '../../assets/purse.png';
-import cosplayImg from '../../assets/cosplay.png';
-import spidermanImg from '../../assets/spiderman.png';
-import coupleImg from '../../assets/couple.png';
+import treatGif from '../../assets/treat.webp';
+import hoppingBear from '../../assets/hopping_bear.webp';
+import beatingHeart from '../../assets/beating_heart.webp';
+import kpopImg from '../../assets/kpop.avif';
+import giftGif from '../../assets/gift.webp';
+import purseImg from '../../assets/purse.avif';
+import cosplayImg from '../../assets/cosplay.avif';
+import spidermanImg from '../../assets/spiderman.avif';
+import coupleImg from '../../assets/couple.avif';
 import legoHeartGif from '../../assets/lego_heart.gif';
-import luffyImg from '../../assets/luffy.png';
-import albumIcon from '../../assets/album_icon.png';
-import keychainArt from '../../assets/keychain_art.png';
-import cashGif from '../../assets/cash.gif';
+import luffyImg from '../../assets/luffy.avif';
+import albumIcon from '../../assets/album_icon.avif';
+import keychainArt from '../../assets/keychain_art.avif';
+import cashGif from '../../assets/cash.webp';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Menos de un dolar': <img src={cashGif} alt="" className="category-emoji-img category-cash" width={217} height={119} loading="lazy" />,

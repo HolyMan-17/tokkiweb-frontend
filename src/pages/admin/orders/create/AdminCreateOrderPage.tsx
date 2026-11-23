@@ -9,7 +9,7 @@ import { AdminProductPicker } from './AdminProductPicker';
 import { CustomerFormCard } from './CustomerFormCard';
 import { OrderSummaryCard } from './OrderSummaryCard';
 import { useAdminOrderCreator } from './useAdminOrderCreator';
-import sparklesGif from '../../../../assets/sparkles.gif';
+import sparklesGif from '../../../../assets/sparkles.webp';
 import './AdminCreateOrderPage.css';
 
 export default function AdminCreateOrderPage() {
