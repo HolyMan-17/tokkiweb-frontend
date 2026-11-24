@@ -10,6 +10,7 @@ import {
   normalizePhoneNumber, validatePhoneNumber, CEDULA_TYPES,
 } from '../../constants';
 import { ROUTES } from '../../lib/routes';
+import { usePageMeta } from '../../hooks/usePageMeta';
 import CheckoutContactSection from './CheckoutContactSection';
 import CheckoutDeliverySection from './CheckoutDeliverySection';
 import CheckoutPaymentSection from './CheckoutPaymentSection';
@@ -44,6 +45,10 @@ const validateCedula = (type: string, value: string) => {
 };
 
 export default function CheckoutPage() {
+  usePageMeta({
+    title: 'Finalizar Pedido | Tokki Shop',
+    noindex: true,
+  });
   const { items, total, clearCart, reconcileStock } = useCart();
   const navigate = useNavigate();
 

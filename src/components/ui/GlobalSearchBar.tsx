@@ -9,19 +9,7 @@ import { ROUTES } from '../../lib/routes';
 import sparklesGif from '../../assets/sparkles.webp';
 import './GlobalSearchBar.css';
 
-// ── Module-level helpers & cache ──────────────────────────────────────────────
-
-let cachedProductsPromise: Promise<Product[]> | null = null;
-
-function getCachedProducts(): Promise<Product[]> {
-  if (!cachedProductsPromise) {
-    cachedProductsPromise = fetchAllProducts().catch((err) => {
-      cachedProductsPromise = null;
-      throw err;
-    });
-  }
-  return cachedProductsPromise;
-}
+// ── Module-level helpers ──────────────────────────────────────────────────────
 
 const SEARCH_SVG = (
   <svg
@@ -124,21 +112,26 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [fetchedProducts, setFetchedProducts] = useState<Product[]>([]);
 
+  const hasFetchedFallbackRef = useRef(false);
   const allProducts = initialProducts ?? fetchedProducts;
 
   useEffect(() => {
-    if (!initialProducts) {
-      let isSubscribed = true;
-      getCachedProducts()
-        .then((data) => {
-          if (isSubscribed) setFetchedProducts(data);
-        })
-        .catch(() => {});
-      return () => {
-        isSubscribed = false;
-      };
+    if (initialProducts || hasFetchedFallbackRef.current || (!isOpen && !isMobileOpen)) {
+      return;
     }
-  }, [initialProducts]);
+    let isSubscribed = true;
+    fetchAllProducts({ useCache: true })
+      .then((data) => {
+        if (isSubscribed) {
+          hasFetchedFallbackRef.current = true;
+          setFetchedProducts(data);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isSubscribed = false;
+    };
+  }, [initialProducts, isOpen, isMobileOpen]);
 
   useEffect(() => {
     if (isMobileOpen) {

@@ -6,7 +6,12 @@ import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
 
-export function ProductCard({ product }: { product: Product }) {
+interface ProductCardProps {
+  product: Product;
+  deferImage?: boolean;
+}
+
+export function ProductCard({ product, deferImage = false }: ProductCardProps) {
   const { addItem } = useCart();
   const [popped, setPopped] = useState(false);
 
@@ -26,12 +31,17 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="card-frame">
         <div className="card-img-wrap">
           {product.product_image_url ? (
-            <img
-              src={product.product_image_url}
-              alt={product.product_name}
-              loading="lazy"
-              className="card-img"
-            />
+            deferImage ? (
+              <div className="card-img-deferred" aria-hidden="true" />
+            ) : (
+              <img
+                src={product.product_image_url}
+                alt={product.product_name}
+                loading="lazy"
+                decoding="async"
+                className="card-img"
+              />
+            )
           ) : (
             <div className="card-img-placeholder">
               {product.product_name.charAt(0).toUpperCase()}

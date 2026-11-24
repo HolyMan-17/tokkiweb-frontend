@@ -56,11 +56,17 @@ describe('index.html — meta description & Open Graph', () => {
 });
 
 describe('SEO — robots.txt y sitemap.xml', () => {
-  it('robots.txt permite el rastreo y declara el sitemap canónico', async () => {
+  it('robots.txt permite el rastreo, bloquea rutas privadas/utilitarias y declara el sitemap canónico', async () => {
     const robotsModule = await import('../../public/robots.txt?raw');
     const robots = robotsModule.default;
     expect(robots).toContain('User-agent: *');
     expect(robots).toContain('Allow: /');
+    expect(robots).toContain('Disallow: /api/');
+    expect(robots).toContain('Disallow: /cart');
+    expect(robots).toContain('Disallow: /checkout');
+    expect(robots).toContain('Disallow: /confirmation');
+    expect(robots).toContain('Disallow: /admin');
+    expect(robots).not.toContain('/tokki-admin');
     expect(robots).toContain('Sitemap: https://www.tokkishopve.com/sitemap.xml');
   });
 

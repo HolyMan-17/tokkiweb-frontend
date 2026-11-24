@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
+import { usePageMeta } from '../../hooks/usePageMeta';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
@@ -33,6 +34,12 @@ const CLEAR_SVG = (
 // whole inventory with the same search / stock / sort controls as category
 // pages (styles are shared via CategoryPage.css).
 export default function AllProductsPage() {
+  usePageMeta({
+    title: 'Todos los productos | Tokki Shop',
+    description:
+      'Explora todo el catálogo de Tokki Shop: maquillaje, skincare, accesorios, peluches, K-Pop y dulces asiáticos con envíos a toda Venezuela.',
+    canonicalPath: ROUTES.allProducts,
+  });
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const allProducts = useMemo(() => data ?? [], [data]);
 

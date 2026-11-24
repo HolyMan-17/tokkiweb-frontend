@@ -245,4 +245,24 @@ describe('GlobalSearchBar', () => {
       expect(screen.getByText('Photocard Holder Tokki')).toBeInTheDocument();
     });
   });
+
+  it('9. does not fetch catalog while closed when products prop is omitted, fetching with useCache on focus', async () => {
+    const fetchSpy = vi.spyOn(productsApi, 'fetchAllProducts').mockResolvedValue(MOCK_PRODUCTS);
+
+    render(
+      <MemoryRouter>
+        <GlobalSearchBar />
+      </MemoryRouter>
+    );
+
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    const input = screen.getByRole('combobox', { name: /buscar producto/i });
+    fireEvent.focus(input);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith({ useCache: true });
+      expect(screen.getByText('Photocard Holder Tokki')).toBeInTheDocument();
+    });
+  });
 });

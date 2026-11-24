@@ -21,8 +21,11 @@ describe('App — rutas desconocidas', () => {
     renderAppAt('/tokki-admin/secretos/no-existe');
     // The hidden admin prefix must NOT swallow unknown sub-paths into the
     // panel either — anything unmatched gets the branded 404.
+    expect(screen.getByText('Tokki Shop')).toBeInTheDocument();
     expect(screen.getByText('404')).toBeInTheDocument();
-    expect(screen.getByText(/p[aá]gina no encontrada/i)).toBeInTheDocument();
+    expect(
+      screen.getByText('La página solicitada no fue encontrada, por favor regresa al inicio'),
+    ).toBeInTheDocument();
   });
 
   it('no redirige: la URL se conserva para poder corregir el enlace', () => {

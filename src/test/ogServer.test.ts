@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   CRAWLER_RE,
   PRODUCT_RE,
+  KNOWN_CATEGORY_SLUGS,
   SECURITY_HEADERS,
   MIME_TYPES,
   escapeHtml,
@@ -9,14 +10,18 @@ import {
   resolveImageUrl,
   buildProductOgHtml,
   buildFallbackOgHtml,
+  classifySpaRoute,
+  rewriteIndexHtml,
+  clearSitemapCache,
   serveStaticFile,
   handleRequest,
 } from '../../server/og-server.mjs';
+import { CATEGORIES, slugify } from '../constants';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { EventEmitter } from 'node:events';
 
 describe('server/og-server.mjs — Crawler & Route Matchers', () => {
-  it('detecta correctamente User-Agents de crawlers y redes sociales (WhatsApp, Facebook, Twitter, etc.)', () => {
+  it('detecta correctamente User-Agents de crawlers sociales (WhatsApp, Facebook, Twitter, etc.) sin interceptar motores de búsqueda', () => {
     const crawlers = [
       'WhatsApp/2.21.12.21 i',
       'WhatsApp/0.3.4479 N',
@@ -28,13 +33,22 @@ describe('server/og-server.mjs — Crawler & Route Matchers', () => {
       'Slackbot-LinkExpanding 1.0 (+https://api.slack.com/robots)',
       'LinkedInBot/1.0 (compatible; Mozilla/5.0; Apache-HttpClient +http://www.linkedin.com)',
       'Pinterest/0.2 (+http://www.pinterest.com/bot.html)',
-      'google-pagerenderer',
-      'Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)',
     ];
 
     for (const ua of crawlers) {
       expect(CRAWLER_RE.test(ua)).toBe(true);
     }
+
+    // Search engine renderers must receive the real SPA HTML (no self-redirect loop)
+    expect(CRAWLER_RE.test('google-pagerenderer')).toBe(false);
+    expect(
+      CRAWLER_RE.test('Mozilla/5.0 (compatible; bingbot/2.0; +http://www.bing.com/bingbot.htm)'),
+    ).toBe(false);
+  });
+
+  it('mantiene sincronizados los slugs conocidos de categorías con src/constants', () => {
+    const expected = new Set(CATEGORIES.map((c) => slugify(c.name)));
+    expect(KNOWN_CATEGORY_SLUGS).toEqual(expected);
   });
 
   it('no confunde navegadores estándar de usuarios con crawlers', () => {
@@ -120,6 +134,16 @@ describe('server/og-server.mjs — Generación HTML de Open Graph', () => {
     expect(html).toContain('<meta property="product:price:amount" content="5.50" />');
     expect(html).toContain('<meta property="product:price:currency" content="USD" />');
     expect(html).toContain('<meta property="product:availability" content="in stock" />');
+    expect(html).not.toContain('http-equiv="refresh"');
+    expect(html).not.toContain('window.location.replace');
+  });
+
+  it('incluye redirección cliente solo cuando includeRedirect es true (endpoint heredado /api/og-product)', () => {
+    const html = buildProductOgHtml(mockProduct, {
+      siteUrl: 'https://www.tokkishopve.com',
+      includeRedirect: true,
+    });
+    expect(html).toContain('http-equiv="refresh"');
     expect(html).toContain('window.location.replace("https://www.tokkishopve.com/products/42")');
   });
 
@@ -133,12 +157,14 @@ describe('server/og-server.mjs — Generación HTML de Open Graph', () => {
     expect(html).toContain('<meta property="product:availability" content="out of stock" />');
   });
 
-  it('genera HTML de fallback cuando el producto no se encuentra', () => {
-    const html = buildFallbackOgHtml('https://www.tokkishopve.com/products/999');
+  it('genera HTML de fallback con noindex cuando el producto no se encuentra', () => {
+    const html = buildFallbackOgHtml('https://www.tokkishopve.com/products/999', { noindex: true });
     expect(html).toContain('<title>Tokki Shop — Accesorios y Dulces Coreanos</title>');
     expect(html).toContain('<meta property="og:type" content="website" />');
     expect(html).toContain('<meta property="og:image" content="https://www.tokkishopve.com/tokki_logo.png" />');
-    expect(html).toContain('window.location.replace("https://www.tokkishopve.com/products/999")');
+    expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');
+    expect(html).not.toContain('<link rel="canonical"');
+    expect(html).not.toContain('window.location.replace');
   });
 });
 
@@ -147,10 +173,12 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    clearSitemapCache();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    clearSitemapCache();
   });
 
   function createMockRes() {
@@ -270,7 +298,7 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     expect(html).toContain('https://api.tokkishopve.com/images/products/jungkook.webp');
   });
 
-  it('sirve fallback si el backend responde con error 404 al crawler', async () => {
+  it('responde 404 con noindex si el backend responde 404 al crawler en /products/:id', async () => {
     globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 404,
@@ -287,10 +315,12 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
 
     await handleRequest(req, res);
 
-    expect(res._getStatusCode()).toBe(200);
+    expect(res._getStatusCode()).toBe(404);
+    expect(res._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
     const html = res._getBody();
     expect(html).toContain('Tokki Shop — Accesorios y Dulces Coreanos');
     expect(html).toContain('https://www.tokkishopve.com/tokki_logo.png');
+    expect(html).toContain('<meta name="robots" content="noindex, nofollow" />');
   });
 
   it('permite acceso directo compatible a /api/og-product?id=30', async () => {
@@ -339,7 +369,7 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     expect(res._getBody()).toContain('<div id="root"></div>');
   });
 
-  it('bloquea intentos de path traversal y sirve fallback seguro sin filtrar archivos internos', async () => {
+  it('bloquea intentos de path traversal y responde 404 seguro sin filtrar archivos internos', async () => {
     const req = createMockReq({
       url: '/../package.json',
       headers: {},
@@ -350,8 +380,140 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
 
     // No debe devolver el contenido de package.json
     expect(res._getBody()).not.toContain('"name": "tokki-web"');
-    // Debe caer en el fallback seguro de la SPA
+    // Debe devolver status 404 y noindex sobre el fallback de la SPA
+    expect(res._getStatusCode()).toBe(404);
+    expect(res._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(res._getBody()).toContain('<div id="root"></div>');
+  });
+
+  it('clasifica rutas SPA y reescribe canonical / og:url / noindex correctamente', async () => {
+    expect(classifySpaRoute('/')).toEqual({ status: 200, indexable: true, canonicalPath: '/' });
+    expect(classifySpaRoute('/productos')).toEqual({
+      status: 200,
+      indexable: true,
+      canonicalPath: '/productos',
+    });
+    expect(classifySpaRoute('/categorias/maquillaje')).toEqual({
+      status: 200,
+      indexable: true,
+      canonicalPath: '/categorias/maquillaje',
+    });
+    expect(classifySpaRoute('/products/30')).toEqual({
+      status: 200,
+      indexable: true,
+      canonicalPath: '/products/30',
+    });
+    expect(classifySpaRoute('/cart')).toEqual({ status: 200, indexable: false, canonicalPath: null });
+    expect(classifySpaRoute('/tokki-admin/orders')).toEqual({
+      status: 200,
+      indexable: false,
+      canonicalPath: null,
+    });
+    expect(classifySpaRoute('/ruta-inexistente')).toEqual({
+      status: 404,
+      indexable: false,
+      canonicalPath: null,
+    });
+
+    const sampleHtml =
+      '<html><head><link rel="canonical" href="https://www.tokkishopve.com/" /><meta property="og:url" content="https://www.tokkishopve.com/" /></head><body></body></html>';
+    const rewroteIndexable = rewriteIndexHtml(sampleHtml, {
+      siteUrl: 'https://www.tokkishopve.com',
+      canonicalPath: '/categorias/maquillaje',
+      indexable: true,
+    });
+    expect(rewroteIndexable).toContain(
+      '<link rel="canonical" href="https://www.tokkishopve.com/categorias/maquillaje" />',
+    );
+    expect(rewroteIndexable).toContain(
+      '<meta property="og:url" content="https://www.tokkishopve.com/categorias/maquillaje" />',
+    );
+    expect(rewroteIndexable).not.toContain('noindex');
+
+    const rewroteNoindex = rewriteIndexHtml(sampleHtml, {
+      siteUrl: 'https://www.tokkishopve.com',
+      canonicalPath: null,
+      indexable: false,
+    });
+    expect(rewroteNoindex).toContain('<meta name="robots" content="noindex, nofollow" />');
+    expect(rewroteNoindex).not.toContain('<link rel="canonical"');
+  });
+
+  it('sirve canonical dinámico en rutas indexables y noindex en utilitarias/admin/404', async () => {
+    const reqCat = createMockReq({ url: '/categorias/maquillaje' });
+    const resCat = createMockRes();
+    await handleRequest(reqCat, resCat);
+    expect(resCat._getStatusCode()).toBe(200);
+    expect(resCat._getHeaders()['X-Robots-Tag']).toBeUndefined();
+    expect(resCat._getBody()).toContain(
+      '<link rel="canonical" href="https://www.tokkishopve.com/categorias/maquillaje" />',
+    );
+
+    const reqAdmin = createMockReq({ url: '/tokki-admin/orders' });
+    const resAdmin = createMockRes();
+    await handleRequest(reqAdmin, resAdmin);
+    expect(resAdmin._getStatusCode()).toBe(200);
+    expect(resAdmin._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(resAdmin._getBody()).toContain('<meta name="robots" content="noindex, nofollow" />');
+    expect(resAdmin._getBody()).not.toContain('<link rel="canonical"');
+
+    const reqMissing = createMockReq({ url: '/ruta-inexistente' });
+    const resMissing = createMockRes();
+    await handleRequest(reqMissing, resMissing);
+    expect(resMissing._getStatusCode()).toBe(404);
+    expect(resMissing._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(resMissing._getBody()).toContain('<meta name="robots" content="noindex, nofollow" />');
+    expect(resMissing._getBody()).toContain('<div id="root"></div>');
+  });
+
+  it('normaliza trailing slashes con redirección 301', async () => {
+    const req = createMockReq({ url: '/categorias/maquillaje/?sort=price' });
+    const res = createMockRes();
+    await handleRequest(req, res);
+
+    expect(res._getStatusCode()).toBe(301);
+    expect(res._getHeaders()['Location']).toBe('/categorias/maquillaje?sort=price');
+  });
+
+  it('genera /sitemap.xml dinámico con productos y categorías pobladas, y hace fallback si falla el backend', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: [
+          { product_id: 10, category: 'Maquillaje' },
+          { product_id: 25, category: 'Dulces & Comida Asiatica' },
+        ],
+      }),
+    }) as unknown as typeof fetch;
+
+    const req = createMockReq({ url: '/sitemap.xml' });
+    const res = createMockRes();
+    await handleRequest(req, res);
+
     expect(res._getStatusCode()).toBe(200);
+    expect(res._getHeaders()['Content-Type']).toBe('application/xml; charset=utf-8');
+    const xml = res._getBody();
+    expect(xml).toContain('<loc>https://www.tokkishopve.com/</loc>');
+    expect(xml).toContain('<loc>https://www.tokkishopve.com/productos</loc>');
+    expect(xml).toContain('<loc>https://www.tokkishopve.com/categorias/maquillaje</loc>');
+    expect(xml).toContain(
+      '<loc>https://www.tokkishopve.com/categorias/dulces-&amp;-comida-asiatica</loc>',
+    );
+    expect(xml).toContain('<loc>https://www.tokkishopve.com/products/25</loc>');
+    expect(xml).toContain('<loc>https://www.tokkishopve.com/products/10</loc>');
+    expect(xml).not.toContain('/categorias/skincare');
+
+    // Fallback to static sitemap when backend fails and cache is empty
+    clearSitemapCache();
+    globalThis.fetch = vi.fn().mockRejectedValue(new Error('timeout')) as unknown as typeof fetch;
+    const reqFallback = createMockReq({ url: '/sitemap.xml' });
+    const resFallback = createMockRes();
+    await handleRequest(reqFallback, resFallback);
+
+    expect(resFallback._getStatusCode()).toBe(200);
+    expect(resFallback._getBody()).toContain('<urlset');
   });
 
   it('sirve un archivo estático existente con su tipo MIME correspondiente', async () => {

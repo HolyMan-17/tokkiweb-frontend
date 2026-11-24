@@ -7,6 +7,7 @@
 //   PATCH  /orders/:id/approve        admin — only while pending
 
 import { api, NotFoundError, type ApiResult } from './client';
+import { invalidateCatalogCache } from './catalogCache';
 import type {
   ApproveResult,
   CheckoutPayload,
@@ -32,6 +33,14 @@ export type {
   OrderSummary,
 };
 
+async function withCacheInvalidation<T>(
+  request: Promise<ApiResult<T>>,
+): Promise<ApiResult<T>> {
+  const result = await request;
+  if (result.ok) invalidateCatalogCache();
+  return result;
+}
+
 /** Checkout submission. The payload is sent verbatim: `tlf_num` already
  *  arrives as a full international E.164 number, so `country_code` stays
  *  omitted (§4.2 phone rules). Backend errors (400 stock/validation,
@@ -39,10 +48,12 @@ export type {
 export async function createOrder(
   payload: CheckoutPayload,
 ): Promise<ApiResult<CreatedOrder>> {
-  return api<CreatedOrder>('/orders', {
-    method: 'POST',
-    body: JSON.stringify(payload),
-  });
+  return withCacheInvalidation(
+    api<CreatedOrder>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+  );
 }
 
 /** Admin list. Empty shop quirk: success with NO data → []. */
@@ -78,10 +89,12 @@ export async function approveOrder(
   orderId: number,
   auth?: AdminAuth,
 ): Promise<ApiResult<ApproveResult>> {
-  return api<ApproveResult>(`/orders/${orderId}/approve`, {
-    method: 'PATCH',
-    getToken: auth?.getToken,
-  });
+  return withCacheInvalidation(
+    api<ApproveResult>(`/orders/${orderId}/approve`, {
+      method: 'PATCH',
+      getToken: auth?.getToken,
+    }),
+  );
 }
 
 /** Only valid while pending (backend restores stock in-transaction). */
@@ -89,10 +102,12 @@ export async function cancelOrder(
   orderId: number,
   auth?: AdminAuth,
 ): Promise<ApiResult<unknown>> {
-  return api(`/orders/${orderId}/cancel`, {
-    method: 'PATCH',
-    getToken: auth?.getToken,
-  });
+  return withCacheInvalidation(
+    api(`/orders/${orderId}/cancel`, {
+      method: 'PATCH',
+      getToken: auth?.getToken,
+    }),
+  );
 }
 
 // ─── Page-facing loaders ───────────────────────────────────

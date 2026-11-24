@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.webp';
@@ -10,6 +10,7 @@ import cashFlyingImg from '../../assets/cash_flying.webp';
 import letterEnvelopeImg from '../../assets/letter_envelope.webp';
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
+import { DEFAULT_DOC_DESCRIPTION, DEFAULT_DOC_TITLE, usePageMeta } from '../../hooks/usePageMeta';
 import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
@@ -37,6 +38,8 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 // the DOM small (Lighthouse flags tracks with dozens of children) and
 // shrinks the synchronous layout pass that measures every track on mount.
 const MAX_CARDS_PER_CAROUSEL = 16;
+const INITIAL_CAROUSEL_IMAGES = 6;
+const VERTICAL_ROOT_MARGIN = '350px 0px';
 
 // Compute a card width so an exact whole number of cards fits the
 // visible track width on every screen, and fill the row precisely.
@@ -56,15 +59,38 @@ function computeCardWidth(track: HTMLDivElement): number {
   return (available - (n - 1) * gap) / n;
 }
 
-function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
+function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false }: {
   title: string;
   emoji: React.ReactNode;
   products: Product[];
   seeMoreTo?: string;
+  eagerSection?: boolean;
 }) {
+  const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(true);
+  const [isNearViewport, setIsNearViewport] = useState(
+    () => Boolean(eagerSection) || typeof IntersectionObserver === 'undefined',
+  );
+  const [expandedTrack, setExpandedTrack] = useState(false);
+
+  useEffect(() => {
+    if (isNearViewport || typeof IntersectionObserver === 'undefined') return;
+    const section = sectionRef.current;
+    if (!section) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          setIsNearViewport(true);
+          observer.disconnect();
+        }
+      },
+      { rootMargin: VERTICAL_ROOT_MARGIN },
+    );
+    observer.observe(section);
+    return () => observer.disconnect();
+  }, [isNearViewport]);
 
   // Read layout (scroll position/width), then update arrow state. Called from
   // scroll events — throttled with rAF so reads never follow a write in the
@@ -78,6 +104,7 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
     const left = track.scrollLeft;
     setCanScrollLeft(left > 0);
     setCanScrollRight(left < maxScroll - 1);
+    if (left > 8) setExpandedTrack(true);
   }, []);
 
   // One measure+apply pass per frame: read ALL geometry first (card width +
@@ -126,7 +153,12 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
     };
   }, [applyWidth, updateArrows]);
 
+  const handleExpandTrack = useCallback(() => {
+    setExpandedTrack(true);
+  }, []);
+
   const scroll = (dir: 'left' | 'right') => {
+    setExpandedTrack(true);
     const track = trackRef.current;
     if (!track) return;
 
@@ -139,14 +171,14 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
       ? varCardWidth + gap
       : track.clientWidth * 0.8;
 
-    track.scrollBy({
+    track.scrollBy?.({
       left: dir === 'right' ? cardWidth : -cardWidth,
       behavior: 'smooth',
     });
   };
 
   return (
-    <section className="category-section">
+    <section className="category-section" ref={sectionRef}>
       <div className="category-header">
         <h2 className="category-title">
           <span className="category-emoji">{emoji}</span>
@@ -177,10 +209,19 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo }: {
         </div>
       </div>
 
-      <div className="carousel-track" ref={trackRef}>
-        {products.slice(0, MAX_CARDS_PER_CAROUSEL).map(p => (
+      <div
+        className="carousel-track"
+        ref={trackRef}
+        onPointerDown={handleExpandTrack}
+        onTouchStart={handleExpandTrack}
+        onFocusCapture={handleExpandTrack}
+      >
+        {products.slice(0, MAX_CARDS_PER_CAROUSEL).map((p, cardIndex) => (
           <div key={p.product_id} className="carousel-item">
-            <ProductCard product={p} />
+            <ProductCard
+              product={p}
+              deferImage={!isNearViewport || (!expandedTrack && cardIndex >= INITIAL_CAROUSEL_IMAGES)}
+            />
           </div>
         ))}
         {seeMoreTo && products.length > MAX_CARDS_PER_CAROUSEL && (
@@ -368,6 +409,11 @@ function SocialCircles() {
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
+  usePageMeta({
+    title: DEFAULT_DOC_TITLE,
+    description: DEFAULT_DOC_DESCRIPTION,
+    canonicalPath: ROUTES.home,
+  });
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const products = useMemo(() => data ?? [], [data]);
   const sortedProducts = useMemo(
@@ -375,6 +421,10 @@ export default function CatalogPage() {
     [products],
   );
   const grouped = useMemo(() => groupByCategory(sortedProducts), [sortedProducts]);
+  const populatedCategories = useMemo(
+    () => CATEGORIES.filter((cat) => (grouped[cat.name]?.length ?? 0) > 0),
+    [grouped],
+  );
 
   if (isLoading) {
     return (
@@ -436,21 +486,19 @@ export default function CatalogPage() {
             emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
             products={sortedProducts}
             seeMoreTo={ROUTES.allProducts}
+            eagerSection
           />
 
-          {CATEGORIES.map(cat => {
-            const products = grouped[cat.name] ?? [];
-            if (products.length === 0) return null;
-            return (
-              <CategoryCarousel
-                key={cat.name}
-                title={cat.name}
-                emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
-                products={products}
-                seeMoreTo={ROUTES.category(slugify(cat.name))}
-              />
-            );
-          })}
+          {populatedCategories.map((cat, index) => (
+            <CategoryCarousel
+              key={cat.name}
+              title={cat.name}
+              emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
+              products={grouped[cat.name]}
+              seeMoreTo={ROUTES.category(slugify(cat.name))}
+              eagerSection={index === 0}
+            />
+          ))}
         </div>
 
         {/* ── WhatsApp contact + social ── */}

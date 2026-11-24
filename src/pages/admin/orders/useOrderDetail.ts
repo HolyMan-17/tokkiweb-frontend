@@ -30,7 +30,10 @@ export function useOrderDetail(auth?: AdminApiAuth): OrderDetailState {
     () => fetchOrderDetail(Number(id), auth),
     [id, auth],
   );
-  const { data: catalogProducts } = useAsync(fetchAllProducts, []);
+  const { data: catalogProducts } = useAsync(
+    () => fetchAllProducts({ useCache: true }),
+    [],
+  );
 
   const catalogImageMap = useMemo(
     () => buildCatalogImageMap(catalogProducts),

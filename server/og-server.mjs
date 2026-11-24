@@ -2,7 +2,9 @@
  * og-server.mjs — Production server for Coolify / Docker deployment.
  *
  * Production server responsibilities:
- *  - Static SPA hosting (dist/)
+ *  - Static SPA hosting (dist/) with per-route canonical / og:url / noindex injection
+ *  - Dynamic /sitemap.xml generation (cached 1h, falls back to dist/sitemap.xml)
+ *  - Trailing-slash 301 normalization
  *  - OG embed generation for social crawlers (WhatsApp, Discord, etc.)
  *  - Reverse-proxy (/api/*, /images/*)
  *  - Security headers
@@ -41,10 +43,43 @@ const DEFAULT_SITE_URL = (
   process.env.VITE_PUBLIC_SITE_URL || 'https://www.tokkishopve.com'
 ).replace(/\/+$/, '');
 
-// ─── Crawler Detection (social embed crawler UAs: WhatsApp, Facebook, Twitter/X, Telegram, Discord, Slack, LinkedIn, Pinterest, Bing) ─
+// ─── Crawler Detection (social embed crawlers only — search renderers get the real SPA) ─
 export const CRAWLER_RE =
-  /facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|discordbot|slackbot|linkedinbot|pinterest|google-pagerenderer|bingbot/i;
+  /facebookexternalhit|facebot|twitterbot|telegrambot|whatsapp|discordbot|slackbot|linkedinbot|pinterest/i;
 export const PRODUCT_RE = /^\/products\/(\d+)$/;
+
+// ─── Known Storefront Categories (mirrors src/constants/index.ts) ─
+export function slugifyCategory(text) {
+  if (typeof text !== 'string') return '';
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '-');
+}
+
+export const KNOWN_CATEGORY_SLUGS = new Set([
+  'menos-de-un-dolar',
+  'zona-kpop',
+  'albumes',
+  'maquillaje',
+  'skincare',
+  'accesorios',
+  'llaveros',
+  'lentes-de-contacto',
+  'pines-&-chapas',
+  'ropa',
+  'bolsos-y-carteras',
+  'dulces-&-comida-asiatica',
+  'peluches',
+  'figuras',
+  'bolsas-o-cajas-de-regalo',
+  'cosplays',
+  'para-ellos',
+  'regalos-de-pareja',
+  'bloques-de-construccion',
+  'otros',
+]);
 
 // ─── MIME Types ─────────────────────────────────
 export const MIME_TYPES = {
@@ -112,6 +147,17 @@ export function resolveImageUrl(rawUrl, siteUrl = DEFAULT_SITE_URL) {
   return `${base}${cleanPath}`;
 }
 
+function buildRedirectTags(targetUrl, escapedUrl, includeRedirect) {
+  if (!includeRedirect) return '';
+  const safeJsUrl = JSON.stringify(targetUrl);
+  return `
+  <!-- Fast client redirect fallback for human browsers -->
+  <meta http-equiv="refresh" content="0;url=${escapedUrl}" />
+  <script>
+    window.location.replace(${safeJsUrl});
+  </script>`;
+}
+
 export function buildProductOgHtml(product, options = {}) {
   const siteUrl = (options.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
   const productUrl = `${siteUrl}/products/${product.product_id}`;
@@ -133,6 +179,11 @@ export function buildProductOgHtml(product, options = {}) {
     (product.qty_available === undefined || product.qty_available > 0);
   const availability = isAvailable ? 'in stock' : 'out of stock';
   const numericPrice = escapeHtml(String(product.product_price));
+  const redirectTags = buildRedirectTags(
+    productUrl,
+    escapedProductUrl,
+    options.includeRedirect === true,
+  );
 
   return `<!doctype html>
 <html lang="es">
@@ -166,13 +217,7 @@ export function buildProductOgHtml(product, options = {}) {
   <meta name="twitter:title" content="${escapedTitle}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${escapedImageUrl}" />
-  <meta name="twitter:image:alt" content="${escapedProductName}" />
-
-  <!-- Fast client redirect fallback for human browsers -->
-  <meta http-equiv="refresh" content="0;url=${escapedProductUrl}" />
-  <script>
-    window.location.replace("${productUrl}");
-  </script>
+  <meta name="twitter:image:alt" content="${escapedProductName}" />${redirectTags}
 </head>
 <body>
   <h1>${escapedProductName}</h1>
@@ -191,6 +236,15 @@ export function buildFallbackOgHtml(targetUrl, options = {}) {
   const escapedDesc = escapeHtml(DEFAULT_DESCRIPTION);
   const logoUrl = `${siteUrl}/tokki_logo.png`;
   const escapedLogoUrl = escapeHtml(logoUrl);
+  const noindex = options.noindex === true;
+  const robotsOrCanonical = noindex
+    ? '<meta name="robots" content="noindex, nofollow" />'
+    : `<link rel="canonical" href="${escapedTargetUrl}" />`;
+  const redirectTags = buildRedirectTags(
+    finalUrl,
+    escapedTargetUrl,
+    options.includeRedirect === true,
+  );
 
   return `<!doctype html>
 <html lang="es">
@@ -200,7 +254,7 @@ export function buildFallbackOgHtml(targetUrl, options = {}) {
   <title>${escapedTitle}</title>
   <meta name="description" content="${escapedDesc}" />
   <meta name="theme-color" content="${THEME_COLOR}" />
-  <link rel="canonical" href="${escapedTargetUrl}" />
+  ${robotsOrCanonical}
 
   <!-- Open Graph / WhatsApp / Facebook / Discord -->
   <meta property="og:type" content="website" />
@@ -218,13 +272,7 @@ export function buildFallbackOgHtml(targetUrl, options = {}) {
   <meta name="twitter:site" content="@tokkishopve" />
   <meta name="twitter:title" content="${escapedTitle}" />
   <meta name="twitter:description" content="${escapedDesc}" />
-  <meta name="twitter:image" content="${escapedLogoUrl}" />
-
-  <!-- Fast client redirect fallback for human browsers -->
-  <meta http-equiv="refresh" content="0;url=${escapedTargetUrl}" />
-  <script>
-    window.location.replace("${finalUrl}");
-  </script>
+  <meta name="twitter:image" content="${escapedLogoUrl}" />${redirectTags}
 </head>
 <body>
   <h1>${escapedTitle}</h1>
@@ -240,12 +288,18 @@ export function buildFallbackOgHtml(targetUrl, options = {}) {
 export async function serveOgHtml(productId, res, config = {}) {
   const backendBase = (config.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
   const siteUrl = (config.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
+  const includeRedirect = config.includeRedirect === true;
 
   const idNum = parseInt(productId, 10);
   let html;
+  let statusCode = 200;
+  let isNotFound = false;
+  let cacheControl = 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400';
 
   if (isNaN(idNum) || idNum <= 0) {
-    html = buildFallbackOgHtml(siteUrl, { siteUrl });
+    statusCode = 404;
+    isNotFound = true;
+    html = buildFallbackOgHtml(siteUrl, { siteUrl, includeRedirect, noindex: true });
   } else {
     try {
       const apiUrl = `${backendBase}/api/products/${idNum}`;
@@ -257,25 +311,234 @@ export async function serveOgHtml(productId, res, config = {}) {
       if (response.ok) {
         const payload = await response.json();
         if (payload?.success && payload.data) {
-          html = buildProductOgHtml(payload.data, { siteUrl });
+          html = buildProductOgHtml(payload.data, { siteUrl, includeRedirect });
         } else {
-          html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, { siteUrl });
+          statusCode = 404;
+          isNotFound = true;
+          html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, {
+            siteUrl,
+            includeRedirect,
+            noindex: true,
+          });
         }
+      } else if (response.status === 404) {
+        statusCode = 404;
+        isNotFound = true;
+        html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, {
+          siteUrl,
+          includeRedirect,
+          noindex: true,
+        });
       } else {
-        html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, { siteUrl });
+        cacheControl = 'no-cache';
+        html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, {
+          siteUrl,
+          includeRedirect,
+        });
       }
     } catch (err) {
       console.error(`[og-server] OG fetch error for product ${idNum}:`, err.message);
-      html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, { siteUrl });
+      cacheControl = 'no-cache';
+      html = buildFallbackOgHtml(`${siteUrl}/products/${idNum}`, {
+        siteUrl,
+        includeRedirect,
+      });
     }
   }
 
   for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
-  res.writeHead(200, {
+  if (isNotFound) {
+    res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    cacheControl = 'public, max-age=60';
+  }
+  res.writeHead(statusCode, {
     'Content-Type': 'text/html; charset=utf-8',
-    'Cache-Control': 'public, max-age=60, s-maxage=3600, stale-while-revalidate=86400',
+    'Cache-Control': cacheControl,
   });
   res.end(html);
+}
+
+// ─────────────────────────────────────────────────
+//  SPA Route Classification & Head Meta Injection
+// ─────────────────────────────────────────────────
+export function classifySpaRoute(pathname) {
+  if (pathname === '/' || pathname === '/productos' || PRODUCT_RE.test(pathname)) {
+    return { status: 200, indexable: true, canonicalPath: pathname };
+  }
+
+  if (pathname.startsWith('/categorias/')) {
+    const rawSlug = pathname.slice('/categorias/'.length);
+    if (rawSlug && !rawSlug.includes('/')) {
+      let decodedSlug = rawSlug;
+      try {
+        decodedSlug = decodeURIComponent(rawSlug);
+      } catch {
+        return { status: 404, indexable: false, canonicalPath: null };
+      }
+      if (KNOWN_CATEGORY_SLUGS.has(decodedSlug)) {
+        return {
+          status: 200,
+          indexable: true,
+          canonicalPath: `/categorias/${decodedSlug}`,
+        };
+      }
+    }
+    return { status: 404, indexable: false, canonicalPath: null };
+  }
+
+  if (
+    pathname === '/cart' ||
+    pathname === '/checkout' ||
+    pathname === '/confirmation' ||
+    pathname.startsWith('/confirmation/') ||
+    pathname === '/tokki-admin' ||
+    pathname.startsWith('/tokki-admin/') ||
+    pathname === '/admin' ||
+    pathname.startsWith('/admin/')
+  ) {
+    return { status: 200, indexable: false, canonicalPath: null };
+  }
+
+  return { status: 404, indexable: false, canonicalPath: null };
+}
+
+export function rewriteIndexHtml(html, { siteUrl = DEFAULT_SITE_URL, canonicalPath, indexable }) {
+  const base = siteUrl.replace(/\/+$/, '');
+
+  if (indexable && canonicalPath) {
+    const normalizedPath = canonicalPath === '/' ? '/' : canonicalPath;
+    const escapedCanonicalUrl = escapeHtml(`${base}${normalizedPath}`);
+    return html
+      .replace(
+        /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i,
+        `<link rel="canonical" href="${escapedCanonicalUrl}" />`,
+      )
+      .replace(
+        /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i,
+        `<meta property="og:url" content="${escapedCanonicalUrl}" />`,
+      );
+  }
+
+  return html
+    .replace(/\s*<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i, '')
+    .replace(
+      /<\/head>/i,
+      '    <meta name="robots" content="noindex, nofollow" />\n  </head>',
+    );
+}
+
+// ─────────────────────────────────────────────────
+//  Dynamic /sitemap.xml (cached 1h, fallback to static)
+// ─────────────────────────────────────────────────
+const SITEMAP_CACHE_TTL_MS = 3600_000;
+let cachedSitemapXml = null;
+let cachedSitemapAt = 0;
+
+export function clearSitemapCache() {
+  cachedSitemapXml = null;
+  cachedSitemapAt = 0;
+}
+
+export function buildSitemapXml(products, siteUrl = DEFAULT_SITE_URL) {
+  const base = siteUrl.replace(/\/+$/, '');
+  const urls = [
+    { loc: `${base}/`, changefreq: 'daily', priority: '1.0' },
+    { loc: `${base}/productos`, changefreq: 'daily', priority: '0.9' },
+  ];
+
+  const populatedSlugs = new Set();
+  const productIds = [];
+  const seenIds = new Set();
+
+  for (const row of products) {
+    if (row && typeof row.category === 'string') {
+      const slug = slugifyCategory(row.category);
+      if (KNOWN_CATEGORY_SLUGS.has(slug)) {
+        populatedSlugs.add(slug);
+      }
+    }
+    const id = Number(row?.product_id);
+    if (Number.isInteger(id) && id > 0 && !seenIds.has(id)) {
+      seenIds.add(id);
+      productIds.push(id);
+    }
+  }
+
+  for (const slug of KNOWN_CATEGORY_SLUGS) {
+    if (populatedSlugs.has(slug)) {
+      urls.push({
+        loc: `${base}/categorias/${slug}`,
+        changefreq: 'weekly',
+        priority: '0.8',
+      });
+    }
+  }
+
+  productIds.sort((a, b) => b - a);
+  for (const id of productIds) {
+    urls.push({
+      loc: `${base}/products/${id}`,
+      changefreq: 'daily',
+      priority: '0.7',
+    });
+  }
+
+  const entries = urls
+    .map(
+      (u) =>
+        `  <url>\n    <loc>${escapeHtml(u.loc)}</loc>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`,
+    )
+    .join('\n');
+
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${entries}\n</urlset>\n`;
+}
+
+export async function serveDynamicSitemap(res, config = {}) {
+  const backendBase = (config.backendUrl || DEFAULT_BACKEND_URL).replace(/\/+$/, '');
+  const siteUrl = (config.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
+  const distDir = config.distDir || DEFAULT_DIST_DIR;
+
+  const now = Date.now();
+  if (cachedSitemapXml && now - cachedSitemapAt < SITEMAP_CACHE_TTL_MS) {
+    for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+    res.writeHead(200, {
+      'Content-Type': 'application/xml; charset=utf-8',
+      'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+    });
+    res.end(cachedSitemapXml);
+    return;
+  }
+
+  try {
+    const response = await fetch(`${backendBase}/api/products`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(5000),
+    });
+
+    if (response.ok) {
+      const payload = await response.json();
+      const rows = Array.isArray(payload?.data) ? payload.data : null;
+      if (rows) {
+        const xml = buildSitemapXml(rows, siteUrl);
+        cachedSitemapXml = xml;
+        cachedSitemapAt = now;
+        for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+        res.writeHead(200, {
+          'Content-Type': 'application/xml; charset=utf-8',
+          'Cache-Control': 'public, max-age=300, s-maxage=3600, stale-while-revalidate=86400',
+        });
+        res.end(xml);
+        return;
+      }
+    }
+  } catch (err) {
+    console.error('[og-server] Sitemap fetch error:', err.message);
+  }
+
+  if (await serveStaticFile('/sitemap.xml', res, distDir)) return;
+
+  res.writeHead(502, { 'Content-Type': 'text/plain' });
+  res.end('Sitemap unavailable');
 }
 
 // ─────────────────────────────────────────────────
@@ -360,17 +623,30 @@ export async function serveStaticFile(pathname, res, distDir = DEFAULT_DIST_DIR)
 // ─────────────────────────────────────────────────
 let cachedIndexHtml = null;
 
-export async function serveSpaFallback(res, distDir = DEFAULT_DIST_DIR) {
+export async function serveSpaFallback(res, distDir = DEFAULT_DIST_DIR, options = {}) {
+  const pathname = options.pathname || '/';
+  const siteUrl = options.siteUrl || DEFAULT_SITE_URL;
+
   try {
     if (!cachedIndexHtml) {
-      cachedIndexHtml = await readFile(join(distDir, 'index.html'));
+      cachedIndexHtml = await readFile(join(distDir, 'index.html'), 'utf8');
     }
+    const routeInfo = classifySpaRoute(pathname);
+    const html = rewriteIndexHtml(cachedIndexHtml, {
+      siteUrl,
+      canonicalPath: routeInfo.canonicalPath,
+      indexable: routeInfo.indexable,
+    });
+
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
-    res.writeHead(200, {
+    if (!routeInfo.indexable) {
+      res.setHeader('X-Robots-Tag', 'noindex, nofollow');
+    }
+    res.writeHead(routeInfo.status, {
       'Content-Type': 'text/html; charset=utf-8',
       'Cache-Control': 'no-cache',
     });
-    res.end(cachedIndexHtml);
+    res.end(html);
   } catch (err) {
     console.error('[og-server] Failed to read index.html:', err.message);
     res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -399,16 +675,24 @@ export async function handleRequest(req, res, config = {}) {
       return;
     }
 
-    // 1) Crawler hitting /products/:id -> serve OG HTML
+    // 1) Social crawler hitting /products/:id -> serve OG HTML (no self-redirect)
     const productMatch = pathname.match(PRODUCT_RE);
     if (productMatch && CRAWLER_RE.test(ua)) {
-      return await serveOgHtml(productMatch[1], res, { backendUrl, siteUrl });
+      return await serveOgHtml(productMatch[1], res, {
+        backendUrl,
+        siteUrl,
+        includeRedirect: false,
+      });
     }
 
     // 2) Direct call to /api/og-product?id=... (backwards compatibility)
     if (pathname === '/api/og-product' || pathname === '/api/og-product/') {
       const id = url.searchParams.get('id');
-      return await serveOgHtml(id, res, { backendUrl, siteUrl });
+      return await serveOgHtml(id, res, {
+        backendUrl,
+        siteUrl,
+        includeRedirect: true,
+      });
     }
 
     // 3) /api/* -> reverse proxy to backend
@@ -421,11 +705,28 @@ export async function handleRequest(req, res, config = {}) {
       return await proxyRequest(req, res, backendUrl);
     }
 
-    // 5) Try serving a static file from dist/
+    // 5) Trailing-slash normalization (301 redirect) for non-root paths
+    if (pathname.length > 1 && pathname.endsWith('/')) {
+      const cleanPath = pathname.replace(/\/+$/, '') || '/';
+      for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
+      res.writeHead(301, {
+        Location: `${cleanPath}${url.search}`,
+        'Cache-Control': 'public, max-age=3600',
+      });
+      res.end();
+      return;
+    }
+
+    // 6) Dynamic /sitemap.xml (falls back to static dist/sitemap.xml)
+    if (pathname === '/sitemap.xml') {
+      return await serveDynamicSitemap(res, { backendUrl, siteUrl, distDir });
+    }
+
+    // 7) Try serving a static file from dist/
     if (await serveStaticFile(pathname, res, distDir)) return;
 
-    // 6) SPA fallback for client-side routes
-    await serveSpaFallback(res, distDir);
+    // 8) SPA fallback for client-side routes (with per-route canonical / noindex / 404 status)
+    await serveSpaFallback(res, distDir, { pathname, siteUrl });
   } catch (err) {
     console.error('[og-server] Unhandled error:', err);
     if (!res.headersSent) {

@@ -12,15 +12,18 @@ function renderAt(path = '/esta-ruta-no-existe') {
 }
 
 describe('NotFoundPage — 404 con marca', () => {
-  it('muestra un encabezado 404 y mensaje en español', () => {
+  it('muestra la marca Tokki Shop, el código 404 y el mensaje solicitado', () => {
     renderAt();
+    expect(screen.getByText('Tokki Shop')).toBeInTheDocument();
     expect(screen.getByText('404')).toBeInTheDocument();
-    expect(screen.getByText(/p[aá]gina no encontrada/i)).toBeInTheDocument();
+    expect(
+      screen.getByText('La página solicitada no fue encontrada, por favor regresa al inicio'),
+    ).toBeInTheDocument();
   });
 
-  it('ofrece un enlace de vuelta a la tienda', () => {
+  it('ofrece un enlace a la página principal', () => {
     renderAt();
-    const link = screen.getByRole('link', { name: /volver a la tienda/i });
+    const link = screen.getByRole('link', { name: /volver al inicio/i });
     expect(link).toHaveAttribute('href', '/');
   });
 

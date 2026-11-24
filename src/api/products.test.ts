@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import {
   listProducts,
+  fetchAllProducts,
+  getProduct,
   createProduct,
   updateProduct,
   archiveProduct,
@@ -10,6 +12,7 @@ import {
   removeProductImageByUrl,
   reorderProductImages,
 } from './products';
+import { invalidateCatalogCache } from './catalogCache';
 
 const fetchMock = vi.fn();
 
@@ -18,6 +21,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  invalidateCatalogCache();
   vi.unstubAllGlobals();
   fetchMock.mockReset();
 });
@@ -292,5 +296,121 @@ describe('gallery endpoints (max 5 images per product)', () => {
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.data?.product_image_url).toBe('http://x/images/products/b.webp');
+  });
+});
+
+describe('catalog deduplication, TTL cache & getProduct normalization', () => {
+  test('deduplicates concurrent fetchAllProducts calls into a single HTTP request', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: [
+          {
+            product_id: 1,
+            product_name: 'Sticker',
+            product_price: '1.00',
+            product_description: 'Cute',
+            category: 'Otros',
+            qty_available: 10,
+            in_stock: true,
+          },
+        ],
+      }),
+    );
+
+    const [a, b] = await Promise.all([fetchAllProducts(), fetchAllProducts()]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(a).toEqual(b);
+    expect(a).toHaveLength(1);
+  });
+
+  test('fetchAllProducts({ useCache: true }) returns cached catalog with zero extra requests', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: [
+          {
+            product_id: 2,
+            product_name: 'Gloss',
+            product_price: '4.50',
+            product_description: 'Brillo',
+            category: 'Maquillaje',
+            qty_available: 5,
+            in_stock: true,
+          },
+        ],
+      }),
+    );
+
+    const first = await fetchAllProducts();
+    const second = await fetchAllProducts({ useCache: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second).toEqual(first);
+  });
+
+  test('mutations invalidate cached catalog so next useCache read refetches', async () => {
+    const initialRow = {
+      product_id: 2,
+      product_name: 'Gloss',
+      product_price: '4.50',
+      product_description: 'Brillo',
+      category: 'Maquillaje',
+      qty_available: 5,
+      in_stock: true,
+    };
+
+    // Seed cache -> createProduct -> refetch
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: [initialRow] }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, row: initialRow }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: [initialRow] }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, updated_row: initialRow }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: [initialRow] }))
+      .mockResolvedValueOnce(jsonResponse({ success: true }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: [initialRow] }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: { product_id: 2, product_image_urls: [] } }))
+      .mockResolvedValueOnce(jsonResponse({ success: true, data: [initialRow] }));
+
+    await fetchAllProducts();
+    await createProduct({ product_name: 'X', product_price: 1, product_description: '', category: 'Otros', qty_available: 1 });
+    await fetchAllProducts({ useCache: true });
+
+    await updateProduct(2, { product_name: 'Gloss 2' });
+    await fetchAllProducts({ useCache: true });
+
+    await archiveProduct(2);
+    await fetchAllProducts({ useCache: true });
+
+    const file = new File(['bytes'], 'foto.png', { type: 'image/png' });
+    await addProductImage(2, file);
+    await fetchAllProducts({ useCache: true });
+
+    expect(fetchMock).toHaveBeenCalledTimes(9);
+  });
+
+  test('getProduct normalizes ProductRow (price to string, null image to undefined)', async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          product_id: 5,
+          product_name: 'Pin',
+          product_price: 12.5,
+          product_description: 'Esmaltado',
+          category: 'Pines & Chapas',
+          qty_available: 4,
+          in_stock: true,
+          product_image_url: null,
+        },
+      }),
+    );
+
+    const result = await getProduct(5);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.data.product_price).toBe('12.5');
+    expect(result.data.product_image_url).toBeUndefined();
   });
 });

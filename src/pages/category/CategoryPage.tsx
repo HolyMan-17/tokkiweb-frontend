@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
+import { usePageMeta } from '../../hooks/usePageMeta';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
@@ -40,6 +41,28 @@ export default function CategoryPage() {
     () => (category ? allStoreProducts.filter(p => p.category === category.name) : []),
     [category, allStoreProducts],
   );
+  const isEmptyCategory = Boolean(category) && !isLoading && !isError && allProducts.length === 0;
+  const pageMeta = useMemo(
+    () =>
+      !category
+        ? {
+            title: 'Categoría no encontrada | Tokki Shop',
+            noindex: true,
+          }
+        : isEmptyCategory
+          ? {
+              title: `${category.name} | Tokki Shop`,
+              description: `Productos de ${category.name} en Tokki Shop. Envíos a toda Venezuela.`,
+              noindex: true,
+            }
+          : {
+              title: `${category.name} | Tokki Shop`,
+              description: `Compra ${category.name} en Tokki Shop. Envíos a toda Venezuela.`,
+              canonicalPath: ROUTES.category(slugify(category.name)),
+            },
+    [category, isEmptyCategory],
+  );
+  usePageMeta(pageMeta);
 
   const [query, setQuery] = useState('');
   const [sort, setSort] = useState<SortOption>('recent');

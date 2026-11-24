@@ -1,8 +1,9 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import './ProductDetailPage.css';
-import { fetchAllProducts } from '../../api/products';
+import { fetchProductDetail } from '../../api/productDetail';
 import { useAsync } from '../../hooks/useAsync';
+import { DEFAULT_DOC_DESCRIPTION, usePageMeta } from '../../hooks/usePageMeta';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
@@ -13,8 +14,6 @@ import ProductGallery from '../../components/ui/ProductGallery';
 import beatingHeart from '../../assets/beating_heart.webp';
 import sparklesGif from '../../assets/sparkles.webp';
 
-const DEFAULT_DOC_TITLE = 'Tokki Shop — Accesorios y Dulces Coreanos';
-
 interface ToastState {
   message: string;
   icon: string;
@@ -24,8 +23,10 @@ export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addItem } = useCart();
-  const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, [id]);
-  const products = data ?? [];
+  const { data: product, isLoading, isError, retry } = useAsync(
+    () => fetchProductDetail(Number(id)),
+    [id],
+  );
 
   const [quantity, setQuantity] = useState(1);
   const [toast, setToast] = useState<ToastState | null>(null);
@@ -37,21 +38,35 @@ export default function ProductDetailPage() {
     };
   }, []);
 
-  const product = products.find(p => p.product_id === Number(id));
   const galleryImages = product?.product_image_urls?.length
     ? product.product_image_urls
     : product?.product_image_url
       ? [product.product_image_url]
       : [];
 
-  // Dynamic document title update with cleanup on unmount
-  useEffect(() => {
-    if (!product) return;
-    document.title = `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`;
-    return () => {
-      document.title = DEFAULT_DOC_TITLE;
-    };
-  }, [product]);
+  const numericId = Number(id);
+  const fallbackCanonical =
+    Number.isFinite(numericId) && numericId > 0 ? ROUTES.product(numericId) : undefined;
+  const pageMeta = useMemo(() => {
+    if (product) {
+      const desc = product.product_description?.trim()
+        ? `${product.product_description.trim()} • Envíos a toda Venezuela 🐰`
+        : DEFAULT_DOC_DESCRIPTION;
+      return {
+        title: `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`,
+        description: desc,
+        canonicalPath: ROUTES.product(product.product_id),
+      };
+    }
+    if (!isLoading && !isError) {
+      return {
+        title: 'Producto no encontrado | Tokki Shop',
+        noindex: true,
+      };
+    }
+    return { canonicalPath: fallbackCanonical };
+  }, [product, isLoading, isError, fallbackCanonical]);
+  usePageMeta(pageMeta);
 
   const triggerToast = useCallback((message: string, icon = beatingHeart) => {
     setToast({ message, icon });

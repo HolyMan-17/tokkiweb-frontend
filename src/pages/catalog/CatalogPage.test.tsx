@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, it, expect, vi } from 'vitest';
 import CatalogPage from './CatalogPage';
@@ -308,5 +308,40 @@ describe('CatalogPage — postal de contacto WhatsApp', () => {
     expect(socials!.querySelector('.social-whatsapp')).toBeNull();
     expect(within(socials as HTMLElement).getByRole('link', { name: 'Instagram' })).toBeInTheDocument();
     expect(within(socials as HTMLElement).getByRole('link', { name: 'TikTok' })).toBeInTheDocument();
+  });
+});
+
+describe('CatalogPage — progressive carousel image loading', () => {
+  it('mounts only the first 6 card images in Todos initially and loads the rest when scrolled/clicked', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    const mock12Products = Array.from({ length: 12 }, (_, i) => ({
+      product_id: i + 1,
+      product_name: `Sticker Kawaii ${i + 1}`,
+      category: 'Menos de un dolar',
+      product_price: '0.75',
+      product_description: 'Desc',
+      qty_available: 10,
+      in_stock: true,
+      product_image_url: `https://example.com/p-${i + 1}.webp`,
+    }));
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce(mock12Products);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>
+    );
+
+    await screen.findAllByText('Sticker Kawaii 12');
+
+    const todosSection = document.querySelectorAll('.category-section')[0] as HTMLElement;
+    expect(todosSection.querySelectorAll('.product-card')).toHaveLength(12);
+    expect(todosSection.querySelectorAll('img.card-img')).toHaveLength(6);
+    expect(todosSection.querySelectorAll('.card-img-deferred')).toHaveLength(6);
+
+    fireEvent.click(within(todosSection).getByRole('button', { name: 'Siguiente' }));
+
+    expect(todosSection.querySelectorAll('img.card-img')).toHaveLength(12);
+    expect(todosSection.querySelectorAll('.card-img-deferred')).toHaveLength(0);
   });
 });

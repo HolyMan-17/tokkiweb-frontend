@@ -8,9 +8,14 @@ import QuantitySelector from '../../components/ui/QuantitySelector';
 import StockNotice from '../../components/ui/StockNotice';
 import ShippingCostNote from '../../components/ui/ShippingCostNote';
 import { fetchAllProducts } from '../../api/products';
+import { usePageMeta } from '../../hooks/usePageMeta';
 import cartImg from '../../assets/cart.avif';
 
 export default function CartPage() {
+  usePageMeta({
+    title: 'Mi Carrito | Tokki Shop',
+    noindex: true,
+  });
   const { items, total, removeItem, updateQuantity, reconcileStock } = useCart();
   const navigate = useNavigate();
   const [stockChanges, setStockChanges] = useState<StockAdjustment[]>([]);
@@ -26,7 +31,7 @@ export default function CartPage() {
   // re-checks before submitting and blocks there).
   useEffect(() => {
     let cancelled = false;
-    fetchAllProducts()
+    fetchAllProducts({ useCache: true })
       .then(products => {
         if (!cancelled) setStockChanges(reconcileRef.current(products));
       })
