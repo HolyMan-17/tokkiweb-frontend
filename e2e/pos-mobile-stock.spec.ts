@@ -44,7 +44,7 @@ test.describe('POS Product Stock Badge and Card Layout Across Viewports', () => 
     },
   ];
 
-  test('desktop displays full "disponibles" text without clipping or overflow', async ({ page }) => {
+  test('desktop displays full "disponibles" text without clipping or overflow', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 800 });
 
     await page.route('**/api/products', async (route) => {
@@ -65,7 +65,7 @@ test.describe('POS Product Stock Badge and Card Layout Across Viewports', () => 
     await picker.scrollIntoViewIfNeeded();
 
     await picker.screenshot({
-      path: '/home/manu0ak/.gemini/antigravity-cli/brain/27c6b742-4b88-46a7-8529-010ec7f04b45/pos-desktop.png',
+      path: testInfo.outputPath('pos-desktop.png'),
     });
 
     // Check that full text is visible on desktop
@@ -77,7 +77,7 @@ test.describe('POS Product Stock Badge and Card Layout Across Viewports', () => 
     await expect(page.locator('.pos-stock-badge').first()).toContainText('15 disponibles');
   });
 
-  test('mobile 375px displays compact "disp." text and fits perfectly inside card', async ({ page }) => {
+  test('mobile 375px displays compact "disp." text and fits perfectly inside card', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 812 });
 
     await page.route('**/api/products', async (route) => {
@@ -98,7 +98,7 @@ test.describe('POS Product Stock Badge and Card Layout Across Viewports', () => 
     await picker.scrollIntoViewIfNeeded();
 
     await picker.screenshot({
-      path: '/home/manu0ak/.gemini/antigravity-cli/brain/27c6b742-4b88-46a7-8529-010ec7f04b45/pos-mobile-375px-final.png',
+      path: testInfo.outputPath('pos-mobile-375px-final.png'),
     });
 
     const fullText = page.locator('.pos-stock-full').first();

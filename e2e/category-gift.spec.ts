@@ -54,7 +54,7 @@ function setupMocks(page: import('@playwright/test').Page) {
 }
 
 test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
-  test('Catalog page renders Bolsas o cajas de regalo carousel with properly sized gift.gif icon and text alignment', async ({ page }) => {
+  test('Catalog page renders Bolsas o cajas de regalo carousel with properly sized gift.gif icon and text alignment', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/');
 
@@ -88,10 +88,10 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
     const productCard = carouselSection.getByText('Caja de Regalo Corazones Pastel');
     await expect(productCard).toBeVisible();
 
-    await carouselSection.screenshot({ path: 'test-results/gift-carousel-desktop.png' });
+    await carouselSection.screenshot({ path: testInfo.outputPath('gift-carousel-desktop.png') });
   });
 
-  test('Category page /categorias/bolsas-o-cajas-de-regalo displays gift.gif header icon with proper sizing and alignment', async ({ page }) => {
+  test('Category page /categorias/bolsas-o-cajas-de-regalo displays gift.gif header icon with proper sizing and alignment', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/categorias/bolsas-o-cajas-de-regalo');
 
@@ -120,10 +120,10 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
     await expect(page.getByText('Bolsa de Regalo Tokki Bunny Grande')).toBeVisible();
     await expect(page.getByText('Bálsamo Labial Fresa')).not.toBeVisible();
 
-    await page.screenshot({ path: 'test-results/gift-category-page.png' });
+    await page.screenshot({ path: testInfo.outputPath('gift-category-page.png') });
   });
 
-  test('Admin Products page displays Bolsas o cajas de regalo filter chip with gift.gif icon and modal dropdown option', async ({ page }) => {
+  test('Admin Products page displays Bolsas o cajas de regalo filter chip with gift.gif icon and modal dropdown option', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/tokki-admin/products');
 
@@ -152,7 +152,7 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
       expect(optionText).toContain('Bolsas o cajas de regalo');
     }
 
-    await page.screenshot({ path: 'test-results/gift-admin-products.png' });
+    await page.screenshot({ path: testInfo.outputPath('gift-admin-products.png') });
   });
 
   test('Admin POS Order Creator displays Bolsas o cajas de regalo chip with gift.gif icon', async ({ page }) => {
@@ -171,7 +171,7 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
     await expect(page.getByText('Caja de Regalo Corazones Pastel')).toBeVisible();
   });
 
-  test('Catalog page aligns category titles between Peluches and Bolsas o cajas de regalo', async ({ page }) => {
+  test('Catalog page aligns category titles between Peluches and Bolsas o cajas de regalo', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/');
 
@@ -200,7 +200,7 @@ test.describe('Bolsas o cajas de regalo Category & Icon Integration', () => {
       expect(Math.abs(peluchesBox.height - giftBox.height)).toBeLessThanOrEqual(5);
     }
 
-    await page.screenshot({ path: 'test-results/peluches-and-gift-alignment.png' });
+    await page.screenshot({ path: testInfo.outputPath('peluches-and-gift-alignment.png') });
   });
 
   test('Guarantees all category icons have proper padding and spacing with zero overlap to text or cards', async ({ page }) => {

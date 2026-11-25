@@ -44,7 +44,7 @@ function setupMocks(page: import('@playwright/test').Page) {
 }
 
 test.describe('Zona KPOP Category & Icon Integration', () => {
-  test('Catalog page renders Zona KPOP carousel with properly sized kpop.png icon', async ({ page }) => {
+  test('Catalog page renders Zona KPOP carousel with properly sized kpop.png icon', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/');
 
@@ -78,10 +78,10 @@ test.describe('Zona KPOP Category & Icon Integration', () => {
     await expect(productCard).toBeVisible();
 
     // Take a screenshot of the Zona KPOP carousel section for visual verification
-    await carouselSection.screenshot({ path: 'test-results/kpop-carousel-desktop.png' });
+    await carouselSection.screenshot({ path: testInfo.outputPath('kpop-carousel-desktop.png') });
   });
 
-  test('Category page /categorias/zona-kpop displays kpop.png header icon and products', async ({ page }) => {
+  test('Category page /categorias/zona-kpop displays kpop.png header icon and products', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/categorias/zona-kpop');
 
@@ -101,10 +101,10 @@ test.describe('Zona KPOP Category & Icon Integration', () => {
     await expect(page.getByText('Bálsamo Labial Fresa')).not.toBeVisible();
 
     // Take screenshot of the category page
-    await page.screenshot({ path: 'test-results/kpop-category-page.png' });
+    await page.screenshot({ path: testInfo.outputPath('kpop-category-page.png') });
   });
 
-  test('Admin Products page displays Zona KPOP filter chip with kpop.png icon and modal dropdown option', async ({ page }) => {
+  test('Admin Products page displays Zona KPOP filter chip with kpop.png icon and modal dropdown option', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/tokki-admin/products');
 
@@ -135,7 +135,7 @@ test.describe('Zona KPOP Category & Icon Integration', () => {
       expect(optionText).toContain('Zona KPOP');
     }
 
-    await page.screenshot({ path: 'test-results/kpop-admin-products.png' });
+    await page.screenshot({ path: testInfo.outputPath('kpop-admin-products.png') });
   });
 
   test('Admin POS Order Creator displays Zona KPOP chip with kpop.png icon', async ({ page }) => {

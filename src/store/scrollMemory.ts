@@ -1,7 +1,7 @@
-// ─── Scroll memory store — session scroll positions ────────────────
-// Pure helpers that remember the vertical scroll offset of visited
-// routes so the catalog can restore the previous position on back-nav.
-// Persistence lives in sessionStorage and is best-effort only.
+// ─── Scroll memory store — in-memory per-route scroll positions ───────────────
+// Pure helpers that remember the vertical scroll offset of visited routes
+// during the active SPA lifetime so back navigations return where the user left,
+// while full page reloads start cleanly at the top (and clear legacy storage).
 
 export const SCROLL_STORAGE_KEY = 'tokki_scroll_positions_v1';
 
@@ -54,49 +54,13 @@ export function clampOffset(y: number, maxScroll: number): number {
 }
 
 /**
- * Parse a persisted payload, dropping entries that are not finite numbers.
+ * Remove any legacy scroll map persisted in sessionStorage so refreshes
+ * always flush scroll memory and start from the top.
  */
-export function parseScrollMap(raw: string | null): ScrollMap {
-  if (!raw) return {};
-  let parsed: unknown;
+export function clearPersistedScrollMap(): void {
   try {
-    parsed = JSON.parse(raw);
+    sessionStorage.removeItem(SCROLL_STORAGE_KEY);
   } catch {
-    return {};
-  }
-  if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) return {};
-  const map: ScrollMap = {};
-  for (const [key, value] of Object.entries(parsed as Record<string, unknown>)) {
-    if (typeof value === 'number' && Number.isFinite(value)) map[key] = value;
-  }
-  return map;
-}
-
-/**
- * Serialise a map for storage.
- */
-export function serializeScrollMap(map: ScrollMap): string {
-  return JSON.stringify(map);
-}
-
-/**
- * Read the persisted scroll map. Unreadable storage yields an empty map.
- */
-export function loadScrollMap(): ScrollMap {
-  try {
-    return parseScrollMap(sessionStorage.getItem(SCROLL_STORAGE_KEY));
-  } catch {
-    return {};
-  }
-}
-
-/**
- * Persist the scroll map. Storage failures are ignored.
- */
-export function persistScrollMap(map: ScrollMap): void {
-  try {
-    sessionStorage.setItem(SCROLL_STORAGE_KEY, serializeScrollMap(map));
-  } catch {
-    /* quota / private mode — ignore */
+    /* private mode / blocked storage — ignore */
   }
 }

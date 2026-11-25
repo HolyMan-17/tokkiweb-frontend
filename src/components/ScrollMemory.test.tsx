@@ -2,7 +2,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation, useNavigate } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { ScrollMemory } from './ScrollMemory';
-import { SCROLL_STORAGE_KEY, loadScrollMap, persistScrollMap } from '../store/scrollMemory';
+import { SCROLL_STORAGE_KEY } from '../store/scrollMemory';
 
 const MAQUILLAJE = '/categorias/maquillaje';
 const PRODUCTOS = '/productos';
@@ -54,6 +54,20 @@ function renderMemory(initialEntries: string[]) {
   );
 }
 
+/**
+ * Simulates scrolling MAQUILLAJE to `offset`, navigating to PRODUCTOS,
+ * and returning to MAQUILLAJE so ScrollMemory restores `offset` from memory.
+ */
+function returnToRememberedRoute(offset: number) {
+  const view = renderMemory([MAQUILLAJE]);
+  setScrollY(offset);
+  fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
+  setScrollY(0);
+  scrollToMock().mockClear();
+  fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
+  return view;
+}
+
 describe('ScrollMemory — restauración de scroll por ruta', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
@@ -71,10 +85,12 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     delete (window.history as { scrollRestoration?: string }).scrollRestoration;
   });
 
-  it('restaura el offset recordado al montar', () => {
-    persistScrollMap({ [MAQUILLAJE]: 640 });
+  it('abre en el inicio al montar aunque exista un valor previo en sessionStorage y lo limpia', () => {
+    window.sessionStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify({ [MAQUILLAJE]: 640 }));
     renderMemory([MAQUILLAJE]);
-    expect(scrollToMock()).toHaveBeenCalledWith({ top: 640, behavior: 'instant' });
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    expect(scrollToMock()).not.toHaveBeenCalledWith({ top: 640, behavior: 'instant' });
+    expect(window.sessionStorage.getItem(SCROLL_STORAGE_KEY)).toBeNull();
   });
 
   it('abre en el inicio una ruta sin offset recordado', () => {
@@ -82,7 +98,7 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
   });
 
-  it('guarda el offset de salida al navegar a otra ruta', () => {
+  it('guarda los offsets solo en memoria y los restaura al volver dentro de la misma sesión', () => {
     renderMemory([MAQUILLAJE]);
 
     setScrollY(800);
@@ -92,7 +108,36 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
 
     expect(screen.getByTestId('path')).toHaveTextContent(PRODUCTOS);
-    expect(loadScrollMap()[MAQUILLAJE]).toBe(800);
+    expect(window.sessionStorage.getItem(SCROLL_STORAGE_KEY)).toBeNull();
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+
+    scrollToMock().mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 800, behavior: 'instant' });
+  });
+
+  it('olvida todos los offsets al desmontar y volver a montar (simulando recarga de página)', () => {
+    const firstMount = renderMemory([MAQUILLAJE]);
+
+    setScrollY(800);
+    fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
+    expect(screen.getByTestId('path')).toHaveTextContent(PRODUCTOS);
+
+    setScrollY(500);
+    act(() => {
+      window.dispatchEvent(new Event('scroll'));
+    });
+    firstMount.unmount();
+
+    scrollToMock().mockClear();
+    renderMemory([PRODUCTOS]);
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    expect(scrollToMock()).not.toHaveBeenCalledWith({ top: 500, behavior: 'instant' });
+
+    scrollToMock().mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    expect(scrollToMock()).not.toHaveBeenCalledWith({ top: 800, behavior: 'instant' });
   });
 
   it('restaura el offset guardado al volver a la ruta', () => {
@@ -112,6 +157,7 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     window.sessionStorage.setItem(SCROLL_STORAGE_KEY, '{not json');
     expect(() => renderMemory([MAQUILLAJE])).not.toThrow();
     expect(scrollToMock()).toHaveBeenCalledWith({ top: 0, behavior: 'instant' });
+    expect(window.sessionStorage.getItem(SCROLL_STORAGE_KEY)).toBeNull();
   });
 
   it('se monta sin scrollRestoration en el navegador', () => {
@@ -131,8 +177,7 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
   });
 
   it('reaplica el offset mientras llega el contenido asíncrono', async () => {
-    persistScrollMap({ [MAQUILLAJE]: 640 });
-    renderMemory([MAQUILLAJE]);
+    returnToRememberedRoute(640);
 
     const callsBefore = scrollToMock().mock.calls.length;
     await act(async () => {
@@ -140,11 +185,11 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     });
 
     expect(scrollToMock().mock.calls.length).toBeGreaterThan(callsBefore);
+    expect(scrollToMock()).toHaveBeenLastCalledWith({ top: 640, behavior: 'instant' });
   });
 
   it('deja de reaplicar el offset cuando el usuario toma el control', async () => {
-    persistScrollMap({ [MAQUILLAJE]: 640 });
-    renderMemory([MAQUILLAJE]);
+    returnToRememberedRoute(640);
 
     await act(async () => {
       await nextFrame();
@@ -164,8 +209,7 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
   });
 
   it('no pisa el scroll del usuario después de una restauración', async () => {
-    persistScrollMap({ [MAQUILLAJE]: 640 });
-    renderMemory([MAQUILLAJE]);
+    returnToRememberedRoute(640);
 
     // El usuario se desplaza a una posición que NO es la restaurada.
     setScrollY(300);
@@ -214,11 +258,25 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     ).toBe(false);
   });
 
-  it('guarda el offset real del usuario al salir, no el de la restauración', async () => {
-    persistScrollMap({ [MAQUILLAJE]: 640 });
+  it('no devuelve al usuario a 0 si se desplaza en el primer frame antes del rAF al abrir una ruta nueva', async () => {
     renderMemory([MAQUILLAJE]);
 
+    setScrollY(1000);
+    scrollToMock().mockClear();
+
+    await act(async () => {
+      await nextFrame();
+      await nextFrame();
+    });
+
+    expect(scrollToMock()).not.toHaveBeenCalled();
+  });
+
+  it('guarda el offset real del usuario al salir, no el de la restauración', async () => {
+    returnToRememberedRoute(640);
+
     // Deja que la restauración se asiente en 640.
+    setScrollY(640);
     await act(async () => {
       await nextFrame();
     });
@@ -234,10 +292,13 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
+    setScrollY(0);
+    scrollToMock().mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
 
     // Lo que se guarda es la posición del usuario (800), no el objetivo de
     // la restauración (640).
-    expect(loadScrollMap()[MAQUILLAJE]).toBe(800);
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 800, behavior: 'instant' });
   });
 
   it('guarda la posición viva aunque el evento de scroll aún no se haya despachado', () => {
@@ -249,8 +310,11 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     setScrollY(900);
 
     fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
+    setScrollY(0);
+    scrollToMock().mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
 
-    expect(loadScrollMap()[MAQUILLAJE]).toBe(900);
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 900, behavior: 'instant' });
   });
 
   it('captura la posición en la interacción que puede navegar', () => {
@@ -260,7 +324,10 @@ describe('ScrollMemory — restauración de scroll por ruta', () => {
     // el momento de la interacción, no un frame más tarde.
     setScrollY(750);
     fireEvent.click(screen.getByRole('button', { name: 'ir a productos' }));
+    setScrollY(0);
+    scrollToMock().mockClear();
+    fireEvent.click(screen.getByRole('button', { name: 'ir a maquillaje' }));
 
-    expect(loadScrollMap()[MAQUILLAJE]).toBe(750);
+    expect(scrollToMock()).toHaveBeenCalledWith({ top: 750, behavior: 'instant' });
   });
 });

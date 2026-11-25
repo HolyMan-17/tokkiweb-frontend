@@ -1,7 +1,8 @@
 // ─── Scroll memory — per-route scroll restoration ──────────────────
 //
-// Remembers the vertical position of every visited route and puts the
-// user back there when they return; routes never visited open at the top.
+// Remembers the vertical position of every visited route in memory during the
+// active SPA session and puts the user back there when they navigate back;
+// routes never visited — and every full page refresh/reload — open at the top.
 //
 // Two positions are tracked apart on purpose, because mixing them is what
 // used to destroy the user's scroll:
@@ -18,8 +19,7 @@ import { useLayoutEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
   clampOffset,
-  loadScrollMap,
-  persistScrollMap,
+  clearPersistedScrollMap,
   readOffset,
   saveOffset,
   scrollKey,
@@ -45,16 +45,16 @@ export function ScrollMemory() {
   const previousKeyRef = useRef<string | null>(null);
   const abortRestoreRef = useRef<(() => void) | null>(null);
 
-  // Global wiring: native restoration off, the user's position tracked and
-  // the user able to interrupt a pending restore.
+  // Global wiring: native restoration off, any stale persisted scroll cleared,
+  // the user's position tracked and able to interrupt a pending restore.
   useLayoutEffect(() => {
     if ('scrollRestoration' in window.history) {
       window.history.scrollRestoration = 'manual';
     }
 
-    mapRef.current = loadScrollMap();
-    userOffsetRef.current = window.scrollY;
-    appliedRef.current = window.scrollY;
+    clearPersistedScrollMap();
+    userOffsetRef.current = 0;
+    appliedRef.current = 0;
 
     const handleScroll = () => {
       const y = window.scrollY;
@@ -133,10 +133,17 @@ export function ScrollMemory() {
       // never lower what the user had reached.
       const offset = Math.max(userOffsetRef.current, window.scrollY);
       mapRef.current = saveOffset(mapRef.current, outgoingKey, offset);
-      persistScrollMap(mapRef.current);
     }
 
     const target = readOffset(mapRef.current, key);
+    userOffsetRef.current = target;
+    if (target === 0) {
+      appliedRef.current = 0;
+      abortRestoreRef.current = null;
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      return;
+    }
+
     let frame: number | null = null;
     let timer: number | null = null;
     let observer: ResizeObserver | null = null;
@@ -159,13 +166,9 @@ export function ScrollMemory() {
     };
 
     // The restore landed: the page sits where it was asked to sit.
-    const hasLanded = () => {
-      if (target === 0) return window.scrollY <= 1;
-      return (
-        Math.abs(window.scrollY - target) <= LANDED_TOLERANCE &&
-        viewportMax() >= target
-      );
-    };
+    const hasLanded = () =>
+      Math.abs(window.scrollY - target) <= LANDED_TOLERANCE &&
+      viewportMax() >= target;
 
     const tick = () => {
       if (stopped) return;

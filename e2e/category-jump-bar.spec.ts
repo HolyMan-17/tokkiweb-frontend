@@ -1,4 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
+import { CATEGORIES } from '../src/constants';
+import { VIEWPORTS, WIDE_VIEWPORTS } from './viewports';
 
 const ACTIVE_CATEGORIES = [
   'Menos de un dolar',
@@ -13,32 +15,41 @@ const ACTIVE_CATEGORIES = [
 
 const UNUSED_CATEGORIES = ['Cosplays', 'Figuras', 'Peluches'] as const;
 
-const MOCK_PRODUCTS = ACTIVE_CATEGORIES.map((category, index) => ({
-  product_id: index + 100,
-  product_name: `Producto ${category}`,
-  product_price: `${(index + 1) * 2}.00`,
-  qty_available: 10,
-  in_stock: true,
-  category,
-  product_description: `Producto de prueba en ${category}`,
-  product_image_url: null,
-}));
+function buildMockProducts(categories: readonly string[]) {
+  return categories.map((category, index) => ({
+    product_id: index + 100,
+    product_name: `Producto ${category}`,
+    product_price: `${(index + 1) * 2}.00`,
+    qty_available: 10,
+    in_stock: true,
+    category,
+    product_description: `Producto de prueba en ${category}`,
+    product_image_url: null,
+  }));
+}
 
-function mockCatalogApi(page: Page) {
+const MOCK_PRODUCTS = buildMockProducts(ACTIVE_CATEGORIES);
+
+function mockCatalogApi(page: Page, products = MOCK_PRODUCTS) {
   return page.route('**/api/products', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: MOCK_PRODUCTS }),
+      body: JSON.stringify({ success: true, data: products }),
     });
   });
 }
 
+const BASE_JUMP_VIEWPORTS = VIEWPORTS.filter(
+  (v) => v.name === 'mobile-375' || v.name === 'laptop-1280',
+);
+
+const CENTERED_WIDE_VIEWPORTS = VIEWPORTS.filter(
+  (v) => v.name === 'desktop-1680' || v.name === 'desktop-1920',
+);
+
 test.describe('CatalogPage Category Quick-Jump Bar', () => {
-  for (const viewport of [
-    { name: 'mobile 375x812', width: 375, height: 812 },
-    { name: 'desktop 1280x800', width: 1280, height: 800 },
-  ]) {
+  for (const viewport of BASE_JUMP_VIEWPORTS) {
     test(`shows only active categories, fits cleanly, and scrolls to target section on ${viewport.name}`, async ({
       page,
     }) => {
@@ -109,6 +120,99 @@ test.describe('CatalogPage Category Quick-Jump Bar', () => {
         expect(position!.sectionTop).toBeGreaterThanOrEqual(position!.navBottom - 4);
         expect(position!.sectionTop).toBeLessThan(position!.viewportHeight * 0.6);
       }).toPass({ timeout: 5000 });
+    });
+  }
+
+  for (const viewport of WIDE_VIEWPORTS) {
+    test(`spans full width without clipping or overlapping pills when overflowing on ${viewport.name} (${viewport.width}x${viewport.height})`, async ({
+      page,
+    }) => {
+      const allCategories = CATEGORIES.map((c) => c.name);
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await mockCatalogApi(page, buildMockProducts(allCategories));
+      await page.goto('/');
+
+      const jumpNav = page.getByRole('navigation', { name: 'Ir a una categoría' });
+      await expect(jumpNav).toBeVisible();
+      await expect(jumpNav).toHaveClass(/category-jump-nav--scrollable/);
+
+      const layoutSizes = await page.evaluate(() => ({
+        navWidth: document.querySelector('.category-jump-nav')!.getBoundingClientRect().width,
+        clientWidth: document.documentElement.clientWidth,
+        scrollWidth: document.documentElement.scrollWidth,
+        innerWidth: window.innerWidth,
+      }));
+      expect(layoutSizes.navWidth).toBeGreaterThanOrEqual(layoutSizes.clientWidth - 2);
+      expect(layoutSizes.scrollWidth).toBeLessThanOrEqual(layoutSizes.innerWidth);
+      if (viewport.width >= 1440) {
+        expect(layoutSizes.navWidth).toBeGreaterThan(1250);
+      }
+
+      const leftArrow = page.getByRole('button', { name: 'Desplazar categorías a la izquierda' });
+      const rightArrow = page.getByRole('button', { name: 'Desplazar categorías a la derecha' });
+      const track = jumpNav.locator('.category-jump-track');
+
+      await expect(leftArrow).toBeVisible();
+      await expect(rightArrow).toBeVisible();
+      await expect(leftArrow).toBeDisabled();
+      await expect(rightArrow).toBeEnabled();
+      await expect(track).toHaveClass(/category-jump-track--fade-right/);
+
+      const geometry = await page.evaluate(() => {
+        const left = document.querySelector('.category-jump-arrow--left')!.getBoundingClientRect();
+        const right = document.querySelector('.category-jump-arrow--right')!.getBoundingClientRect();
+        const t = document.querySelector('.category-jump-track')!.getBoundingClientRect();
+        return { leftRight: left.right, trackLeft: t.left, trackRight: t.right, rightLeft: right.left };
+      });
+      expect(geometry.leftRight).toBeLessThanOrEqual(geometry.trackLeft + 1);
+      expect(geometry.trackRight).toBeLessThanOrEqual(geometry.rightLeft + 1);
+
+      await rightArrow.click();
+
+      await expect
+        .poll(() => track.evaluate((el) => el.scrollLeft), { timeout: 5000 })
+        .toBeGreaterThan(0);
+      await expect(leftArrow).toBeEnabled();
+      await expect(track).toHaveClass(/category-jump-track--fade-(both|left)/);
+
+      await track.evaluate((el) => {
+        el.scrollTo({ left: el.scrollWidth - el.clientWidth, behavior: 'instant' });
+      });
+
+      await expect(rightArrow).toBeDisabled();
+      await expect(leftArrow).toBeEnabled();
+      await expect(track).toHaveClass(/category-jump-track--fade-left/);
+      await expect(track).not.toHaveClass(/category-jump-track--fade-right/);
+    });
+  }
+
+  for (const viewport of CENTERED_WIDE_VIEWPORTS) {
+    test(`centers pills with no arrows or edge fade when all pills fit on ${viewport.name} (${viewport.width}x${viewport.height})`, async ({
+      page,
+    }) => {
+      const fewCategories = ['Maquillaje', 'Skincare', 'Papeleria'] as const;
+      await page.setViewportSize({ width: viewport.width, height: viewport.height });
+      await mockCatalogApi(page, buildMockProducts(fewCategories));
+      await page.goto('/');
+
+      const jumpNav = page.getByRole('navigation', { name: 'Ir a una categoría' });
+      await expect(jumpNav).toBeVisible();
+      await expect(jumpNav).not.toHaveClass(/category-jump-nav--scrollable/);
+      await expect(jumpNav.locator('.category-jump-arrow')).toHaveCount(0);
+
+      const track = jumpNav.locator('.category-jump-track');
+      await expect(track).not.toHaveClass(/category-jump-track--fade-/);
+
+      const margins = await page.evaluate(() => {
+        const pills = Array.from(document.querySelectorAll('.category-jump-pill'));
+        const first = pills[0].getBoundingClientRect();
+        const last = pills[pills.length - 1].getBoundingClientRect();
+        return {
+          leftGap: first.left,
+          rightGap: document.documentElement.clientWidth - last.right,
+        };
+      });
+      expect(Math.abs(margins.leftGap - margins.rightGap)).toBeLessThanOrEqual(4);
     });
   }
 });

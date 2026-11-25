@@ -20,7 +20,7 @@ cp .env.example .env.local   # add VITE_CLERK_PUBLISHABLE_KEY (admin only)
 pnpm dev                     # http://localhost:5173 (proxies /api → :3000)
 ```
 
-Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run` (Vitest), `pnpm test:e2e` (Playwright), `pnpm doctor`, `pnpm preview`.
+Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run` (Vitest), `pnpm test:e2e` (Playwright across modern mobile, tablet, laptop, and wide desktop viewports `360×740`–`1920×1080` via `e2e/viewports.ts` & `playwright.config.ts`), `pnpm doctor`, `pnpm preview`.
 
 ## Current state (live API backend wired)
 

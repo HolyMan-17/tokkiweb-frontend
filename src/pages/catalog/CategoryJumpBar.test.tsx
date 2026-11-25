@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { act, render, screen, fireEvent } from '@testing-library/react';
 import { afterEach, describe, it, expect, vi } from 'vitest';
 import CategoryJumpBar from './CategoryJumpBar';
 import { getCategorySectionId } from './categoryJumpUtils';
@@ -8,6 +8,28 @@ const SAMPLE_CATEGORIES = [
   { name: 'Pines & Chapas', emoji: '📌' },
   { name: 'Papeleria', emoji: '📝' },
 ];
+
+function nextFrame(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => resolve());
+  });
+}
+
+function setTrackMetrics(
+  track: HTMLDivElement,
+  { clientWidth, scrollWidth, scrollLeft }: { clientWidth: number; scrollWidth: number; scrollLeft: number },
+) {
+  Object.defineProperty(track, 'clientWidth', { configurable: true, value: clientWidth });
+  Object.defineProperty(track, 'scrollWidth', { configurable: true, value: scrollWidth });
+  Object.defineProperty(track, 'scrollLeft', { configurable: true, writable: true, value: scrollLeft });
+}
+
+async function flushTrackScroll(track: HTMLDivElement) {
+  await act(async () => {
+    fireEvent.scroll(track);
+    await nextFrame();
+  });
+}
 
 describe('CategoryJumpBar', () => {
   const originalMatchMedia = window.matchMedia;
@@ -112,5 +134,127 @@ describe('CategoryJumpBar', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Papeleria' }));
     expect(scrollMock).toHaveBeenCalledWith({ behavior: 'auto', block: 'start' });
+  });
+
+  it('renders no scroll arrows and no fade classes when pills do not overflow', async () => {
+    render(<CategoryJumpBar categories={SAMPLE_CATEGORIES} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const track = nav.querySelector('.category-jump-track') as HTMLDivElement;
+    setTrackMetrics(track, { clientWidth: 600, scrollWidth: 420, scrollLeft: 0 });
+    await flushTrackScroll(track);
+
+    expect(nav).not.toHaveClass('category-jump-nav--scrollable');
+    expect(screen.queryByRole('button', { name: 'Desplazar categorías a la izquierda' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Desplazar categorías a la derecha' })).toBeNull();
+    expect(track).not.toHaveClass('category-jump-track--fade-left');
+    expect(track).not.toHaveClass('category-jump-track--fade-right');
+    expect(track).not.toHaveClass('category-jump-track--fade-both');
+  });
+
+  it('shows flanking arrows outside track with fade-right at scrollLeft = 0 when overflowing', async () => {
+    render(<CategoryJumpBar categories={SAMPLE_CATEGORIES} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const track = nav.querySelector('.category-jump-track') as HTMLDivElement;
+    setTrackMetrics(track, { clientWidth: 400, scrollWidth: 900, scrollLeft: 0 });
+    await flushTrackScroll(track);
+
+    expect(nav).toHaveClass('category-jump-nav--scrollable');
+
+    const leftArrow = screen.getByRole('button', { name: 'Desplazar categorías a la izquierda' });
+    const rightArrow = screen.getByRole('button', { name: 'Desplazar categorías a la derecha' });
+
+    expect(track.contains(leftArrow)).toBe(false);
+    expect(track.contains(rightArrow)).toBe(false);
+    expect(leftArrow.compareDocumentPosition(track) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(track.compareDocumentPosition(rightArrow) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    expect(leftArrow).toBeDisabled();
+    expect(rightArrow).toBeEnabled();
+    expect(track).toHaveClass('category-jump-track--fade-right');
+    expect(track).not.toHaveClass('category-jump-track--fade-left');
+    expect(track).not.toHaveClass('category-jump-track--fade-both');
+  });
+
+  it('enables both arrows and applies fade-both when scrolled to the middle', async () => {
+    render(<CategoryJumpBar categories={SAMPLE_CATEGORIES} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const track = nav.querySelector('.category-jump-track') as HTMLDivElement;
+    setTrackMetrics(track, { clientWidth: 400, scrollWidth: 900, scrollLeft: 200 });
+    await flushTrackScroll(track);
+
+    const leftArrow = screen.getByRole('button', { name: 'Desplazar categorías a la izquierda' });
+    const rightArrow = screen.getByRole('button', { name: 'Desplazar categorías a la derecha' });
+
+    expect(leftArrow).toBeEnabled();
+    expect(rightArrow).toBeEnabled();
+    expect(track).toHaveClass('category-jump-track--fade-both');
+    expect(track).not.toHaveClass('category-jump-track--fade-left');
+    expect(track).not.toHaveClass('category-jump-track--fade-right');
+  });
+
+  it('disables right arrow and applies fade-left when scrolled to the right end', async () => {
+    render(<CategoryJumpBar categories={SAMPLE_CATEGORIES} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const track = nav.querySelector('.category-jump-track') as HTMLDivElement;
+    setTrackMetrics(track, { clientWidth: 400, scrollWidth: 900, scrollLeft: 500 });
+    await flushTrackScroll(track);
+
+    const leftArrow = screen.getByRole('button', { name: 'Desplazar categorías a la izquierda' });
+    const rightArrow = screen.getByRole('button', { name: 'Desplazar categorías a la derecha' });
+
+    expect(leftArrow).toBeEnabled();
+    expect(rightArrow).toBeDisabled();
+    expect(track).toHaveClass('category-jump-track--fade-left');
+    expect(track).not.toHaveClass('category-jump-track--fade-right');
+    expect(track).not.toHaveClass('category-jump-track--fade-both');
+  });
+
+  it('scrolls track horizontally on arrow click and respects prefers-reduced-motion', async () => {
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: false,
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    render(<CategoryJumpBar categories={SAMPLE_CATEGORIES} />);
+
+    const nav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const track = nav.querySelector('.category-jump-track') as HTMLDivElement;
+    const scrollByMock = vi.fn();
+    track.scrollBy = scrollByMock;
+    setTrackMetrics(track, { clientWidth: 400, scrollWidth: 900, scrollLeft: 200 });
+    await flushTrackScroll(track);
+
+    const leftArrow = screen.getByRole('button', { name: 'Desplazar categorías a la izquierda' });
+    const rightArrow = screen.getByRole('button', { name: 'Desplazar categorías a la derecha' });
+
+    fireEvent.click(rightArrow);
+    expect(scrollByMock).toHaveBeenCalledWith({ left: 240, behavior: 'smooth' });
+
+    fireEvent.click(leftArrow);
+    expect(scrollByMock).toHaveBeenCalledWith({ left: -240, behavior: 'smooth' });
+
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query === '(prefers-reduced-motion: reduce)',
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    fireEvent.click(rightArrow);
+    expect(scrollByMock).toHaveBeenLastCalledWith({ left: 240, behavior: 'auto' });
   });
 });

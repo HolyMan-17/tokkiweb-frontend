@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { VIEWPORTS } from './viewports';
 
 const PRODUCT = {
   product_id: 1,
@@ -32,12 +33,13 @@ async function expectNoHorizontalOverflow(page: Page) {
   expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
 }
 
+const SHIPPING_VIEWPORTS = VIEWPORTS.filter((v) =>
+  ['mobile-375', 'laptop-1280', 'desktop-1680'].includes(v.name),
+);
+
 test.describe('Aviso de costos de envío (Delivery / Envío Nacional)', () => {
-  for (const viewport of [
-    { name: 'desktop', width: 1280, height: 900 },
-    { name: 'mobile', width: 375, height: 667 },
-  ]) {
-    test(`carrito y checkout muestran el aviso dentro del resumen (${viewport.name})`, async ({ page }) => {
+  for (const viewport of SHIPPING_VIEWPORTS) {
+    test(`carrito y checkout muestran el aviso dentro del resumen (${viewport.name})`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await setup(page);
 
@@ -50,7 +52,7 @@ test.describe('Aviso de costos de envío (Delivery / Envío Nacional)', () => {
       await cartNote.evaluate((el) => el.scrollIntoView({ behavior: 'instant', block: 'center' }));
       await expectNoHorizontalOverflow(page);
       await page.screenshot({
-        path: `test-results/shipping-note-cart-${viewport.name}.png`,
+        path: testInfo.outputPath(`shipping-note-cart-${viewport.name}.png`),
         animations: 'disabled',
       });
 
@@ -64,7 +66,7 @@ test.describe('Aviso de costos de envío (Delivery / Envío Nacional)', () => {
       await summary.evaluate((el) => el.scrollIntoView({ behavior: 'instant', block: 'center' }));
       await expectNoHorizontalOverflow(page);
       await page.screenshot({
-        path: `test-results/shipping-note-checkout-${viewport.name}.png`,
+        path: testInfo.outputPath(`shipping-note-checkout-${viewport.name}.png`),
         animations: 'disabled',
       });
     });

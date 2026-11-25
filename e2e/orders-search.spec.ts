@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Admin Orders Search Bar & Spacing', () => {
-  test('search input has proper padding and spacing without icon overlap', async ({ page }) => {
+  test('search input has proper padding and spacing without icon overlap', async ({ page }, testInfo) => {
     // Mock the /api/orders endpoint so the page renders orders
     await page.route('**/api/orders', async (route) => {
       await route.fulfill({
@@ -74,7 +74,7 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     }
 
     // Take screenshot of empty search bar with placeholder on desktop
-    await searchWrapper.screenshot({ path: 'test-results/search-wrapper-empty-desktop.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('search-wrapper-empty-desktop.png') });
 
     // Type short text into search bar
     await searchInput.fill('V-26345678');
@@ -85,11 +85,11 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     await expect(clearButton).toBeVisible();
 
     // Take screenshot of the search toolbar for visual verification
-    await searchWrapper.screenshot({ path: 'test-results/search-wrapper-filled.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('search-wrapper-filled.png') });
 
     // Type very long text into search bar
     await searchInput.fill('Super long search query testing placeholder and boundary padding overlap issues 1234567890');
-    await searchWrapper.screenshot({ path: 'test-results/search-wrapper-long-text.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('search-wrapper-long-text.png') });
 
     // Click clear button
     await clearButton.click();
@@ -98,10 +98,10 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
 
     // Check tablet viewport (768px)
     await page.setViewportSize({ width: 768, height: 1024 });
-    await searchWrapper.screenshot({ path: 'test-results/search-wrapper-empty-tablet.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('search-wrapper-empty-tablet.png') });
   });
 
-  test('admin product management search bar spacing and visual rendering', async ({ page }) => {
+  test('admin product management search bar spacing and visual rendering', async ({ page }, testInfo) => {
     // Mock /api/products
     await page.route('**/api/products', async (route) => {
       await route.fulfill({
@@ -133,13 +133,13 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     const searchInput = page.locator('.search-input');
     await expect(searchInput).toBeVisible();
 
-    await searchField.screenshot({ path: 'test-results/product-search-empty.png' });
+    await searchField.screenshot({ path: testInfo.outputPath('product-search-empty.png') });
 
     await searchInput.fill('Bálsamo Labial con texto largo para verificar padding y spacing');
-    await searchField.screenshot({ path: 'test-results/product-search-filled.png' });
+    await searchField.screenshot({ path: testInfo.outputPath('product-search-filled.png') });
   });
 
-  test('admin POS order creator product picker search bar spacing', async ({ page }) => {
+  test('admin POS order creator product picker search bar spacing', async ({ page }, testInfo) => {
     // Mock /api/products
     await page.route('**/api/products', async (route) => {
       await route.fulfill({
@@ -171,13 +171,13 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     const posSearchInput = page.locator('.pos-search-input');
     await expect(posSearchInput).toBeVisible();
 
-    await posSearchField.screenshot({ path: 'test-results/pos-search-empty.png' });
+    await posSearchField.screenshot({ path: testInfo.outputPath('pos-search-empty.png') });
 
     await posSearchInput.fill('Bálsamo Labial con texto largo');
-    await posSearchField.screenshot({ path: 'test-results/pos-search-filled.png' });
+    await posSearchField.screenshot({ path: testInfo.outputPath('pos-search-filled.png') });
   });
 
-  test('mobile viewport rendering of order search bar', async ({ page }) => {
+  test('mobile viewport rendering of order search bar', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 667 });
 
     await page.route('**/api/orders', async (route) => {
@@ -210,11 +210,11 @@ test.describe('Admin Orders Search Bar & Spacing', () => {
     const searchWrapper = page.locator('.orders-search-wrapper');
     await expect(searchWrapper).toBeVisible();
 
-    await searchWrapper.screenshot({ path: 'test-results/orders-search-mobile-empty.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('orders-search-mobile-empty.png') });
 
     const searchInput = page.locator('.orders-search-input');
     await searchInput.fill('V-26345678');
-    await searchWrapper.screenshot({ path: 'test-results/orders-search-mobile-filled.png' });
+    await searchWrapper.screenshot({ path: testInfo.outputPath('orders-search-mobile-filled.png') });
   });
 
   test('mobile viewport rendering of create order dropdowns and search bar', async ({ page }) => {

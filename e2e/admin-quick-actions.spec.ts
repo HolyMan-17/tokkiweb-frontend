@@ -92,7 +92,7 @@ const MOCK_PRODUCTS = [
 ];
 
 test.describe('Admin Step 5 Quick Actions', () => {
-  test('Orders status tabs show per-status counts with amber pending badge across viewports', async ({ page }) => {
+  test('Orders status tabs show per-status counts with amber pending badge across viewports', async ({ page }, testInfo) => {
     await page.route('**/api/orders', async (route) => {
       await route.fulfill({
         status: 200,
@@ -116,7 +116,7 @@ test.describe('Admin Step 5 Quick Actions', () => {
     await expect(approvedTab.locator('.filter-tab-count')).toHaveText('1');
     await expect(canceledTab.locator('.filter-tab-count')).toHaveText('1');
 
-    await page.screenshot({ path: 'test-results/admin-orders-tabs-desktop.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-orders-tabs-desktop.png') });
 
     await pendingTab.click();
     await expect(page.getByText('#21')).toBeVisible();
@@ -138,10 +138,10 @@ test.describe('Admin Step 5 Quick Actions', () => {
       clientWidth: document.documentElement.clientWidth,
     }));
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
-    await page.screenshot({ path: 'test-results/admin-orders-tabs-mobile.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-orders-tabs-mobile.png') });
   });
 
-  test('Products inline stepper batches rapid taps, keeps ?stock=out card visible, rolls back failures, and fits mobile', async ({ page }) => {
+  test('Products inline stepper batches rapid taps, keeps ?stock=out card visible, rolls back failures, and fits mobile', async ({ page }, testInfo) => {
     const patchPayloads: Array<{ url: string; body: { qty_available?: number } }> = [];
     let failNextPatchForId103 = false;
 
@@ -231,7 +231,7 @@ test.describe('Admin Step 5 Quick Actions', () => {
     await expect(page.getByText('Bálsamo Labial Fresa')).toBeVisible();
     await expect(page.getByText('Mochi Matcha')).toBeVisible();
     await page.locator('.products-grid').scrollIntoViewIfNeeded();
-    await page.screenshot({ path: 'test-results/admin-products-stepper-desktop.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-products-stepper-desktop.png') });
 
     failNextPatchForId103 = true;
     const mochiCard = page.locator('.product-card-admin', { hasText: 'Mochi Matcha' });
@@ -252,6 +252,6 @@ test.describe('Admin Step 5 Quick Actions', () => {
       clientWidth: document.documentElement.clientWidth,
     }));
     expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 2);
-    await page.screenshot({ path: 'test-results/admin-products-stepper-mobile.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-products-stepper-mobile.png') });
   });
 });

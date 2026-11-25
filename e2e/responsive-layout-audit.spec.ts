@@ -1,15 +1,11 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect, type Page, type TestInfo } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { CATEGORIES } from '../src/constants';
 
 const SAMPLE_PNG = readFileSync(join(process.cwd(), 'public/favicon-192x192.png'));
 
-const VIEWPORTS = [
-  { name: 'mobile-360', width: 360, height: 740, screenshot: false },
-  { name: 'mobile-375', width: 375, height: 667, screenshot: true },
-  { name: 'desktop-1280', width: 1280, height: 900, screenshot: true },
-] as const;
+const SCREENSHOT_VIEWPORTS = new Set(['mobile-375', 'laptop-1280', 'desktop-1680']);
 
 const MOCK_PRODUCTS = CATEGORIES.map((cat, idx) => {
   const id = idx + 1;
@@ -212,7 +208,9 @@ interface LayoutFindings {
 async function auditPageLayout(
   page: Page,
   routeLabel: string,
-  viewport: { name: string; width: number; height: number; screenshot: boolean },
+  viewportName: string,
+  takeScreenshot: boolean,
+  testInfo: TestInfo,
   pageErrors: string[],
   failedAssets: string[],
 ) {
@@ -396,20 +394,42 @@ async function auditPageLayout(
       modal.scrollTop = modal.scrollHeight;
     }
 
+    const getHorizontallyClippedRect = (el: Element): DOMRect | null => {
+      const raw = el.getBoundingClientRect();
+      let left = raw.left;
+      let right = raw.right;
+      let cur: Element | null = el.parentElement;
+      while (cur && cur !== document.body && cur !== document.documentElement) {
+        const s = window.getComputedStyle(cur);
+        if (s.overflowX === 'auto' || s.overflowX === 'scroll') {
+          const cr = cur.getBoundingClientRect();
+          left = Math.max(left, cr.left);
+          right = Math.min(right, cr.right);
+          if (right <= left + 1) return null;
+        }
+        cur = cur.parentElement;
+      }
+      return new DOMRect(left, raw.top, right - left, raw.height);
+    };
+
     const rootScope = isModalOpen && modal ? modal : document.body;
+    const interactiveRects = new Map<Element, DOMRect>();
     const interactiveEls = Array.from(
       rootScope.querySelectorAll('button, a, input:not([type="hidden"]), select, textarea'),
     ).filter((el) => {
       if (!isVisible(el)) return false;
       if (el.classList.contains('order-card-stretched-link')) return false;
       if (el.classList.contains('visually-hidden')) return false;
-      const r = el.getBoundingClientRect();
+      const r = getHorizontallyClippedRect(el);
+      if (!r) return false;
       // For a scrollable modal, ignore elements currently scrolled out of the visible scrollbox above .modal-content's top
       if (isModalOpen && modal) {
         const mRect = modal.getBoundingClientRect();
         if (r.bottom <= mRect.top + 1 || r.top >= mRect.bottom - 1) return false;
       }
-      return r.width > 4 && r.height > 4;
+      if (r.width <= 4 || r.height <= 4) return false;
+      interactiveRects.set(el, r);
+      return true;
     });
 
     const interactiveOverlaps: LayoutFindings['interactiveOverlaps'] = [];
@@ -439,8 +459,8 @@ async function auditPageLayout(
             }
           }
         }
-        const rA = a.getBoundingClientRect();
-        const rB = b.getBoundingClientRect();
+        const rA = interactiveRects.get(a)!;
+        const rB = interactiveRects.get(b)!;
         const { w, h } = intersect(rA, rB);
         if (w > 2 && h > 2) {
           interactiveOverlaps.push({
@@ -529,34 +549,34 @@ async function auditPageLayout(
     };
   });
 
-  if (viewport.screenshot) {
-    const safeName = `${routeLabel}-${viewport.name}`.replace(/[^a-z0-9-_]/gi, '_');
+  if (takeScreenshot) {
+    const safeName = `${routeLabel}-${viewportName}`.replace(/[^a-z0-9-_]/gi, '_');
     const useFullPage = !['user-catalog', 'admin-products-edit-modal'].includes(routeLabel);
     await page.screenshot({
-      path: `test-results/audit/${safeName}.png`,
+      path: testInfo.outputPath(`${safeName}.png`),
       fullPage: useFullPage,
       animations: 'disabled',
     });
   }
 
-  expect(pageErrors, `${routeLabel} (${viewport.name}) pageerrors`).toEqual([]);
-  expect(failedAssets, `${routeLabel} (${viewport.name}) failed assets`).toEqual([]);
+  expect(pageErrors, `${routeLabel} (${viewportName}) pageerrors`).toEqual([]);
+  expect(failedAssets, `${routeLabel} (${viewportName}) failed assets`).toEqual([]);
   expect(
     findings.docOverflow.docScrollW,
-    `${routeLabel} (${viewport.name}) documentElement scrollWidth`,
+    `${routeLabel} (${viewportName}) documentElement scrollWidth`,
   ).toBeLessThanOrEqual(findings.docOverflow.clientW + 1);
   expect(
     findings.docOverflow.bodyScrollW,
-    `${routeLabel} (${viewport.name}) body scrollWidth`,
+    `${routeLabel} (${viewportName}) body scrollWidth`,
   ).toBeLessThanOrEqual(findings.docOverflow.clientW + 1);
-  expect(findings.brokenImages, `${routeLabel} (${viewport.name}) brokenImages`).toEqual([]);
-  expect(findings.overflowingImages, `${routeLabel} (${viewport.name}) overflowingImages`).toEqual([]);
-  expect(findings.distortedImages, `${routeLabel} (${viewport.name}) distortedImages`).toEqual([]);
-  expect(findings.headerOutOfBounds, `${routeLabel} (${viewport.name}) headerOutOfBounds`).toEqual([]);
-  expect(findings.headerOverlaps, `${routeLabel} (${viewport.name}) headerOverlaps`).toEqual([]);
-  expect(findings.interactiveOverlaps, `${routeLabel} (${viewport.name}) interactiveOverlaps`).toEqual([]);
-  expect(findings.iconOverlaps, `${routeLabel} (${viewport.name}) iconOverlaps`).toEqual([]);
-  expect(findings.iconBleeds, `${routeLabel} (${viewport.name}) iconBleeds`).toEqual([]);
+  expect(findings.brokenImages, `${routeLabel} (${viewportName}) brokenImages`).toEqual([]);
+  expect(findings.overflowingImages, `${routeLabel} (${viewportName}) overflowingImages`).toEqual([]);
+  expect(findings.distortedImages, `${routeLabel} (${viewportName}) distortedImages`).toEqual([]);
+  expect(findings.headerOutOfBounds, `${routeLabel} (${viewportName}) headerOutOfBounds`).toEqual([]);
+  expect(findings.headerOverlaps, `${routeLabel} (${viewportName}) headerOverlaps`).toEqual([]);
+  expect(findings.interactiveOverlaps, `${routeLabel} (${viewportName}) interactiveOverlaps`).toEqual([]);
+  expect(findings.iconOverlaps, `${routeLabel} (${viewportName}) iconOverlaps`).toEqual([]);
+  expect(findings.iconBleeds, `${routeLabel} (${viewportName}) iconBleeds`).toEqual([]);
 }
 
 test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
@@ -580,38 +600,37 @@ test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
     { label: 'admin-devtools', path: '/tokki-admin/dev' },
   ];
 
-  for (const viewport of VIEWPORTS) {
-    test(`audits all routes and assets cleanly at ${viewport.name}`, async ({ page }) => {
-      test.setTimeout(120_000);
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await setupApiAndImageMocks(page);
+  test('audits all routes and assets cleanly', async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    const viewportName = testInfo.project.name.replace(/^audit-/, '');
+    const takeScreenshot = SCREENSHOT_VIEWPORTS.has(viewportName);
+    await setupApiAndImageMocks(page);
 
-      const pageErrors: string[] = [];
-      const failedAssets: string[] = [];
-      page.on('pageerror', (err) => pageErrors.push(err.message));
-      page.on('response', (res) => {
-        if (res.status() >= 400 && !res.url().includes('/favicon')) {
-          failedAssets.push(`${res.status()} ${res.url()}`);
-        }
-      });
-
-      for (const route of routes) {
-        pageErrors.length = 0;
-        failedAssets.length = 0;
-
-        if (route.seedCart) {
-          await seedCart(page);
-          await page.goto(route.path);
-        } else {
-          await page.goto(route.path);
-          if (route.label === 'user-cart-empty') {
-            await page.evaluate(() => window.localStorage.removeItem('tokki_cart_v1'));
-            await page.reload();
-          }
-        }
-
-        await auditPageLayout(page, route.label, viewport, pageErrors, failedAssets);
+    const pageErrors: string[] = [];
+    const failedAssets: string[] = [];
+    page.on('pageerror', (err) => pageErrors.push(err.message));
+    page.on('response', (res) => {
+      if (res.status() >= 400 && !res.url().includes('/favicon')) {
+        failedAssets.push(`${res.status()} ${res.url()}`);
       }
     });
-  }
+
+    for (const route of routes) {
+      pageErrors.length = 0;
+      failedAssets.length = 0;
+
+      if (route.seedCart) {
+        await seedCart(page);
+        await page.goto(route.path);
+      } else {
+        await page.goto(route.path);
+        if (route.label === 'user-cart-empty') {
+          await page.evaluate(() => window.localStorage.removeItem('tokki_cart_v1'));
+          await page.reload();
+        }
+      }
+
+      await auditPageLayout(page, route.label, viewportName, takeScreenshot, testInfo, pageErrors, failedAssets);
+    }
+  });
 });

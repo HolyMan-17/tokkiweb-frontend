@@ -60,7 +60,7 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
     await setupMocks(page);
   });
 
-  test('desktop (1280px): navigates to dashboard via navbar button and highlights active route', async ({ page }) => {
+  test('desktop (1280px): navigates to dashboard via navbar button and highlights active route', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto('/tokki-admin/orders');
 
@@ -103,7 +103,7 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
       expect(headerMetrics.scrollWidth).toBeLessThanOrEqual(headerMetrics.clientWidth + 2);
     }
 
-    await header.screenshot({ path: 'test-results/admin-navbar-desktop.png' });
+    await header.screenshot({ path: testInfo.outputPath('admin-navbar-desktop.png') });
 
     // Clicking Productos highlights only Productos
     await productsBtn.click();
@@ -121,7 +121,7 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
     await expect(dashboardBtn).not.toHaveClass(/nav-icon-btn--active/);
   });
 
-  test('mobile (375px & 360px): all admin navbar buttons fit cleanly without clipping or overlap', async ({ page }) => {
+  test('mobile (375px & 360px): all admin navbar buttons fit cleanly without clipping or overlap', async ({ page }, testInfo) => {
     for (const viewport of [
       { width: 375, height: 812 },
       { width: 360, height: 640 },
@@ -194,10 +194,10 @@ test.describe('Admin Navbar — Dashboard Button & Active Highlight', () => {
       }
 
       if (viewport.width === 375) {
-        await header.screenshot({ path: 'test-results/admin-navbar-mobile.png' });
+        await header.screenshot({ path: testInfo.outputPath('admin-navbar-mobile.png') });
       }
       if (viewport.width === 360) {
-        await header.screenshot({ path: 'test-results/admin-navbar-mobile-360.png' });
+        await header.screenshot({ path: testInfo.outputPath('admin-navbar-mobile-360.png') });
       }
     }
   });

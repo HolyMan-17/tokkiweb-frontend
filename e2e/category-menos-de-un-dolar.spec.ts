@@ -54,7 +54,7 @@ function setupMocks(page: import('@playwright/test').Page) {
 }
 
 test.describe('Menos de un dolar Category & Icon Integration', () => {
-  test('El catálogo muestra el carrusel Menos de un dolar como primera categoría justo después de Todos', async ({ page }) => {
+  test('El catálogo muestra el carrusel Menos de un dolar como primera categoría justo después de Todos', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/');
 
@@ -62,10 +62,10 @@ test.describe('Menos de un dolar Category & Icon Integration', () => {
     await expect(sections.nth(0).locator('.category-title')).toContainText('Todos');
     await expect(sections.nth(1).locator('.category-title')).toContainText('Menos de un dolar');
 
-    await page.screenshot({ path: 'test-results/menos-de-un-dolar-carousel.png' });
+    await page.screenshot({ path: testInfo.outputPath('menos-de-un-dolar-carousel.png') });
   });
 
-  test('La página /categorias/menos-de-un-dolar muestra el título con icono cash y solo sus productos', async ({ page }) => {
+  test('La página /categorias/menos-de-un-dolar muestra el título con icono cash y solo sus productos', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/categorias/menos-de-un-dolar');
 
@@ -81,10 +81,10 @@ test.describe('Menos de un dolar Category & Icon Integration', () => {
     await expect(page.getByText('Paquete de Gomitas Dulces Kawaii')).toBeVisible();
     await expect(page.getByText('Bálsamo Labial Fresa')).not.toBeVisible();
 
-    await page.screenshot({ path: 'test-results/menos-de-un-dolar-category-page.png' });
+    await page.screenshot({ path: testInfo.outputPath('menos-de-un-dolar-category-page.png') });
   });
 
-  test('La página de admin de productos muestra el chip de filtro Menos de un dolar', async ({ page }) => {
+  test('La página de admin de productos muestra el chip de filtro Menos de un dolar', async ({ page }, testInfo) => {
     await setupMocks(page);
     await page.goto('/tokki-admin/products');
 
@@ -96,6 +96,6 @@ test.describe('Menos de un dolar Category & Icon Integration', () => {
     const src = await chipImg.getAttribute('src');
     expect(src).toContain('cash');
 
-    await page.screenshot({ path: 'test-results/menos-de-un-dolar-admin-chip.png' });
+    await page.screenshot({ path: testInfo.outputPath('menos-de-un-dolar-admin-chip.png') });
   });
 });

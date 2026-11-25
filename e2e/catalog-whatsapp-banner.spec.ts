@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { VIEWPORTS } from './viewports';
 
 const MOCK_PRODUCTS = [
   {
@@ -33,15 +34,13 @@ async function setup(page: Page) {
   });
 }
 
-const VIEWPORTS = [
-  { name: 'desktop', width: 1280, height: 900 },
-  { name: 'mobile', width: 375, height: 667 },
-  { name: 'mobile-360', width: 360, height: 740 },
-] as const;
+const BANNER_VIEWPORTS = VIEWPORTS.filter((v) =>
+  ['mobile-360', 'mobile-375', 'laptop-1280', 'desktop-1680'].includes(v.name),
+);
 
 test.describe('CatalogPage — postal de contacto WhatsApp', () => {
-  for (const viewport of VIEWPORTS) {
-    test(`reemplaza el círculo de WhatsApp por la postal clicable (${viewport.name})`, async ({ page }) => {
+  for (const viewport of BANNER_VIEWPORTS) {
+    test(`reemplaza el círculo de WhatsApp por la postal clicable (${viewport.name})`, async ({ page }, testInfo) => {
       await page.setViewportSize({ width: viewport.width, height: viewport.height });
       await setup(page);
       await page.goto('/');
@@ -85,9 +84,9 @@ test.describe('CatalogPage — postal de contacto WhatsApp', () => {
       }));
       expect(scrollWidth).toBeLessThanOrEqual(clientWidth + 1);
 
-      if (viewport.name === 'desktop' || viewport.name === 'mobile') {
+      if (viewport.name === 'laptop-1280' || viewport.name === 'mobile-375') {
         await page.screenshot({
-          path: `test-results/catalog-whatsapp-banner-${viewport.name}.png`,
+          path: testInfo.outputPath(`catalog-whatsapp-banner-${viewport.name}.png`),
           animations: 'disabled',
         });
       }

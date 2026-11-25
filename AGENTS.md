@@ -185,6 +185,8 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Product Image Gallery (storefront):** `<ProductGallery>` (`src/components/ui/ProductGallery.tsx`, helper `galleryUtils.ts`) renders a swipeable scroll-snap carousel from `product.product_image_urls` (max 5; index 0 = cover / Portada) on the product detail page, with a counter badge (`1 / 3`), controls that auto-hide after a few seconds and reappear on tap/scroll, desktop prev/next arrows, and a floating frosted thumbnails pill tracking the active slide (`aria-current`). Products without a gallery fall back to the single legacy `product_image_url` (or the initial-letter placeholder). On desktop the gallery is NEVER sticky/pinned — `.product-image-container` in `src/pages/product/ProductDetailPage.css` uses `max-height: calc(100dvh - var(--nav-height) - 150px)` (no `position: sticky`) so the gallery stays top-aligned with the info column and can never overflow the viewport bottom; a Playwright regression test (`e2e/product-gallery.spec.ts`) asserts ≤2px alignment and no viewport overflow. Unit tests in `ProductGallery.test.tsx`.
 - **Product Image Pipeline (admin, multi-image):** `ProductImagesUploader` (`src/pages/admin/products/ProductImagesUploader.tsx`) accepts up to `MAX_PRODUCT_IMAGES = 5` files per picker (JPG/PNG/WEBP pre-check, ≤5 MB each), then compresses each via `compressImage(file)` (`src/utils/compressImage.ts`): files ≤1 MB pass through untouched; larger files are canvas-downscaled to ≤1600 px and re-encoded as WebP q0.82 (JPEG fallback where WebP encoding is unsupported; one extra pass at q0.7 if still >1.5 MB; never throws — falls back to the original file). Previews use `URL.createObjectURL` (revoked on remove/discard and on modal unmount). The uploader is a carousel with a "Portada" cover badge, per-image Portada/Quitar actions, and a floating "+" button; upload orchestration lives in `useProductGallery.ts` — on save, a sequential queue uploads each file with one automatic retry after `RETRY_DELAY_MS` (1200 ms), then `reorderProductImages` syncs the final order. In `ProductFormModal`, an upload failure after the product row was committed keeps the modal open with a `role="alert"` recovery block ("Reintentar" / "Continuar sin ellas"); re-submitting Guardar in that state retries only the unfinished images (`savedProductIdRef` prevents duplicate product creation). The old single-image `ProductImageUploader` component was deleted. **Deploy note:** the SPA calls the API same-origin (`/api`), so the nginx server block serving the site must set `client_max_body_size 6M;` (nginx's 1 MB default 413s bigger uploads before Node sees them — Nov 2026 incident).
 - **Product Gallery API:** `src/api/products.ts` mirrors the backend contract v0.10.0 §1.6–1.9 — `addProductImage` (multipart `POST /products/:id/images`, field `image`; the backend 409s beyond 5 images), `removeProductImageByUrl` (`DELETE /products/:id/images?url=` — removing the cover promotes the next image), and `reorderProductImages` (`PUT /products/:id/images/order`, body `{ urls }` must match the current set exactly; first URL = cover). The legacy single-image endpoints remain as compat wrappers (`uploadProductImage` / `removeProductImage` on `.../image`).
+- **Category Quick-Jump Bar (`CategoryJumpBar`):** `src/pages/catalog/CategoryJumpBar.tsx` + `CategoryJumpBar.css` renders a full-bleed pill strip (`width: 100%`, matching `.carousel-track`) between `<ShippingNotice />` and the carousels whenever ≥2 categories are active. Centers pills when they fit; when overflowing, flanks the track with disabled-aware flex prev/next arrow buttons (`≥768px`, never overlapping pill text) and applies soft `mask-image` edge fades (`--fade-left`, `--fade-right`, `--fade-both`).
+- **Scroll Memory (`ScrollMemory`):** `src/components/ScrollMemory.tsx` + `src/store/scrollMemory.ts` keeps per-route vertical scroll offsets strictly **in memory** during the active SPA session so back navigations (`<Link>`, `navigate(-1)`, browser Back) return where the user left off (with async layout clamping/re-application). Full page refreshes/reloads unmount `<ScrollMemory />`, clear any legacy `tokki_scroll_positions_v1` `sessionStorage` entry via `clearPersistedScrollMap()`, and start cleanly at `y = 0`.
 
 ---
 
@@ -221,7 +223,7 @@ All development **must** follow Test-Driven Development (Red → Green → Refac
 Rules:
 
 - Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **48 Vitest test files / 464 tests green** + **75 Playwright E2E tests green**).
+- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **61 Vitest test files / 588 tests green** + **120 Playwright E2E tests green**).
 - Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
 - Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 - Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
@@ -266,7 +268,13 @@ Playwright is configured for browser rendering, layout spacing, accessibility, a
 - **Commands**:
   - Run all E2E tests: `pnpm test:e2e` (or `npx playwright test`)
   - Install browser binaries: `npx playwright install chromium`
-- **Output Artifacts**: Screenshots and traces go to `test-results/` and `playwright-report/` (both ignored in `.gitignore`).
+- **Output Artifacts & No Hardcoded Paths Rule**:
+  - **NEVER** hardcode OS-specific paths (`/home/...`, `C:\...`) or raw `'test-results/...'` strings in Playwright specs (`e2e/*.spec.ts`).
+  - Always use `testInfo.outputPath('<filename>.png')` so Playwright isolates screenshots and traces per test and per resolution project inside `test-results/` and `playwright-report/` (both ignored in `.gitignore`).
+- **Multi-Viewport & Modern Resolution Testing Rule (Mandatory)**:
+  - Canonical viewport presets live in `e2e/viewports.ts`: `mobile-360` (`360×740`), `mobile-375` (`375×812`), `tablet-768` (`768×1024`), `laptop-1280` (`1280×800`), `desktop-1440` (`1440×900`), `desktop-1680` (`1680×900`), and `desktop-1920` (`1920×1080`).
+  - `playwright.config.ts` registers per-resolution `audit-<viewport>` projects executing `e2e/responsive-layout-audit.spec.ts` across all 7 modern resolutions (`pnpm test:e2e` runs everything; `pnpm test:e2e --project=audit-desktop-1680` targets a single resolution).
+  - Any new or modified responsive UI/layout E2E spec **must** import viewport presets from `e2e/viewports.ts` and validate across mobile, tablet/laptop, and wide desktop resolutions (including `1680×900` and `1920×1080`) — never test only a single screen size.
 
 ---
 
@@ -319,6 +327,7 @@ To add a new category: add it to `CATEGORIES` in constants, add an entry + asset
 - Co-locate CSS with its component
 - Use `formatPrice()` and `formatDate()` from constants — never raw number formatting
 - Make layouts full-width and responsive; carousels edge-to-edge
+- Test responsive layouts across the multi-resolution matrix in `e2e/viewports.ts` (`360×740` through `1920×1080`, including `1680×900`) and write Playwright screenshots via `testInfo.outputPath(...)`
 - Run `pnpm doctor`, `pnpm lint`, and `pnpm test:run` on every feature/fix
 - Preserve existing comments and docstrings unless directly modifying that code
 
@@ -328,6 +337,8 @@ To add a new category: add it to `CATEGORIES` in constants, add an entry + asset
 - Don't add new font families — stick to DynaPuff / Sour Gummy (Baloo 2 / Quicksand / Fredoka are fallbacks only)
 - Don't use grey shadows — always tint with `rgba(230,139,190,...)`
 - Don't hardcode `max-width` on full-bleed pages (catalog, category) that clips carousel content
+- Don't cap full-bleed horizontal strips (carousels, `CategoryJumpBar`) with a narrow `max-width`
+- Don't hardcode screenshot or artifact output paths in Playwright specs
 - Don't use `overflow-x: clip` on containers that hold scrollable carousels
 - Don't bypass the `api()` wrapper for backend calls
 - Don't use English for UI copy (buttons, labels, empty states, etc.)

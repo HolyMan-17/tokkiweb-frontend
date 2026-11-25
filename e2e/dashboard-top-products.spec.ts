@@ -235,7 +235,7 @@ function setupMocks(page: import('@playwright/test').Page) {
 }
 
 test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => {
-  test('mobile (375px): top product items stack vertically without overlap', async ({ page }) => {
+  test('mobile (375px): top product items stack vertically without overlap', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await setupMocks(page);
     await page.goto('/tokki-admin');
@@ -284,10 +284,10 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
       expect(layout.rightTop).toBeGreaterThanOrEqual(layout.leftBottom - 1);
     }
 
-    await topProductsCard.screenshot({ path: 'test-results/dashboard-top-products-mobile.png' });
+    await topProductsCard.screenshot({ path: testInfo.outputPath('dashboard-top-products-mobile.png') });
   });
 
-  test('tablet (768px): top product items display horizontally', async ({ page }) => {
+  test('tablet (768px): top product items display horizontally', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 768, height: 1024 });
     await setupMocks(page);
     await page.goto('/tokki-admin');
@@ -322,10 +322,10 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
       expect(layout.rightTop).toBeLessThan(layout.leftBottom);
     }
 
-    await topProductsCard.screenshot({ path: 'test-results/dashboard-top-products-tablet.png' });
+    await topProductsCard.screenshot({ path: testInfo.outputPath('dashboard-top-products-tablet.png') });
   });
 
-  test('desktop (1280px): top products card renders cleanly', async ({ page }) => {
+  test('desktop (1280px): top products card renders cleanly', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await setupMocks(page);
     await page.goto('/tokki-admin');
@@ -354,7 +354,7 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
       expect(headerLayout.linkLeft).toBeGreaterThan(headerLayout.titleLeft);
     }
 
-    await topProductsCard.screenshot({ path: 'test-results/dashboard-top-products-desktop.png' });
+    await topProductsCard.screenshot({ path: testInfo.outputPath('dashboard-top-products-desktop.png') });
   });
 
   test('desktop (1280px): toggles ranking filters and links Editar, Pedidos Recientes, and Alertas Stock', async ({ page }) => {
@@ -404,7 +404,7 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
     await expect(page.getByText('Bálsamo Labial Bunny Kawaii Edición Limitada')).not.toBeVisible();
   });
 
-  test('quick actions, pending banner deep-link, and overview layout across desktop & mobile', async ({ page }) => {
+  test('quick actions, pending banner deep-link, and overview layout across desktop & mobile', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await setupMocks(page);
     await page.goto('/tokki-admin');
@@ -415,7 +415,7 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
     await expect(pendingBanner).toBeVisible();
     await expect(pendingBanner).toContainText('$15.00 por cobrar');
 
-    await page.screenshot({ path: 'test-results/admin-dashboard-overview-desktop.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-dashboard-overview-desktop.png') });
 
     // + Agregar Producto opens /tokki-admin/products?new=1 with Nuevo Producto modal
     await page.getByRole('link', { name: '+ Agregar Producto' }).click();
@@ -438,6 +438,6 @@ test.describe('Admin Dashboard — Top Products & Interactive Workflows', () => 
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );
     expect(overflow).toBeLessThanOrEqual(2);
-    await page.screenshot({ path: 'test-results/admin-dashboard-overview-mobile.png' });
+    await page.screenshot({ path: testInfo.outputPath('admin-dashboard-overview-mobile.png') });
   });
 });

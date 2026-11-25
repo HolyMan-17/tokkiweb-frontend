@@ -45,7 +45,7 @@ test.describe('Product Detail Share Feature', () => {
     await expect(shareBtn).toContainText('Compartir');
   });
 
-  test('copies product URL to clipboard and shows kawaii toast feedback on desktop', async ({ context, page }) => {
+  test('copies product URL to clipboard and shows kawaii toast feedback on desktop', async ({ context, page }, testInfo) => {
     await context.grantPermissions(['clipboard-read', 'clipboard-write']);
     await setupMocks(page);
     await page.goto('/products/1');
@@ -58,14 +58,14 @@ test.describe('Product Detail Share Feature', () => {
     await expect(toast).toBeVisible();
     await expect(toast).toContainText('¡Enlace copiado al portapapeles!');
 
-    await page.screenshot({ path: 'test-results/product-share-toast.png' });
+    await page.screenshot({ path: testInfo.outputPath('product-share-toast.png') });
 
     // Verify clipboard content
     const clipboardText = await page.evaluate(() => navigator.clipboard.readText());
     expect(clipboardText).toContain('/products/1');
   });
 
-  test('navigates cleanly on mobile viewport without layout breaks', async ({ page }) => {
+  test('navigates cleanly on mobile viewport without layout breaks', async ({ page }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 667 });
     await setupMocks(page);
     await page.goto('/products/1');
@@ -93,6 +93,6 @@ test.describe('Product Detail Share Feature', () => {
       expect(shareBox.x + shareBox.width).toBeLessThanOrEqual(375);
     }
 
-    await page.screenshot({ path: 'test-results/product-share-mobile.png' });
+    await page.screenshot({ path: testInfo.outputPath('product-share-mobile.png') });
   });
 });

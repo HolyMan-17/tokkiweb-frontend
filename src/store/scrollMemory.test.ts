@@ -1,5 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { scrollKey, readOffset, saveOffset, clearOffset, clampOffset, parseScrollMap, serializeScrollMap, loadScrollMap, persistScrollMap, SCROLL_STORAGE_KEY, type ScrollMap } from './scrollMemory';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import {
+  scrollKey,
+  readOffset,
+  saveOffset,
+  clearOffset,
+  clampOffset,
+  clearPersistedScrollMap,
+  SCROLL_STORAGE_KEY,
+  type ScrollMap,
+} from './scrollMemory';
 
 /**
  * Canonical key form (documented contract):
@@ -129,86 +138,35 @@ describe('scrollMemory — clampOffset', () => {
   });
 });
 
-describe('scrollMemory — parseScrollMap', () => {
-  it('returns an empty map for null, empty or invalid payloads', () => {
-    expect(parseScrollMap(null)).toEqual({});
-    expect(parseScrollMap('')).toEqual({});
-    expect(parseScrollMap('{not json')).toEqual({});
-  });
-
-  it('does not throw on malformed JSON', () => {
-    expect(() => parseScrollMap('=')).not.toThrow();
-  });
-
-  it('drops only the invalid entries of a partially valid payload', () => {
-    const raw = JSON.stringify({
-      '/productos': 120,
-      '/roto': 'abc',
-      '/categorias/ropa': 340,
-    });
-    expect(parseScrollMap(raw)).toEqual({ '/productos': 120, '/categorias/ropa': 340 });
-  });
-
-  it('drops entries whose value is null', () => {
-    expect(parseScrollMap(JSON.stringify({ '/nulo': null, '/ok': 5 }))).toEqual({ '/ok': 5 });
-  });
-
-  it('keeps every valid numeric entry', () => {
-    const raw = JSON.stringify({ '/a': 0, '/b': 12.5, '/c': 900 });
-    expect(parseScrollMap(raw)).toEqual({ '/a': 0, '/b': 12.5, '/c': 900 });
-  });
-});
-
-describe('scrollMemory — serializeScrollMap', () => {
-  it('serialises a map to JSON that parses back to the same entries', () => {
-    const map: ScrollMap = { '/productos': 120, '/categorias/ropa': 340 };
-    expect(JSON.parse(serializeScrollMap(map))).toEqual(map);
-  });
-
-  it('round-trips through parseScrollMap', () => {
-    const map: ScrollMap = { '/productos': 120, '/categorias/ropa': 340 };
-    expect(parseScrollMap(serializeScrollMap(map))).toEqual(map);
-  });
-
-  it('round-trips an empty map', () => {
-    expect(parseScrollMap(serializeScrollMap({}))).toEqual({});
-  });
-});
-
-describe('scrollMemory — sessionStorage persistence', () => {
+describe('scrollMemory — clearPersistedScrollMap', () => {
   beforeEach(() => {
     window.sessionStorage.clear();
   });
 
   afterEach(() => {
     window.sessionStorage.clear();
+    vi.restoreAllMocks();
   });
 
   it('exposes the expected sessionStorage key', () => {
     expect(SCROLL_STORAGE_KEY).toBe('tokki_scroll_positions_v1');
   });
 
-  it('returns an empty map when sessionStorage holds no scroll positions', () => {
-    expect(loadScrollMap()).toEqual({});
+  it('removes any previously persisted scroll map from sessionStorage', () => {
+    window.sessionStorage.setItem(SCROLL_STORAGE_KEY, JSON.stringify({ '/productos': 120 }));
+    clearPersistedScrollMap();
+    expect(window.sessionStorage.getItem(SCROLL_STORAGE_KEY)).toBeNull();
   });
 
-  it('persists a map and loads it back unchanged', () => {
-    const map: ScrollMap = { '/productos': 120, '/categorias/ropa': 340 };
-    persistScrollMap(map);
-    expect(loadScrollMap()).toEqual(map);
+  it('is a safe no-op when sessionStorage has no scroll entry', () => {
+    expect(() => clearPersistedScrollMap()).not.toThrow();
+    expect(window.sessionStorage.getItem(SCROLL_STORAGE_KEY)).toBeNull();
   });
 
-  it('writes the serialised map under the scroll storage key', () => {
-    const map: ScrollMap = { '/productos': 120 };
-    persistScrollMap(map);
-    const raw = window.sessionStorage.getItem(SCROLL_STORAGE_KEY);
-    expect(raw).not.toBeNull();
-    expect(parseScrollMap(raw)).toEqual(map);
-  });
-
-  it('ignores a corrupt sessionStorage payload instead of throwing', () => {
-    window.sessionStorage.setItem(SCROLL_STORAGE_KEY, '{not json');
-    expect(() => loadScrollMap()).not.toThrow();
-    expect(loadScrollMap()).toEqual({});
+  it('ignores sessionStorage errors instead of throwing', () => {
+    vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
+      throw new Error('SecurityError');
+    });
+    expect(() => clearPersistedScrollMap()).not.toThrow();
   });
 });

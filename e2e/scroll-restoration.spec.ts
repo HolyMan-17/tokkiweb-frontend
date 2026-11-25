@@ -323,4 +323,61 @@ test.describe('Scroll restoration', () => {
     expect(y).toBeGreaterThanOrEqual(0);
     expect(y).toBeLessThanOrEqual(maxScroll + 2);
   });
+
+  test('flushes scroll memory and returns to the top on page reload', async ({ page }) => {
+    await mockProducts(page, { count: 60 });
+
+    await page.goto('/');
+    await expect(page.locator('.category-section').first()).toBeVisible();
+    await expect(page.locator('.product-card').first()).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeGreaterThan(1200);
+
+    await scrollTo(page, 900);
+    await expectScrollNear(page, 900);
+
+    await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
+    await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.product-card').first()).toBeVisible();
+
+    await scrollTo(page, 1000);
+    await expectScrollNear(page, 1000);
+
+    // In-app back navigation still restores the home scroll offset
+    await clickWithoutScrolling(page.getByRole('link', { name: /volver/i }).first());
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('.category-section').first()).toBeVisible();
+    await expectScrollNear(page, 900);
+
+    // Full page reload must flush all scroll memory and open at the top
+    await page.reload();
+    await expect(page.locator('.category-section').first()).toBeVisible();
+    await expect(page.locator('.product-card').first()).toBeVisible();
+
+    await expect
+      .poll(() => scrollY(page), {
+        timeout: 5000,
+        message: 'page reload must clear scroll memory and land at top (y=0)',
+      })
+      .toBe(0);
+    // Let the restore window pass and confirm it stays at 0
+    await page.waitForTimeout(300);
+    expect(await scrollY(page)).toBe(0);
+
+    // Previously visited category route also had its remembered offset flushed
+    await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
+    await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.product-card').first()).toBeVisible();
+    expect(await scrollY(page)).toBe(0);
+
+    // Scroll memory works normally again after the refresh
+    await scrollTo(page, 700);
+    await expectScrollNear(page, 700);
+    await clickWithoutScrolling(page.getByRole('link', { name: /volver/i }).first());
+    await expect(page).toHaveURL('/');
+    await expect(page.locator('.category-section').first()).toBeVisible();
+    await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
+    await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.product-card').first()).toBeVisible();
+    await expectScrollNear(page, 700);
+  });
 });
