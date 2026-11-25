@@ -18,21 +18,57 @@
   padding: var(--space-sm) 0 var(--space-xl);
 }
 
-.back-link {
+.category-page .back-link {
   display: inline-flex;
   align-items: center;
-  min-height: 44px;              /* Apple HIG touch target */
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 18px;
+  margin-bottom: var(--space-md);
+  border-radius: var(--radius-full);
+  border: 2px solid var(--p3);
+  background: var(--color-surface);
+  box-shadow: 0 2px 0 var(--p2), var(--shadow-sm);
   font-family: var(--font-display);
   font-size: var(--text-sm);
   font-weight: 700;
-  color: var(--color-primary);
+  line-height: 1.1;
+  color: var(--pink-800);
   text-decoration: none;
-  margin-bottom: var(--space-md);
-  transition: transform var(--duration-fast) var(--ease-out);
+  cursor: pointer;
+  transition:
+    transform 0.2s var(--ease-spring),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.2s ease;
 }
 
-.back-link:active {
-  transform: translateX(-3px);
+@media (hover: hover) and (pointer: fine) {
+  .category-page .back-link:hover {
+    background: var(--p1);
+    border-color: var(--p4);
+    color: var(--color-text);
+    transform: translateX(-3px);
+    box-shadow: 0 3px 0 var(--p3), var(--shadow-md);
+  }
+}
+
+.category-page .back-link:active {
+  background: var(--p1);
+  border-color: var(--p4);
+  color: var(--color-text);
+  transform: translateX(-2px) scale(0.97);
+  box-shadow: 0 1px 0 var(--p3), var(--shadow-sm);
+}
+
+.category-page .back-link:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.category-page .back-link:focus-visible {
+  outline: 2.5px solid var(--p5);
+  outline-offset: 2px;
 }
 
 .category-page-title {
@@ -385,10 +421,6 @@
   }
 
   /* On desktop, hover states replace :active */
-  .back-link:hover {
-    transform: translateX(-3px);
-  }
-
   .category-search-clear:hover {
     background: var(--p3);
     color: var(--color-text);
@@ -408,5 +440,11 @@
 @media (min-width: 1024px) {
   .category-grid {
     grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-page .back-link {
+    transition: none;
   }
 }

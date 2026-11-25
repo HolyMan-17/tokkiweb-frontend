@@ -881,25 +881,56 @@
   gap: 10px;
 }
 
-/* "Ver más" — pill link to the category page */
+/* "Ver más" — crisp white Tokki sticker pill link to the category page */
 .see-more-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   font-family: var(--font-display);
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-primary);
+  line-height: 1.1;
+  color: var(--pink-800);
   text-decoration: none;
-  padding: 5px 14px;
-  border-radius: var(--radius-pill);
-  border: 2px solid var(--color-primary);
-  background: transparent;
-  transition: all 0.18s ease;
+  padding: 6px 15px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--p3);
+  background: var(--color-surface);
+  box-shadow: 0 2px 0 var(--p2), var(--shadow-sm);
+  transition:
+    transform 0.2s var(--ease-spring),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.2s ease;
   white-space: nowrap;
 }
 
-.see-more-btn:hover {
-  background: var(--color-primary);
-  color: #fff;
-  box-shadow: 0 4px 12px rgba(230,139,190,0.35);
+@media (hover: hover) and (pointer: fine) {
+  .see-more-btn:hover {
+    background: var(--p1);
+    border-color: var(--p4);
+    color: var(--color-text);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--p3), var(--shadow-md);
+  }
+}
+
+.see-more-btn:active {
+  background: var(--p1);
+  border-color: var(--p4);
+  color: var(--color-text);
+  transform: translateY(0) scale(0.97);
+  box-shadow: 0 1px 0 var(--p3), var(--shadow-sm);
+}
+
+.see-more-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.see-more-btn:focus-visible {
+  outline: 2.5px solid var(--p5);
+  outline-offset: 2px;
 }
 
 .carousel-controls { display: flex; gap: 4px; }
@@ -1308,7 +1339,10 @@
     scroll-padding-inline: 32px;
   }
 
-  .see-more-btn { font-size: 0.85rem; }
+  .see-more-btn {
+    font-size: 0.85rem;
+    padding: 7px 17px;
+  }
 
   .social-circles { padding: 28px 16px 16px; }
 }
@@ -1320,7 +1354,7 @@
   .hero-aurora, .hero-blob, .hero-bubble,
   .catalog-shipping,
   .catalog-whatsapp, .catalog-whatsapp-stamp, .catalog-whatsapp-cta, .catalog-whatsapp-cta svg,
-  .carousel-btn, .social-circle { animation: none !important; transition: none !important; }
+  .see-more-btn, .carousel-btn, .social-circle { animation: none !important; transition: none !important; }
 
   .hero-bubble { opacity: 0.5; }
 }
