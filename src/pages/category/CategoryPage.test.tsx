@@ -304,7 +304,7 @@ describe('CategoryPage — Papeleria', () => {
     mockFetchAllProducts.mockResolvedValue([glossMariposa]);
   });
 
-  it('renderiza la página de categoría Papeleria con su icono paper_crane.png y solo sus productos', async () => {
+  it('renderiza la página de categoría Papeleria con su icono paper_crane.avif y solo sus productos', async () => {
     const papeleriaProduct: Product = {
       product_id: 801,
       product_name: 'Libreta Origami Tokki',

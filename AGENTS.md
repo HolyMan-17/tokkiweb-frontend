@@ -66,8 +66,13 @@ Fonts load locally via `@fontsource/*` packages (imported in `src/main.tsx`), NO
 
 ```
 src/
-├── api/client.ts          # Shared fetch wrapper (envelope normalization)
-├── assets/                # Brand gifs/images (hopping_bunny, cherry_blossom,
+├── api/
+│   ├── client.ts          # Shared fetch wrapper (envelope normalization)
+│   ├── catalogCache.ts    # 60s TTL + in-flight request deduplication for catalog
+│   ├── productDetail.ts   # Single-product lookup (GET /products/:id) + cache fallback
+│   ├── products.ts        # Product catalog & gallery API
+│   └── orders.ts          # Orders & checkout API
+├── assets/                # Brand avif/webp/gif icons (hopping_bunny, cherry_blossom,
 │                          #   category icons, logos, etc.)
 ├── components/
 │   ├── auth/              # AdminAuth (AuthProvider), useAdminAuth,
@@ -101,6 +106,7 @@ src/
 │   ├── cart/              # CartPage
 │   ├── checkout/          # CheckoutPage (country-aware phone validation)
 │   ├── confirmation/      # OrderConfirmationPage (reads order via state)
+│   ├── not-found/         # NotFoundPage (branded 404 fallback)
 │   └── admin/
 │       ├── dashboard/     # AdminDashboardPage (recharts: bar + pie, top products)
 │       ├── orders/        # OrdersDashboardPage, OrderDetailPage
@@ -146,7 +152,7 @@ src/
 - Links use react-router `<Link>` / `<NavLink>`, never `<a>` for internal nav.
 - Icons are inline SVGs (no icon library). Keep stroke-based, `currentColor`, consistent `strokeWidth`.
 - Prices arrive as **strings** from the backend (`"49.99"`). Use `formatPrice()` from constants for display. Use `Number(x)` for arithmetic.
-- Category emojis on the storefront are replaced by brand gifs/pngs — use the shared `CATEGORY_ICONS` map (`src/components/ui/CategoryIcons.tsx`), never hand-roll per page.
+- Category emojis on the storefront are replaced by brand avif/webp/gif icons — use the shared `CATEGORY_ICONS` map (`src/components/ui/CategoryIcons.tsx`), never hand-roll per page.
 - Every confirmation pop-up uses the shared `<ConfirmDialog>` (`src/components/ui/ConfirmDialog.tsx`). Never use native `window.confirm()` / `window.alert()`.
 
 ### Product Gallery
@@ -173,8 +179,9 @@ Products AND orders are live from the backend API. Each domain has a thin client
 - **Admin Dashboard Analytics:** Interactive timeframe filters (`Días`, `Semanas`, `Meses`), metric toggle (`Ingresos ($)` vs `Pedidos (#)`), and distribution breakdown (`Por Estado`, `Por Pago`, `Por Entrega`). Highlights top best-selling products (`topProducts.ts`) and direct link to low stock items (`/tokki-admin/products?stock=low`).
 - **Delivery & Payment Labels:** `getDeliveryLabel(slug)` and `getPaymentLabel(slug)` in `src/constants/index.ts` handle case/separator variations, alias fallbacks (`delivery_method`, `payment_type`), and default to `"No especificado"`.
 - **Status Badge:** `<StatusBadge status={...} />` safely defaults undefined/unknown status to `'pending'`.
-- **Cart Persistence:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists the cart client-side in `localStorage` (`tokki_cart_v1`). Products and orders are not cached client-side — they talk directly to the backend API (`src/api/products.ts` / `src/api/orders.ts`). All mock seed data has been removed from git and `.gitignore`d.
-- **Product Share & Open Graph Embed Previews:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`). Dynamic `document.title` lifecycle syncs on mount and cleans up on unmount. For social crawlers that don't execute JS (WhatsApp, Telegram, Discord, Facebook/Instagram, Twitter/X, Slack, LinkedIn), `server/og-server.mjs` intercepts user-agent crawler patterns for `/products/:id`, fetches live product data (`GET /api/products/:id` via `BACKEND_URL`) and serves Open Graph & Twitter Card HTML with cache headers and automatic client redirect fallback for humans.
+- **Cart & Catalog Caching:** (`src/context/CartContext.tsx` & `src/store/localStore.ts`) persists the cart client-side in `localStorage` (`tokki_cart_v1`). Catalog reads (`fetchAllProducts` via `src/api/catalogCache.ts`) use in-flight request deduplication and a 60s TTL cache (invalidated on admin product mutations), while `fetchProductDetail` (`src/api/productDetail.ts`) fetches `GET /api/products/:id` individually. Orders talk directly to the backend API (`src/api/orders.ts`). All mock seed data has been removed from git and `.gitignore`d.
+- **SEO, Open Graph & Indexing:** `usePageMeta` (`src/hooks/usePageMeta.ts`) sets per-route `document.title`, `<meta name="description">`, `<link rel="canonical">`, `og:url`, and `robots` (`noindex, nofollow` on cart, checkout, confirmation, admin, and 404). In production, `server/og-server.mjs` serves dynamic `/sitemap.xml`, normalizes trailing slashes with `301`, injects per-route `<title>`/`<meta>`/`canonical`/`og:url` into `dist/index.html`, serves Open Graph & Twitter Card HTML for social crawlers on `/products/:id`, and returns real HTTP `404` + `X-Robots-Tag: noindex, nofollow` for unknown or utility/admin routes.
+- **Product Share:** Accessible `.share-btn` in `ProductDetailPage.tsx` triggers native `navigator.share` on mobile devices with product title, price, and canonical link; falls back on desktop to `navigator.clipboard.writeText` with toast feedback (`¡Enlace copiado al portapapeles! 🐰`).
 - **Product Image Gallery (storefront):** `<ProductGallery>` (`src/components/ui/ProductGallery.tsx`, helper `galleryUtils.ts`) renders a swipeable scroll-snap carousel from `product.product_image_urls` (max 5; index 0 = cover / Portada) on the product detail page, with a counter badge (`1 / 3`), controls that auto-hide after a few seconds and reappear on tap/scroll, desktop prev/next arrows, and a floating frosted thumbnails pill tracking the active slide (`aria-current`). Products without a gallery fall back to the single legacy `product_image_url` (or the initial-letter placeholder). On desktop the gallery is NEVER sticky/pinned — `.product-image-container` in `src/pages/product/ProductDetailPage.css` uses `max-height: calc(100dvh - var(--nav-height) - 150px)` (no `position: sticky`) so the gallery stays top-aligned with the info column and can never overflow the viewport bottom; a Playwright regression test (`e2e/product-gallery.spec.ts`) asserts ≤2px alignment and no viewport overflow. Unit tests in `ProductGallery.test.tsx`.
 - **Product Image Pipeline (admin, multi-image):** `ProductImagesUploader` (`src/pages/admin/products/ProductImagesUploader.tsx`) accepts up to `MAX_PRODUCT_IMAGES = 5` files per picker (JPG/PNG/WEBP pre-check, ≤5 MB each), then compresses each via `compressImage(file)` (`src/utils/compressImage.ts`): files ≤1 MB pass through untouched; larger files are canvas-downscaled to ≤1600 px and re-encoded as WebP q0.82 (JPEG fallback where WebP encoding is unsupported; one extra pass at q0.7 if still >1.5 MB; never throws — falls back to the original file). Previews use `URL.createObjectURL` (revoked on remove/discard and on modal unmount). The uploader is a carousel with a "Portada" cover badge, per-image Portada/Quitar actions, and a floating "+" button; upload orchestration lives in `useProductGallery.ts` — on save, a sequential queue uploads each file with one automatic retry after `RETRY_DELAY_MS` (1200 ms), then `reorderProductImages` syncs the final order. In `ProductFormModal`, an upload failure after the product row was committed keeps the modal open with a `role="alert"` recovery block ("Reintentar" / "Continuar sin ellas"); re-submitting Guardar in that state retries only the unfinished images (`savedProductIdRef` prevents duplicate product creation). The old single-image `ProductImageUploader` component was deleted. **Deploy note:** the SPA calls the API same-origin (`/api`), so the nginx server block serving the site must set `client_max_body_size 6M;` (nginx's 1 MB default 413s bigger uploads before Node sees them — Nov 2026 incident).
 - **Product Gallery API:** `src/api/products.ts` mirrors the backend contract v0.10.0 §1.6–1.9 — `addProductImage` (multipart `POST /products/:id/images`, field `image`; the backend 409s beyond 5 images), `removeProductImageByUrl` (`DELETE /products/:id/images?url=` — removing the cover promotes the next image), and `reorderProductImages` (`PUT /products/:id/images/order`, body `{ urls }` must match the current set exactly; first URL = cover). The legacy single-image endpoints remain as compat wrappers (`uploadProductImage` / `removeProductImage` on `.../image`).
@@ -265,7 +272,7 @@ Playwright is configured for browser rendering, layout spacing, accessibility, a
 
 ## Categories
 
-Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel per category. Each category has a brand asset (gif/png) in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`) shown instead of the emoji on the catalog, category page, and admin product filter chips.
+Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel per category. Each category has a brand asset (`avif`/`webp`/`gif`) in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`) shown instead of the emoji on the catalog, category page, and admin product filter chips.
 
 | Category            | Emoji | Product Examples                          |
 |---------------------|-------|-------------------------------------------|

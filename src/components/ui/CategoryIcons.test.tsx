@@ -608,7 +608,7 @@ describe('Papeleria support', () => {
     expect(slugify('Papeleria')).toBe('papeleria');
   });
 
-  it('CATEGORY_ICONS contains an entry for Papeleria with paper_crane.png and category-papeleria class', () => {
+  it('CATEGORY_ICONS contains an entry for Papeleria with paper_crane.avif and category-papeleria class', () => {
     const icon = CATEGORY_ICONS['Papeleria'];
     expect(icon).toBeDefined();
 

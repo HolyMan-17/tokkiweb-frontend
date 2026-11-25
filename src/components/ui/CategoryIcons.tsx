@@ -22,7 +22,7 @@ import luffyImg from '../../assets/luffy.avif';
 import albumIcon from '../../assets/album_icon.avif';
 import keychainArt from '../../assets/keychain_art.avif';
 import cashGif from '../../assets/cash.webp';
-import paperCraneImg from '../../assets/paper_crane.png';
+import paperCraneImg from '../../assets/paper_crane.avif';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Menos de un dolar': <img src={cashGif} alt="" className="category-emoji-img category-cash" width={217} height={119} loading="lazy" />,

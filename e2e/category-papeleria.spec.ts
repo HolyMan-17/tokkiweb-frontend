@@ -44,7 +44,7 @@ function setupMocks(page: import('@playwright/test').Page) {
 }
 
 test.describe('Papeleria Category & Icon Integration', () => {
-  test('Catalog page renders Papeleria carousel right before Bolsas o cajas de regalo with paper_crane.png icon', async ({ page }) => {
+  test('Catalog page renders Papeleria carousel right before Bolsas o cajas de regalo with paper_crane.avif icon', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/');
 
@@ -68,7 +68,7 @@ test.describe('Papeleria Category & Icon Integration', () => {
     await expect(productCard).toBeVisible();
   });
 
-  test('Category page /categorias/papeleria displays paper_crane.png header icon and products', async ({ page }) => {
+  test('Category page /categorias/papeleria displays paper_crane.avif header icon and products', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/categorias/papeleria');
 
@@ -84,7 +84,7 @@ test.describe('Papeleria Category & Icon Integration', () => {
     await expect(page.getByText('Figura Tanjiro Kamado')).not.toBeVisible();
   });
 
-  test('Admin Products page displays Papeleria filter chip with paper_crane.png', async ({ page }) => {
+  test('Admin Products page displays Papeleria filter chip with paper_crane.avif', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/tokki-admin/products');
 
@@ -96,7 +96,7 @@ test.describe('Papeleria Category & Icon Integration', () => {
     expect(await chipImg.getAttribute('src')).toContain('paper_crane');
   });
 
-  test('Admin POS Order Creator displays Papeleria chip with paper_crane.png', async ({ page }) => {
+  test('Admin POS Order Creator displays Papeleria chip with paper_crane.avif', async ({ page }) => {
     await setupMocks(page);
     await page.goto('/tokki-admin/orders/new');
 

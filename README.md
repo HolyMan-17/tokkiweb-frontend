@@ -25,7 +25,8 @@ Scripts: `pnpm dev`, `pnpm build`, `pnpm lint`, `pnpm test:run` (Vitest), `pnpm 
 ## Current state (live API backend wired)
 
 The shop is fully wired to the live PostgreSQL backend API (`/api/products`, `/api/orders`, `/api/orders/receipt/:token`):
-- **Storefront & Catalog:** autorouted category carousels and whole-inventory browser loading live products; product detail shows a swipeable multi-image gallery (≤5 images, cover/Portada + thumbnails, legacy single-image fallback).
+- **Storefront & Catalog:** autorouted category carousels (with progressive image loading) and whole-inventory browser loading live products with 60s catalog caching & in-flight request deduplication (`src/api/catalogCache.ts`); product detail fetches single-product metadata (`src/api/productDetail.ts`) and renders a swipeable multi-image gallery (≤5 images, cover/Portada + thumbnails, legacy single-image fallback).
+- **SEO & 404 Handling:** per-route canonical/OG/meta tags (`usePageMeta`), dynamic `/sitemap.xml`, `robots.txt` disallows, trailing-slash `301` normalization, and real HTTP `404` + `noindex` responses via `server/og-server.mjs` alongside a branded Spanish 404 page (`NotFoundPage`).
 - **Cart & Checkout:** persistent cart with live pre-submit stock reconciliation, country-aware phone validation, mandatory Cédula (`V` / `E` / `J` / `G` + 6-9 digits), and unguessable `order_token` UUID confirmation redirection.
 - **Admin Panel:** Clerk Bearer authenticated product CRUD with a multi-image gallery editor (≤5 images, cover/reorder/remove, upload queue with automatic retry, WebP compression pipeline); order management with accessible full-card touch navigation, live Cédula/Phone display, one-click WhatsApp chat links, instant approval/cancellation, and UTF-8 BOM CSV export (`tokki_pedidos_YYYY-MM-DD.csv`).
 - **POS / Manual Order Creation:** `/tokki-admin/orders/new` allows store owners to record in-person physical store sales, WhatsApp orders, or direct deliveries with a live POS catalog picker, quick-fill walk-in customer preset (`⚡ Cliente en Mostrador`), and auto-approval workflow.
@@ -33,7 +34,7 @@ The shop is fully wired to the live PostgreSQL backend API (`/api/products`, `/a
 
 ## Layout & routing
 
-- Customer storefront: `/` (catalog), `/categorias/:slug`, `/productos` (all products), `/products/:id`, `/cart`, `/checkout`, `/confirmation/:orderToken`
+- Customer storefront: `/` (catalog), `/categorias/:slug`, `/productos` (all products), `/products/:id`, `/cart`, `/checkout`, `/confirmation/:orderToken`, `*` (404 `NotFoundPage`)
 - Admin panel (hidden path): `/tokki-admin` — dashboard, orders (`/tokki-admin/orders`), create order (`/tokki-admin/orders/new`), order detail (`/tokki-admin/orders/:id`), products (`/tokki-admin/products`), dev tools; guarded by Clerk roles
 - All paths live in `src/lib/routes.ts` — never hardcode route strings
 - Admin pages are lazy-loaded; deployed as a Docker container on Coolify, built from `Dockerfile` and served by `server/og-server.mjs` (SPA fallback + reverse-proxy `/api/*` and `/images/*` to the backend)
