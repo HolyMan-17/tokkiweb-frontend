@@ -296,3 +296,44 @@ describe('CategoryPage — Menos de un dolar', () => {
     expect(titleImg?.getAttribute('src')).toContain('cash');
   });
 });
+
+describe('CategoryPage — Papeleria', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+    vi.clearAllMocks();
+    mockFetchAllProducts.mockResolvedValue([glossMariposa]);
+  });
+
+  it('renderiza la página de categoría Papeleria con su icono paper_crane.png y solo sus productos', async () => {
+    const papeleriaProduct: Product = {
+      product_id: 801,
+      product_name: 'Libreta Origami Tokki',
+      product_price: '3.50',
+      product_description: 'Libreta kawaii de 80 hojas.',
+      qty_available: 18,
+      in_stock: true,
+      category: 'Papeleria',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, papeleriaProduct]);
+
+    render(
+      <MemoryRouter initialEntries={['/categorias/papeleria']}>
+        <CartProvider>
+          <Routes>
+            <Route path="/categorias/:slug" element={<CategoryPage />} />
+          </Routes>
+        </CartProvider>
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByText('Papeleria')).toBeInTheDocument();
+    expect(screen.getByText('Libreta Origami Tokki')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Buscar en Papeleria...')).toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('paper_crane');
+  });
+});

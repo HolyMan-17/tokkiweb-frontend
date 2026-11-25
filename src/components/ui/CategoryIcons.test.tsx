@@ -595,3 +595,44 @@ describe('Menos de un dolar support', () => {
     expect(c3.querySelector('img')?.getAttribute('src')).toContain('cash');
   });
 });
+
+describe('Papeleria support', () => {
+  it('CATEGORIES contains Papeleria immediately before Bolsas o cajas de regalo', () => {
+    const names = CATEGORIES.map((c) => c.name);
+    const papeleriaIdx = names.indexOf('Papeleria');
+    const giftIdx = names.indexOf('Bolsas o cajas de regalo');
+
+    expect(papeleriaIdx).toBeGreaterThan(-1);
+    expect(giftIdx).toBeGreaterThan(-1);
+    expect(papeleriaIdx).toBe(giftIdx - 1);
+    expect(slugify('Papeleria')).toBe('papeleria');
+  });
+
+  it('CATEGORY_ICONS contains an entry for Papeleria with paper_crane.png and category-papeleria class', () => {
+    const icon = CATEGORY_ICONS['Papeleria'];
+    expect(icon).toBeDefined();
+
+    const { container } = render(<>{icon}</>);
+    const img = container.querySelector('img');
+    expect(img).not.toBeNull();
+    expect(img?.getAttribute('src')).toContain('paper_crane');
+    expect(img?.className).toContain('category-emoji-img');
+    expect(img?.className).toContain('category-papeleria');
+  });
+
+  it('getCategoryIcon resolves Papeleria, accented variants, and stationery aliases to paper_crane', () => {
+    for (const candidate of [
+      'Papeleria',
+      'Papelería',
+      'papeleria',
+      'papelería',
+      'stationery',
+      'cuadernos',
+    ]) {
+      const icon = getCategoryIcon(candidate);
+      expect(icon, `getCategoryIcon("${candidate}") should resolve`).not.toBeNull();
+      const { container } = render(<>{icon}</>);
+      expect(container.querySelector('img')?.getAttribute('src')).toContain('paper_crane');
+    }
+  });
+});

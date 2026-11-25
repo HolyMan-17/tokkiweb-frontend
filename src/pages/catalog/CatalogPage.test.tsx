@@ -345,3 +345,65 @@ describe('CatalogPage — progressive carousel image loading', () => {
     expect(todosSection.querySelectorAll('.card-img-deferred')).toHaveLength(0);
   });
 });
+
+describe('CatalogPage — Papeleria carousel', () => {
+  it('renderiza la sección Papeleria justo antes de Bolsas o cajas de regalo con su icono paper_crane y enlace Ver más', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 10,
+        product_name: 'Figura Luffy Gear 5',
+        category: 'Figuras',
+        product_price: '18.00',
+        product_description: 'Figura coleccionable.',
+        qty_available: 4,
+        in_stock: true,
+      },
+      {
+        product_id: 20,
+        product_name: 'Cuaderno Kawaii Conejito',
+        category: 'Papeleria',
+        product_price: '4.50',
+        product_description: 'Libreta rayada con stickers.',
+        qty_available: 12,
+        in_stock: true,
+      },
+      {
+        product_id: 30,
+        product_name: 'Caja Regalo Pastel',
+        category: 'Bolsas o cajas de regalo',
+        product_price: '3.00',
+        product_description: 'Caja decorada con lazo.',
+        qty_available: 15,
+        in_stock: true,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    const cards = await screen.findAllByText('Cuaderno Kawaii Conejito');
+    expect(cards.length).toBeGreaterThanOrEqual(1);
+
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const headings = sections.map(
+      (s) => s.querySelector('.category-title')?.textContent?.trim(),
+    );
+
+    const papeleriaIdx = headings.indexOf('Papeleria');
+    const giftIdx = headings.indexOf('Bolsas o cajas de regalo');
+    expect(papeleriaIdx).toBeGreaterThan(0);
+    expect(papeleriaIdx).toBe(giftIdx - 1);
+
+    const papeleriaSection = sections[papeleriaIdx] as HTMLElement;
+    const iconImg = papeleriaSection.querySelector('img.category-papeleria');
+    expect(iconImg).not.toBeNull();
+    expect(iconImg?.getAttribute('src')).toContain('paper_crane');
+
+    const verMas = within(papeleriaSection).getByRole('link', { name: 'Ver más' });
+    expect(verMas).toHaveAttribute('href', '/categorias/papeleria');
+  });
+});

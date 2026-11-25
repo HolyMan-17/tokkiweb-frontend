@@ -73,6 +73,7 @@ export const KNOWN_CATEGORY_SLUGS = new Set([
   'dulces-&-comida-asiatica',
   'peluches',
   'figuras',
+  'papeleria',
   'bolsas-o-cajas-de-regalo',
   'cosplays',
   'para-ellos',

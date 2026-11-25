@@ -22,6 +22,7 @@ import luffyImg from '../../assets/luffy.avif';
 import albumIcon from '../../assets/album_icon.avif';
 import keychainArt from '../../assets/keychain_art.avif';
 import cashGif from '../../assets/cash.webp';
+import paperCraneImg from '../../assets/paper_crane.png';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Menos de un dolar': <img src={cashGif} alt="" className="category-emoji-img category-cash" width={217} height={119} loading="lazy" />,
@@ -45,6 +46,8 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
   'Zona KPOP': <img src={kpopImg} alt="" className="category-emoji-img category-kpop" width={160} height={160} loading="lazy" />,
   Albumes: <img src={albumIcon} alt="" className="category-emoji-img category-albumes" width={128} height={128} loading="lazy" />,
   'Álbumes': <img src={albumIcon} alt="" className="category-emoji-img category-albumes" width={128} height={128} loading="lazy" />,
+  Papeleria: <img src={paperCraneImg} alt="" className="category-emoji-img category-papeleria" width={128} height={128} loading="lazy" />,
+  'Papelería': <img src={paperCraneImg} alt="" className="category-emoji-img category-papeleria" width={128} height={128} loading="lazy" />,
   'Bolsas o cajas de regalo': <img src={giftGif} alt="" className="category-emoji-img category-gift" width={140} height={134} loading="lazy" />,
   Otros: <img src={beatingHeart} alt="" className="category-emoji-img category-heart" width={190} height={180} loading="lazy" />,
 };
@@ -74,6 +77,13 @@ const CATEGORY_ALIASES: Record<string, string> = {
   'bag': 'Bolsos y Carteras',
   'purse': 'Bolsos y Carteras',
   'purses': 'Bolsos y Carteras',
+  papeleria: 'Papeleria',
+  'papelería': 'Papeleria',
+  stationery: 'Papeleria',
+  cuadernos: 'Papeleria',
+  libretas: 'Papeleria',
+  origami: 'Papeleria',
+  'paper crane': 'Papeleria',
   'bolsas o cajas de regalo': 'Bolsas o cajas de regalo',
   'bolsas-o-cajas-de-regalo': 'Bolsas o cajas de regalo',
   'cajas de regalo': 'Bolsas o cajas de regalo',

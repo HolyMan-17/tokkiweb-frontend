@@ -283,6 +283,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Dulces & Comida Asiatica | 🍡 | Mochi, Pepero, Hi-Chew, Kit Kat, Ramune |
 | Peluches                  | 🧸    | Plushies, stuffed animals, keychains      |
 | Figuras                   | 🦸    | Anime figures, scale models, collectibles |
+| Papeleria                 | 📝    | Notebooks, pens, stickers, planners, stationery |
 | Bolsas o cajas de regalo  | 🎁    | Gift boxes, gift bags, wrapping kits      |
 | Cosplays                    | 🎭    | Cosplay outfits, wigs, accessories        |
 | Para ellos                  | 🕷️    | Men's items, masculine gifts              |
@@ -290,7 +291,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 | Bloques de construccion     | 🧱    | Nano blocks, lego hearts, floral bouquets |
 | Otros                     | 🛍️    | Stickers, notebooks, totes                |
 
-To add a new category: add it to `CATEGORIES` in constants, add an entry + asset import in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`, with aliases in `CATEGORY_ALIASES`), add a `/categorias/<slug>` block to `public/sitemap.xml`, and the catalog page will auto-render a new carousel (empty categories are skipped until a product carries that `category` string).
+To add a new category: add it to `CATEGORIES` in constants, add an entry + asset import in `CATEGORY_ICONS` (`src/components/ui/CategoryIcons.tsx`, with aliases in `CATEGORY_ALIASES`), add its slug to `KNOWN_CATEGORY_SLUGS` in `server/og-server.mjs`, add a `/categorias/<slug>` block to `public/sitemap.xml`, and the catalog page will auto-render a new carousel (empty categories are skipped until a product carries that `category` string).
 
 ## Phone numbers & WhatsApp (checkout & admin)
 
