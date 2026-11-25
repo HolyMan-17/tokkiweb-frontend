@@ -225,7 +225,8 @@ describe('CatalogPage — aviso de envíos nacionales', () => {
       </MemoryRouter>
     );
 
-    const note = await screen.findByRole('note');
+    await screen.findByRole('heading', { name: 'Todos' });
+    const note = screen.getByRole('note');
     const hero = document.querySelector('.catalog-hero');
     const todosSection = document.querySelector('.category-section');
 
@@ -405,5 +406,146 @@ describe('CatalogPage — Papeleria carousel', () => {
 
     const verMas = within(papeleriaSection).getByRole('link', { name: 'Ver más' });
     expect(verMas).toHaveAttribute('href', '/categorias/papeleria');
+  });
+});
+
+describe('CatalogPage — category quick-jump pills', () => {
+  it('renderiza solo las categorías activas en orden justo entre el aviso de envíos y los carruseles', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 1,
+        product_name: 'Gloss Mariposa',
+        category: 'Maquillaje',
+        product_price: '5.00',
+        product_description: 'Brillo labial.',
+        qty_available: 10,
+        in_stock: true,
+      },
+      {
+        product_id: 2,
+        product_name: 'Cuaderno Conejito',
+        category: 'Papeleria',
+        product_price: '4.50',
+        product_description: 'Libreta kawaii.',
+        qty_available: 8,
+        in_stock: true,
+      },
+      {
+        product_id: 3,
+        product_name: 'Caja Regalo Pastel',
+        category: 'Bolsas o cajas de regalo',
+        product_price: '3.00',
+        product_description: 'Caja decorada.',
+        qty_available: 12,
+        in_stock: true,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findAllByText('Cuaderno Conejito');
+
+    const jumpNav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const pillButtons = Array.from(jumpNav.querySelectorAll('button.category-jump-pill'));
+    expect(pillButtons.map((b) => b.textContent?.trim())).toEqual([
+      'Maquillaje',
+      'Papeleria',
+      'Bolsas o cajas de regalo',
+    ]);
+
+    expect(within(jumpNav).queryByRole('button', { name: 'Cosplays' })).toBeNull();
+    expect(within(jumpNav).queryByRole('button', { name: 'Peluches' })).toBeNull();
+    expect(within(jumpNav).queryByRole('button', { name: 'Zona KPOP' })).toBeNull();
+
+    const shippingNote = screen.getByRole('note');
+    const carouselsWrapper = document.querySelector('.carousels-wrapper');
+    expect(carouselsWrapper).not.toBeNull();
+    expect(
+      shippingNote.compareDocumentPosition(jumpNav) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      jumpNav.compareDocumentPosition(carouselsWrapper!) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+
+    const papeleriaSection = document.getElementById('category-section-papeleria');
+    expect(papeleriaSection).not.toBeNull();
+    const scrollIntoViewMock = vi.fn();
+    papeleriaSection!.scrollIntoView = scrollIntoViewMock;
+
+    fireEvent.click(within(jumpNav).getByRole('button', { name: 'Papeleria' }));
+    expect(scrollIntoViewMock).toHaveBeenCalledTimes(1);
+    expect(scrollIntoViewMock).toHaveBeenCalledWith({
+      behavior: expect.stringMatching(/^(smooth|auto)$/),
+      block: 'start',
+    });
+  });
+
+  it('no renderiza la barra de categorías cuando solo hay 1 categoría activa', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 1,
+        product_name: 'Gloss Único',
+        category: 'Maquillaje',
+        product_price: '5.00',
+        product_description: 'Solo una categoría.',
+        qty_available: 10,
+        in_stock: true,
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findAllByText('Gloss Único');
+    expect(screen.queryByRole('navigation', { name: 'Ir a una categoría' })).toBeNull();
+  });
+});
+
+describe('CatalogPage — hero-first skeleton loading', () => {
+  it('renderiza hero, aviso de envíos y skeletons inmediatamente mientras cargan los productos', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockReturnValueOnce(new Promise(() => {}));
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    expect(document.querySelector('header.catalog-hero')).not.toBeNull();
+    expect(document.querySelector('img.hero-logo')).not.toBeNull();
+    expect(screen.getByRole('heading', { name: 'Tu tienda asiatica favorita' })).toBeInTheDocument();
+    expect(screen.getByRole('note')).toBeInTheDocument();
+
+    const busyRegion = document.querySelector('[aria-busy="true"]');
+    expect(busyRegion).not.toBeNull();
+    expect(document.querySelectorAll('.catalog-skeleton-card').length).toBeGreaterThan(0);
+
+    expect(document.querySelector('.category-section')).toBeNull();
+    expect(screen.queryByRole('link', { name: /Resolvemos todas tus dudas/i })).toBeNull();
+  });
+
+  it('mantiene visibles hero y aviso de envíos cuando falla la carga de productos', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockRejectedValueOnce(new Error('Network error'));
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    expect(await screen.findByRole('button', { name: /reintentar/i })).toBeInTheDocument();
+    expect(document.querySelector('header.catalog-hero')).not.toBeNull();
+    expect(screen.getByRole('note')).toBeInTheDocument();
   });
 });

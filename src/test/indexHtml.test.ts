@@ -84,3 +84,43 @@ describe('SEO — robots.txt y sitemap.xml', () => {
     }
   });
 });
+
+describe('index.html — JSON-LD Store & WebSite structured data', () => {
+  it('incluye un bloque JSON-LD válido con Store y WebSite para resultados de búsqueda en Google', () => {
+    const match = html.match(/<script\s+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/i);
+    expect(match).not.toBeNull();
+
+    const json = JSON.parse(match![1]) as {
+      '@context': string;
+      '@graph': Array<Record<string, unknown>>;
+    };
+    expect(json['@context']).toBe('https://schema.org');
+    expect(Array.isArray(json['@graph'])).toBe(true);
+
+    const store = json['@graph'].find((node) => node['@type'] === 'Store');
+    expect(store).toBeDefined();
+    expect(store?.['@id']).toBe('https://www.tokkishopve.com/#store');
+    expect(store?.name).toBe('Tokki Shop');
+    expect(store?.url).toBe('https://www.tokkishopve.com/');
+    expect(store?.logo).toBe('https://www.tokkishopve.com/tokki_logo.png');
+    expect(store?.image).toBe('https://www.tokkishopve.com/tokki_logo.png');
+    expect(store?.telephone).toBe('+584122698243');
+    expect(store?.currenciesAccepted).toBe('USD');
+    expect((store?.areaServed as Record<string, unknown>)?.name).toBe('Venezuela');
+    expect(store?.sameAs).toEqual(
+      expect.arrayContaining([
+        'https://www.instagram.com/tokki.shopve/',
+        'https://www.tiktok.com/@tokki.shopve',
+      ]),
+    );
+
+    const website = json['@graph'].find((node) => node['@type'] === 'WebSite');
+    expect(website).toBeDefined();
+    expect(website?.name).toBe('Tokki Shop');
+    expect(website?.url).toBe('https://www.tokkishopve.com/');
+    expect(website?.inLanguage).toBe('es-VE');
+    expect((website?.publisher as Record<string, unknown>)?.['@id']).toBe(
+      'https://www.tokkishopve.com/#store',
+    );
+  });
+});

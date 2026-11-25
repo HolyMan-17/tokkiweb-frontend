@@ -7,15 +7,15 @@ import ErrorBoundary from './components/ErrorBoundary';
 import { ADMIN_PATH, ROLES } from './lib/auth';
 import { ROUTES, ADMIN_ROUTES } from './lib/routes';
 
-// Customer Pages (eager — the storefront is the primary experience)
+// Customer Pages (home catalog eager; sub-pages lazy-loaded to keep landing chunk lean)
 import CatalogPage from './pages/catalog/CatalogPage';
-import CategoryPage from './pages/category/CategoryPage';
-import AllProductsPage from './pages/products/AllProductsPage';
-import ProductDetailPage from './pages/product/ProductDetailPage';
-import CartPage from './pages/cart/CartPage';
-import CheckoutPage from './pages/checkout/CheckoutPage';
-import OrderConfirmationPage from './pages/confirmation/OrderConfirmationPage';
-import NotFoundPage from './pages/not-found/NotFoundPage';
+const CategoryPage = lazy(() => import('./pages/category/CategoryPage'));
+const AllProductsPage = lazy(() => import('./pages/products/AllProductsPage'));
+const ProductDetailPage = lazy(() => import('./pages/product/ProductDetailPage'));
+const CartPage = lazy(() => import('./pages/cart/CartPage'));
+const CheckoutPage = lazy(() => import('./pages/checkout/CheckoutPage'));
+const OrderConfirmationPage = lazy(() => import('./pages/confirmation/OrderConfirmationPage'));
+const NotFoundPage = lazy(() => import('./pages/not-found/NotFoundPage'));
 
 // Admin Pages (lazy — keeps the heavy recharts/admin bundle off the storefront)
 const AdminDashboardPage = lazy(() => import('./pages/admin/dashboard/AdminDashboardPage'));
@@ -79,10 +79,28 @@ function App() {
           <Route path={ROUTES.home} element={<ErrorBoundary sectionName="el catálogo"><CatalogPage /></ErrorBoundary>} />
 
           {/* Category — standalone like the catalog, same TopNav */}
-          <Route path="/categorias/:slug" element={<ErrorBoundary sectionName="la categoría"><CategoryPage /></ErrorBoundary>} />
+          <Route
+            path="/categorias/:slug"
+            element={
+              <Suspense fallback={<PageLoading />}>
+                <ErrorBoundary sectionName="la categoría">
+                  <CategoryPage />
+                </ErrorBoundary>
+              </Suspense>
+            }
+          />
 
           {/* Todos ("Ver más") — standalone, full inventory browser */}
-          <Route path={ROUTES.allProducts} element={<ErrorBoundary sectionName="los productos"><AllProductsPage /></ErrorBoundary>} />
+          <Route
+            path={ROUTES.allProducts}
+            element={
+              <Suspense fallback={<PageLoading />}>
+                <ErrorBoundary sectionName="los productos">
+                  <AllProductsPage />
+                </ErrorBoundary>
+              </Suspense>
+            }
+          />
 
           {/* Customer Routes — Layout is lazy so the catalog page stays
               free of the customer chrome bundle (Header/Layout CSS+JS). */}
@@ -95,10 +113,38 @@ function App() {
               </Suspense>
             }
           >
-            <Route path="/products/:id" element={<ProductDetailPage />} />
-            <Route path={ROUTES.cart} element={<CartPage />} />
-            <Route path={ROUTES.checkout} element={<CheckoutPage />} />
-            <Route path="/confirmation/:orderId" element={<OrderConfirmationPage />} />
+            <Route
+              path="/products/:id"
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <ProductDetailPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={ROUTES.cart}
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <CartPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path={ROUTES.checkout}
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <CheckoutPage />
+                </Suspense>
+              }
+            />
+            <Route
+              path="/confirmation/:orderId"
+              element={
+                <Suspense fallback={<PageLoading />}>
+                  <OrderConfirmationPage />
+                </Suspense>
+              }
+            />
           </Route>
 
           {/* Admin — hidden path, guarded by Clerk. Owner + tech only.
@@ -174,9 +220,11 @@ function App() {
           <Route
             path="*"
             element={
-              <ErrorBoundary sectionName="la página">
-                <NotFoundPage />
-              </ErrorBoundary>
+              <Suspense fallback={<PageLoading />}>
+                <ErrorBoundary sectionName="la página">
+                  <NotFoundPage />
+                </ErrorBoundary>
+              </Suspense>
             }
           />
         </Routes>

@@ -148,6 +148,119 @@ export function resolveImageUrl(rawUrl, siteUrl = DEFAULT_SITE_URL) {
   return `${base}${cleanPath}`;
 }
 
+export function serializeJsonLd(data) {
+  return JSON.stringify(data)
+    .replace(/</g, '\\u003c')
+    .replace(/>/g, '\\u003e')
+    .replace(/&/g, '\\u0026');
+}
+
+export function resolveProductImages(product, siteUrl = DEFAULT_SITE_URL) {
+  const base = siteUrl.replace(/\/+$/, '');
+  const gallery = Array.isArray(product?.product_image_urls) ? product.product_image_urls : [];
+  const candidates = [...gallery, product?.product_image_url];
+  const seen = new Set();
+  const images = [];
+
+  for (const raw of candidates) {
+    if (typeof raw !== 'string' || raw.trim() === '') continue;
+    const abs = resolveImageUrl(raw.trim(), base);
+    if (!seen.has(abs)) {
+      seen.add(abs);
+      images.push(abs);
+    }
+  }
+
+  return images.length > 0 ? images : [`${base}/tokki_logo.png`];
+}
+
+function formatSchemaPrice(price) {
+  const num = typeof price === 'number' ? price : parseFloat(price);
+  return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+}
+
+function buildProductDescription(product) {
+  return product?.product_description?.trim()
+    ? `${product.product_description.trim()} • Envíos a toda Venezuela 🐰`
+    : `Disponible en Tokki Shop — ${DEFAULT_DESCRIPTION}`;
+}
+
+function isProductInStock(product) {
+  return Boolean(product?.in_stock) && (product.qty_available === undefined || product.qty_available > 0);
+}
+
+export function buildProductJsonLd(product, siteUrl = DEFAULT_SITE_URL) {
+  const base = siteUrl.replace(/\/+$/, '');
+  const productUrl = `${base}/products/${product.product_id}`;
+  const isAvailable = isProductInStock(product);
+  const rawCategory = typeof product?.category === 'string' ? product.category.trim() : '';
+  const categorySlug = rawCategory ? slugifyCategory(rawCategory) : '';
+
+  const breadcrumbItems = [{ name: 'Inicio', item: `${base}/` }];
+  if (rawCategory && KNOWN_CATEGORY_SLUGS.has(categorySlug)) {
+    breadcrumbItems.push({
+      name: rawCategory,
+      item: `${base}/categorias/${categorySlug}`,
+    });
+  }
+  breadcrumbItems.push({
+    name: product.product_name,
+    item: productUrl,
+  });
+
+  const description = product?.product_description?.trim()
+    ? product.product_description.trim()
+    : `${product.product_name} disponible en Tokki Shop. Envíos a toda Venezuela.`;
+
+  const productNode = {
+    '@type': 'Product',
+    '@id': `${productUrl}#product`,
+    name: product.product_name,
+    description,
+    sku: String(product.product_id),
+    image: resolveProductImages(product, base),
+    brand: {
+      '@type': 'Brand',
+      name: DEFAULT_SITE_NAME,
+    },
+    offers: {
+      '@type': 'Offer',
+      url: productUrl,
+      priceCurrency: 'USD',
+      price: formatSchemaPrice(product.product_price),
+      availability: isAvailable
+        ? 'https://schema.org/InStock'
+        : 'https://schema.org/OutOfStock',
+      itemCondition: 'https://schema.org/NewCondition',
+      seller: {
+        '@type': 'Store',
+        '@id': `${base}/#store`,
+        name: DEFAULT_SITE_NAME,
+      },
+    },
+  };
+
+  if (rawCategory) {
+    productNode.category = rawCategory;
+  }
+
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      productNode,
+      {
+        '@type': 'BreadcrumbList',
+        itemListElement: breadcrumbItems.map((entry, idx) => ({
+          '@type': 'ListItem',
+          position: idx + 1,
+          name: entry.name,
+          item: entry.item,
+        })),
+      },
+    ],
+  };
+}
+
 function buildRedirectTags(targetUrl, escapedUrl, includeRedirect) {
   if (!includeRedirect) return '';
   const safeJsUrl = JSON.stringify(targetUrl);
@@ -165,21 +278,17 @@ export function buildProductOgHtml(product, options = {}) {
   const priceFormatted = ogFormatPrice(product.product_price);
   const title = `${product.product_name} — ${priceFormatted} | ${DEFAULT_SITE_NAME}`;
 
-  const rawDesc = product.product_description?.trim()
-    ? `${product.product_description.trim()} • Envíos a toda Venezuela 🐰`
-    : `Disponible en Tokki Shop — ${DEFAULT_DESCRIPTION}`;
-
+  const rawDesc = buildProductDescription(product);
   const description = escapeHtml(rawDesc);
   const escapedTitle = escapeHtml(title);
-  const imageUrl = resolveImageUrl(product.product_image_url, siteUrl);
+  const images = resolveProductImages(product, siteUrl);
+  const imageUrl = images[0];
   const escapedImageUrl = escapeHtml(imageUrl);
   const escapedProductUrl = escapeHtml(productUrl);
   const escapedProductName = escapeHtml(product.product_name);
-  const isAvailable =
-    product.in_stock &&
-    (product.qty_available === undefined || product.qty_available > 0);
-  const availability = isAvailable ? 'in stock' : 'out of stock';
+  const availability = isProductInStock(product) ? 'in stock' : 'out of stock';
   const numericPrice = escapeHtml(String(product.product_price));
+  const jsonLdScript = `<script type="application/ld+json" data-tokki-jsonld="route">${serializeJsonLd(buildProductJsonLd(product, siteUrl))}</script>`;
   const redirectTags = buildRedirectTags(
     productUrl,
     escapedProductUrl,
@@ -218,7 +327,8 @@ export function buildProductOgHtml(product, options = {}) {
   <meta name="twitter:title" content="${escapedTitle}" />
   <meta name="twitter:description" content="${description}" />
   <meta name="twitter:image" content="${escapedImageUrl}" />
-  <meta name="twitter:image:alt" content="${escapedProductName}" />${redirectTags}
+  <meta name="twitter:image:alt" content="${escapedProductName}" />
+  ${jsonLdScript}${redirectTags}
 </head>
 <body>
   <h1>${escapedProductName}</h1>
@@ -403,21 +513,66 @@ export function classifySpaRoute(pathname) {
   return { status: 404, indexable: false, canonicalPath: null };
 }
 
-export function rewriteIndexHtml(html, { siteUrl = DEFAULT_SITE_URL, canonicalPath, indexable }) {
+export function rewriteIndexHtml(
+  html,
+  { siteUrl = DEFAULT_SITE_URL, canonicalPath, indexable, product = null },
+) {
   const base = siteUrl.replace(/\/+$/, '');
 
   if (indexable && canonicalPath) {
     const normalizedPath = canonicalPath === '/' ? '/' : canonicalPath;
     const escapedCanonicalUrl = escapeHtml(`${base}${normalizedPath}`);
-    return html
+    let updated = html
       .replace(
         /<link\s+rel="canonical"\s+href="[^"]*"\s*\/?>/i,
-        `<link rel="canonical" href="${escapedCanonicalUrl}" />`,
+        () => `<link rel="canonical" href="${escapedCanonicalUrl}" />`,
       )
       .replace(
         /<meta\s+property="og:url"\s+content="[^"]*"\s*\/?>/i,
-        `<meta property="og:url" content="${escapedCanonicalUrl}" />`,
+        () => `<meta property="og:url" content="${escapedCanonicalUrl}" />`,
       );
+
+    if (product) {
+      const priceFormatted = ogFormatPrice(product.product_price);
+      const escapedTitle = escapeHtml(`${product.product_name} — ${priceFormatted} | ${DEFAULT_SITE_NAME}`);
+      const escapedDesc = escapeHtml(buildProductDescription(product));
+      const escapedImage = escapeHtml(resolveProductImages(product, base)[0]);
+      const jsonLdScript = `<script type="application/ld+json" data-tokki-jsonld="route">${serializeJsonLd(buildProductJsonLd(product, base))}</script>`;
+
+      updated = updated
+        .replace(/<title>[^<]*<\/title>/i, () => `<title>${escapedTitle}</title>`)
+        .replace(
+          /<meta\b[^>]*\bname="description"[^>]*>/i,
+          () => `<meta name="description" content="${escapedDesc}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bproperty="og:title"[^>]*>/i,
+          () => `<meta property="og:title" content="${escapedTitle}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bproperty="og:description"[^>]*>/i,
+          () => `<meta property="og:description" content="${escapedDesc}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bproperty="og:image"[^>]*>/i,
+          () => `<meta property="og:image" content="${escapedImage}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bname="twitter:title"[^>]*>/i,
+          () => `<meta name="twitter:title" content="${escapedTitle}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bname="twitter:description"[^>]*>/i,
+          () => `<meta name="twitter:description" content="${escapedDesc}" />`,
+        )
+        .replace(
+          /<meta\b[^>]*\bname="twitter:image"[^>]*>/i,
+          () => `<meta name="twitter:image" content="${escapedImage}" />`,
+        )
+        .replace(/<\/head>/i, () => `    ${jsonLdScript}\n  </head>`);
+    }
+
+    return updated;
   }
 
   return html
@@ -620,23 +775,89 @@ export async function serveStaticFile(pathname, res, distDir = DEFAULT_DIST_DIR)
 }
 
 // ─────────────────────────────────────────────────
-//  SPA fallback -> dist/index.html
+//  Product Metadata Cache & SPA Fallback -> dist/index.html
 // ─────────────────────────────────────────────────
+const PRODUCT_META_CACHE_TTL_MS = 5 * 60_000;
+const MAX_PRODUCT_META_CACHE = 500;
+const productMetaCache = new Map();
+
+export function clearProductMetaCache() {
+  productMetaCache.clear();
+}
+
+async function fetchProductForSpa(productId, backendBase) {
+  const idNum = parseInt(productId, 10);
+  if (isNaN(idNum) || idNum <= 0) return { status: 'not_found' };
+
+  const now = Date.now();
+  const cached = productMetaCache.get(idNum);
+  if (cached && now - cached.at < PRODUCT_META_CACHE_TTL_MS) {
+    return { status: 'ok', product: cached.product };
+  }
+
+  try {
+    const response = await fetch(`${backendBase}/api/products/${idNum}`, {
+      headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(1500),
+    });
+
+    if (response.ok) {
+      const payload = await response.json();
+      if (payload?.success && payload.data) {
+        if (productMetaCache.size >= MAX_PRODUCT_META_CACHE) {
+          const oldestKey = productMetaCache.keys().next().value;
+          if (oldestKey !== undefined) productMetaCache.delete(oldestKey);
+        }
+        productMetaCache.set(idNum, { at: now, product: payload.data });
+        return { status: 'ok', product: payload.data };
+      }
+      return { status: 'not_found' };
+    }
+
+    if (response.status === 404) {
+      return { status: 'not_found' };
+    }
+
+    return { status: 'error' };
+  } catch (err) {
+    if (process.env.NODE_ENV !== 'test') {
+      console.error(`[og-server] SPA product meta error for ${idNum}:`, err.message);
+    }
+    return { status: 'error' };
+  }
+}
+
 let cachedIndexHtml = null;
 
 export async function serveSpaFallback(res, distDir = DEFAULT_DIST_DIR, options = {}) {
   const pathname = options.pathname || '/';
   const siteUrl = options.siteUrl || DEFAULT_SITE_URL;
+  const backendBase = options.backendUrl ? options.backendUrl.replace(/\/+$/, '') : '';
 
   try {
     if (!cachedIndexHtml) {
       cachedIndexHtml = await readFile(join(distDir, 'index.html'), 'utf8');
     }
-    const routeInfo = classifySpaRoute(pathname);
+    let routeInfo = classifySpaRoute(pathname);
+    let product = null;
+
+    if (routeInfo.indexable && backendBase) {
+      const productMatch = pathname.match(PRODUCT_RE);
+      if (productMatch) {
+        const lookup = await fetchProductForSpa(productMatch[1], backendBase);
+        if (lookup.status === 'ok') {
+          product = lookup.product;
+        } else if (lookup.status === 'not_found') {
+          routeInfo = { status: 404, indexable: false, canonicalPath: null };
+        }
+      }
+    }
+
     const html = rewriteIndexHtml(cachedIndexHtml, {
       siteUrl,
       canonicalPath: routeInfo.canonicalPath,
       indexable: routeInfo.indexable,
+      product,
     });
 
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
@@ -726,8 +947,8 @@ export async function handleRequest(req, res, config = {}) {
     // 7) Try serving a static file from dist/
     if (await serveStaticFile(pathname, res, distDir)) return;
 
-    // 8) SPA fallback for client-side routes (with per-route canonical / noindex / 404 status)
-    await serveSpaFallback(res, distDir, { pathname, siteUrl });
+    // 8) SPA fallback for client-side routes (with per-route canonical / noindex / 404 / Product JSON-LD)
+    await serveSpaFallback(res, distDir, { pathname, siteUrl, backendUrl });
   } catch (err) {
     console.error('[og-server] Unhandled error:', err);
     if (!res.headersSent) {

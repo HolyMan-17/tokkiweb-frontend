@@ -329,7 +329,7 @@ describe('CategoryIcons & CATEGORIES — Zona KPOP support', () => {
     expect(slugify(bloquesCat!.name)).toBe('bloques-de-construccion');
   });
 
-  it('CATEGORY_ICONS contains an entry for Bloques de construccion with lego_heart.gif image', () => {
+  it('CATEGORY_ICONS contains an entry for Bloques de construccion with lego_heart.webp image', () => {
     const icon = CATEGORY_ICONS['Bloques de construccion'];
     expect(icon).toBeDefined();
 

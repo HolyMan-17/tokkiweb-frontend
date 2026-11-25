@@ -15,8 +15,9 @@ import type { Product } from '../../types';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
-import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { CATEGORY_ICONS } from '../../components/ui/CategoryIcons';
+import CategoryJumpBar from './CategoryJumpBar';
+import { getCategorySectionId } from './categoryJumpUtils';
 import { CATEGORIES, slugify } from '../../constants';
 import { ROUTES } from '../../lib/routes';
 import { TOKKI_WHATSAPP_PHONE } from '../../utils/whatsapp';
@@ -59,12 +60,13 @@ function computeCardWidth(track: HTMLDivElement): number {
   return (available - (n - 1) * gap) / n;
 }
 
-function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false }: {
+function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false, sectionId }: {
   title: string;
   emoji: React.ReactNode;
   products: Product[];
   seeMoreTo?: string;
   eagerSection?: boolean;
+  sectionId?: string;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -178,7 +180,7 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = fa
   };
 
   return (
-    <section className="category-section" ref={sectionRef}>
+    <section className="category-section" id={sectionId} ref={sectionRef}>
       <div className="category-header">
         <h2 className="category-title">
           <span className="category-emoji">{emoji}</span>
@@ -406,6 +408,40 @@ function SocialCircles() {
   );
 }
 
+const SKELETON_SECTIONS = [0, 1];
+const SKELETON_CARDS = [0, 1, 2, 3, 4, 5];
+
+function CatalogSkeleton() {
+  return (
+    <div
+      className="catalog-skeleton-wrapper"
+      role="status"
+      aria-busy="true"
+      aria-label="Cargando productos"
+    >
+      {SKELETON_SECTIONS.map((sectionIdx) => (
+        <div key={sectionIdx} className="catalog-skeleton-section">
+          <div className="catalog-skeleton-header">
+            <div className="skeleton catalog-skeleton-icon" />
+            <div className="skeleton catalog-skeleton-title" />
+          </div>
+          <div className="catalog-skeleton-track">
+            {SKELETON_CARDS.map((cardIdx) => (
+              <div key={cardIdx} className="catalog-skeleton-card">
+                <div className="skeleton catalog-skeleton-img" />
+                <div className="catalog-skeleton-body">
+                  <div className="skeleton catalog-skeleton-line" />
+                  <div className="skeleton catalog-skeleton-line catalog-skeleton-line--short" />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function CatalogPage() {
@@ -426,27 +462,9 @@ export default function CatalogPage() {
     [grouped],
   );
 
-  if (isLoading) {
-    return (
-      <>
-        <CatalogTopNav />
-        <LoadingSpinner fullPage />
-      </>
-    );
-  }
-
-  if (isError) {
-    return (
-      <>
-        <CatalogTopNav />
-        <ErrorState onRetry={retry} />
-      </>
-    );
-  }
-
   return (
     <>
-      <CatalogTopNav products={products} />
+      <CatalogTopNav products={isLoading || isError ? undefined : products} />
 
       <div className="catalog-page">
         {/* ── Hero ── */}
@@ -479,46 +497,58 @@ export default function CatalogPage() {
         {/* ── National shipping notice ── */}
         <ShippingNotice />
 
-        {/* ── Carousels: Todos (all products) + one per category ── */}
-        <div className="carousels-wrapper">
-          <CategoryCarousel
-            title="Todos"
-            emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
-            products={sortedProducts}
-            seeMoreTo={ROUTES.allProducts}
-            eagerSection
-          />
+        {isLoading ? (
+          <CatalogSkeleton />
+        ) : isError ? (
+          <ErrorState onRetry={retry} />
+        ) : (
+          <>
+            {/* ── Quick-jump pills for populated categories ── */}
+            <CategoryJumpBar categories={populatedCategories} />
 
-          {populatedCategories.map((cat, index) => (
-            <CategoryCarousel
-              key={cat.name}
-              title={cat.name}
-              emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
-              products={grouped[cat.name]}
-              seeMoreTo={ROUTES.category(slugify(cat.name))}
-              eagerSection={index === 0}
-            />
-          ))}
-        </div>
+            {/* ── Carousels: Todos (all products) + one per category ── */}
+            <div className="carousels-wrapper">
+              <CategoryCarousel
+                title="Todos"
+                emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
+                products={sortedProducts}
+                seeMoreTo={ROUTES.allProducts}
+                eagerSection
+              />
 
-        {/* ── WhatsApp contact + social ── */}
-        <WhatsAppNotice />
-        <SocialCircles />
+              {populatedCategories.map((cat, index) => (
+                <CategoryCarousel
+                  key={cat.name}
+                  title={cat.name}
+                  emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
+                  products={grouped[cat.name]}
+                  seeMoreTo={ROUTES.category(slugify(cat.name))}
+                  eagerSection={index === 0}
+                  sectionId={getCategorySectionId(cat.name)}
+                />
+              ))}
+            </div>
 
-        {/* ── Footer ── */}
-        <footer className="catalog-footer">
-          <p className="catalog-footer-text">
-            © 2026{' '}
-            <a
-              href="https://oak-dev-11db6.web.app/"
-              target="_blank"
-              rel="noreferrer"
-              className="footer-dev-link"
-            >
-              Tokki Shop
-            </a>
-          </p>
-        </footer>
+            {/* ── WhatsApp contact + social ── */}
+            <WhatsAppNotice />
+            <SocialCircles />
+
+            {/* ── Footer ── */}
+            <footer className="catalog-footer">
+              <p className="catalog-footer-text">
+                © 2026{' '}
+                <a
+                  href="https://oak-dev-11db6.web.app/"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="footer-dev-link"
+                >
+                  Tokki Shop
+                </a>
+              </p>
+            </footer>
+          </>
+        )}
       </div>
     </>
   );

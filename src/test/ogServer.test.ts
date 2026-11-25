@@ -10,9 +10,12 @@ import {
   resolveImageUrl,
   buildProductOgHtml,
   buildFallbackOgHtml,
+  buildProductJsonLd,
+  serializeJsonLd,
   classifySpaRoute,
   rewriteIndexHtml,
   clearSitemapCache,
+  clearProductMetaCache,
   serveStaticFile,
   handleRequest,
 } from '../../server/og-server.mjs';
@@ -166,6 +169,46 @@ describe('server/og-server.mjs — Generación HTML de Open Graph', () => {
     expect(html).not.toContain('<link rel="canonical"');
     expect(html).not.toContain('window.location.replace');
   });
+
+  it('embebe JSON-LD Product + Offer + BreadcrumbList en buildProductOgHtml y escapa </script> contra XSS', () => {
+    const galleryProduct = {
+      ...mockProduct,
+      product_name: 'Gloss </script><script>alert(1)</script>',
+      category: 'Maquillaje',
+      product_image_url: '/images/products/gloss-1.webp',
+      product_image_urls: [
+        '/images/products/gloss-1.webp',
+        'https://api.tokkishopve.com/images/products/gloss-2.webp',
+      ],
+    };
+
+    const rawSerialized = serializeJsonLd(buildProductJsonLd(galleryProduct, 'https://www.tokkishopve.com'));
+    expect(rawSerialized).not.toContain('</script>');
+    expect(rawSerialized).toContain('\\u003c/script\\u003e');
+
+    const html = buildProductOgHtml(galleryProduct, { siteUrl: 'https://www.tokkishopve.com' });
+    expect(html).toContain('<meta property="og:image" content="https://www.tokkishopve.com/images/products/gloss-1.webp" />');
+
+    const ldMatch = html.match(
+      /<script\s+type="application\/ld\+json"\s+data-tokki-jsonld="route">([\s\S]*?)<\/script>/i,
+    );
+    expect(ldMatch).not.toBeNull();
+    const parsed = JSON.parse(ldMatch![1]) as {
+      '@context': string;
+      '@graph': Array<Record<string, unknown>>;
+    };
+    expect(parsed['@context']).toBe('https://schema.org');
+    const productNode = parsed['@graph'].find((n) => n['@type'] === 'Product');
+    expect(productNode?.name).toBe('Gloss </script><script>alert(1)</script>');
+    expect(productNode?.image).toEqual([
+      'https://www.tokkishopve.com/images/products/gloss-1.webp',
+      'https://api.tokkishopve.com/images/products/gloss-2.webp',
+    ]);
+    const offer = productNode?.offers as Record<string, unknown>;
+    expect(offer.price).toBe('5.50');
+    expect(offer.priceCurrency).toBe('USD');
+    expect(offer.availability).toBe('https://schema.org/InStock');
+  });
 });
 
 describe('server/og-server.mjs — Request Handler & Endpoints', () => {
@@ -174,11 +217,13 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     clearSitemapCache();
+    clearProductMetaCache();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
     clearSitemapCache();
+    clearProductMetaCache();
   });
 
   function createMockRes() {
@@ -437,6 +482,101 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     });
     expect(rewroteNoindex).toContain('<meta name="robots" content="noindex, nofollow" />');
     expect(rewroteNoindex).not.toContain('<link rel="canonical"');
+
+    const fullHtmlShell = `<html><head>
+      <title>Tokki Shop — Accesorios y Dulces Coreanos</title>
+      <meta name="description" content="Default desc" />
+      <link rel="canonical" href="https://www.tokkishopve.com/" />
+      <meta property="og:title" content="Tokki Shop — Accesorios y Dulces Coreanos" />
+      <meta property="og:description" content="Default desc" />
+      <meta property="og:url" content="https://www.tokkishopve.com/" />
+      <meta property="og:image" content="https://www.tokkishopve.com/tokki_logo.png" />
+      <meta name="twitter:title" content="Tokki Shop — Accesorios y Dulces Coreanos" />
+      <meta name="twitter:description" content="Default desc" />
+      <meta name="twitter:image" content="https://www.tokkishopve.com/tokki_logo.png" />
+    </head><body><div id="root"></div></body></html>`;
+    const rewroteProduct = rewriteIndexHtml(fullHtmlShell, {
+      siteUrl: 'https://www.tokkishopve.com',
+      canonicalPath: '/products/30',
+      indexable: true,
+      product: {
+        product_id: 30,
+        product_name: 'Labial $4.80 Special & Cute',
+        product_price: '4.80',
+        product_description: 'Precio $4.80 USD',
+        category: 'Maquillaje',
+        in_stock: true,
+        qty_available: 5,
+        product_image_url: 'https://api.tokkishopve.com/images/products/labial.webp',
+      },
+    });
+    expect(rewroteProduct).toContain('<title>Labial $4.80 Special &amp; Cute — $4.80 | Tokki Shop</title>');
+    expect(rewroteProduct).toContain('content="Precio $4.80 USD • Envíos a toda Venezuela 🐰"');
+    expect(rewroteProduct).toContain('<meta property="og:image" content="https://api.tokkishopve.com/images/products/labial.webp" />');
+    expect(rewroteProduct).toContain('<meta name="twitter:image" content="https://api.tokkishopve.com/images/products/labial.webp" />');
+    expect(rewroteProduct).toContain('<script type="application/ld+json" data-tokki-jsonld="route">');
+  });
+
+  it('inyecta JSON-LD Product y meta tags de producto en la SPA para Googlebot/navegadores y responde 404 si no existe', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          product_id: 30,
+          product_name: 'POPSOCKET JUNGKOOK',
+          product_price: '4.80',
+          product_description: 'Popsocket acrílico BTS',
+          category: 'Zona KPOP',
+          in_stock: true,
+          qty_available: 5,
+          product_image_url: 'https://api.tokkishopve.com/images/products/jungkook.webp',
+        },
+      }),
+    }) as unknown as typeof fetch;
+
+    const req = createMockReq({
+      url: '/products/30',
+      headers: {
+        'user-agent': 'Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)',
+      },
+    });
+    const res = createMockRes();
+    await handleRequest(req, res);
+
+    expect(res._getStatusCode()).toBe(200);
+    const body = res._getBody();
+    expect(body).toContain('<div id="root"></div>');
+    expect(body).toContain('<title>POPSOCKET JUNGKOOK — $4.80 | Tokki Shop</title>');
+    expect(body).toContain('https://api.tokkishopve.com/images/products/jungkook.webp');
+
+    const ldMatch = body.match(
+      /<script\s+type="application\/ld\+json"\s+data-tokki-jsonld="route">([\s\S]*?)<\/script>/i,
+    );
+    expect(ldMatch).not.toBeNull();
+    const ld = JSON.parse(ldMatch![1]) as { '@graph': Array<Record<string, unknown>> };
+    const productNode = ld['@graph'].find((n) => n['@type'] === 'Product');
+    expect((productNode?.offers as Record<string, unknown>)?.price).toBe('4.80');
+    expect((productNode?.offers as Record<string, unknown>)?.priceCurrency).toBe('USD');
+    expect((productNode?.offers as Record<string, unknown>)?.availability).toBe(
+      'https://schema.org/InStock',
+    );
+
+    // Backend 404 -> SPA shell with HTTP 404 + noindex
+    clearProductMetaCache();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 404,
+      json: async () => ({ success: false }),
+    }) as unknown as typeof fetch;
+
+    const req404 = createMockReq({ url: '/products/9999' });
+    const res404 = createMockRes();
+    await handleRequest(req404, res404);
+    expect(res404._getStatusCode()).toBe(404);
+    expect(res404._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(res404._getBody()).toContain('<meta name="robots" content="noindex, nofollow" />');
   });
 
   it('sirve canonical dinámico en rutas indexables y noindex en utilitarias/admin/404', async () => {

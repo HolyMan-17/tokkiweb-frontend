@@ -17,7 +17,7 @@ import purseImg from '../../assets/purse.avif';
 import cosplayImg from '../../assets/cosplay.avif';
 import spidermanImg from '../../assets/spiderman.avif';
 import coupleImg from '../../assets/couple.avif';
-import legoHeartGif from '../../assets/lego_heart.gif';
+import legoHeartGif from '../../assets/lego_heart.webp';
 import luffyImg from '../../assets/luffy.avif';
 import albumIcon from '../../assets/album_icon.avif';
 import keychainArt from '../../assets/keychain_art.avif';

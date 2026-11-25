@@ -4,6 +4,7 @@ import './CategoryPage.css';
 import { fetchAllProducts } from '../../api/products';
 import { useAsync } from '../../hooks/useAsync';
 import { usePageMeta } from '../../hooks/usePageMeta';
+import { buildBreadcrumbJsonLd } from '../../utils/structuredData';
 import ProductCard from '../../components/ui/ProductCard';
 import CatalogTopNav from '../../components/layout/CatalogTopNav';
 import ErrorState from '../../components/ui/ErrorState';
@@ -59,6 +60,10 @@ export default function CategoryPage() {
               title: `${category.name} | Tokki Shop`,
               description: `Compra ${category.name} en Tokki Shop. Envíos a toda Venezuela.`,
               canonicalPath: ROUTES.category(slugify(category.name)),
+              jsonLd: buildBreadcrumbJsonLd([
+                { name: 'Inicio', path: ROUTES.home },
+                { name: category.name, path: ROUTES.category(slugify(category.name)) },
+              ]),
             },
     [category, isEmptyCategory],
   );

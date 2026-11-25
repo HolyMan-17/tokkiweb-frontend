@@ -13,6 +13,26 @@ export interface PageMetaOptions {
   description?: string;
   canonicalPath?: string;
   noindex?: boolean;
+  jsonLd?: Record<string, unknown> | null;
+}
+
+const ROUTE_JSONLD_SELECTOR = 'script[data-tokki-jsonld="route"]';
+
+function upsertRouteJsonLd(serializedJsonLd: string): void {
+  if (typeof document === 'undefined') return;
+  let el = document.head.querySelector<HTMLScriptElement>(ROUTE_JSONLD_SELECTOR);
+  if (!el) {
+    el = document.createElement('script');
+    el.type = 'application/ld+json';
+    el.setAttribute('data-tokki-jsonld', 'route');
+    document.head.appendChild(el);
+  }
+  el.textContent = serializedJsonLd;
+}
+
+function removeRouteJsonLd(): void {
+  if (typeof document === 'undefined') return;
+  document.head.querySelector(ROUTE_JSONLD_SELECTOR)?.remove();
 }
 
 function upsertMeta(attr: 'name' | 'property', key: string, content: string): void {
@@ -56,7 +76,10 @@ export function usePageMeta({
   description,
   canonicalPath,
   noindex = false,
+  jsonLd = null,
 }: PageMetaOptions): void {
+  const serializedJsonLd = jsonLd ? JSON.stringify(jsonLd) : null;
+
   useEffect(() => {
     document.title = title ?? DEFAULT_DOC_TITLE;
     upsertMeta('name', 'description', description ?? DEFAULT_DOC_DESCRIPTION);
@@ -64,6 +87,7 @@ export function usePageMeta({
     if (noindex) {
       upsertMeta('name', 'robots', 'noindex, nofollow');
       removeCanonical();
+      removeRouteJsonLd();
     } else {
       removeMeta('name', 'robots');
       if (canonicalPath) {
@@ -71,6 +95,11 @@ export function usePageMeta({
         const fullUrl = `${PUBLIC_SITE_URL}${normalized}`;
         upsertCanonical(fullUrl);
         upsertMeta('property', 'og:url', fullUrl);
+      }
+      if (serializedJsonLd) {
+        upsertRouteJsonLd(serializedJsonLd);
+      } else {
+        removeRouteJsonLd();
       }
     }
 
@@ -80,8 +109,9 @@ export function usePageMeta({
       removeMeta('name', 'robots');
       upsertCanonical(`${PUBLIC_SITE_URL}/`);
       upsertMeta('property', 'og:url', `${PUBLIC_SITE_URL}/`);
+      removeRouteJsonLd();
     };
-  }, [title, description, canonicalPath, noindex]);
+  }, [title, description, canonicalPath, noindex, serializedJsonLd]);
 }
 
 export default usePageMeta;

@@ -97,4 +97,52 @@ describe('usePageMeta', () => {
       DEFAULT_DOC_DESCRIPTION,
     );
   });
+
+  it('inserta, actualiza in-place y limpia script[data-tokki-jsonld="route"] sin tocar el JSON-LD estático', () => {
+    const staticScript = document.createElement('script');
+    staticScript.type = 'application/ld+json';
+    staticScript.textContent = JSON.stringify({ '@type': 'Store', name: 'Tokki Shop' });
+    document.head.appendChild(staticScript);
+
+    const ssrRouteScript = document.createElement('script');
+    ssrRouteScript.type = 'application/ld+json';
+    ssrRouteScript.setAttribute('data-tokki-jsonld', 'route');
+    ssrRouteScript.textContent = JSON.stringify({ '@type': 'Product', name: 'SSR Placeholder' });
+    document.head.appendChild(ssrRouteScript);
+
+    const { rerender, unmount } = render(
+      <MetaHarness
+        title="Gloss | Tokki Shop"
+        canonicalPath="/products/10"
+        jsonLd={{ '@context': 'https://schema.org', '@type': 'Product', name: 'Gloss Rosa' }}
+      />,
+    );
+
+    const routeScripts = document.head.querySelectorAll('script[data-tokki-jsonld="route"]');
+    expect(routeScripts).toHaveLength(1);
+    expect(routeScripts[0]).toBe(ssrRouteScript);
+    expect(JSON.parse(routeScripts[0].textContent || '{}')).toEqual({
+      '@context': 'https://schema.org',
+      '@type': 'Product',
+      name: 'Gloss Rosa',
+    });
+    expect(document.head.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(2);
+
+    rerender(<MetaHarness title="Mi Carrito | Tokki Shop" noindex jsonLd={null} />);
+    expect(document.head.querySelector('script[data-tokki-jsonld="route"]')).toBeNull();
+    expect(document.head.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(1);
+
+    rerender(
+      <MetaHarness
+        title="Papeleria | Tokki Shop"
+        canonicalPath="/categorias/papeleria"
+        jsonLd={{ '@context': 'https://schema.org', '@type': 'BreadcrumbList' }}
+      />,
+    );
+    expect(document.head.querySelectorAll('script[data-tokki-jsonld="route"]')).toHaveLength(1);
+
+    unmount();
+    expect(document.head.querySelector('script[data-tokki-jsonld="route"]')).toBeNull();
+    expect(document.head.querySelectorAll('script[type="application/ld+json"]')).toHaveLength(1);
+  });
 });

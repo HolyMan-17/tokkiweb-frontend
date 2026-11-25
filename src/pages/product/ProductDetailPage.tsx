@@ -4,6 +4,7 @@ import './ProductDetailPage.css';
 import { fetchProductDetail } from '../../api/productDetail';
 import { useAsync } from '../../hooks/useAsync';
 import { DEFAULT_DOC_DESCRIPTION, usePageMeta } from '../../hooks/usePageMeta';
+import { buildProductJsonLd } from '../../utils/structuredData';
 import { formatPrice } from '../../constants';
 import { useCart } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
@@ -56,6 +57,7 @@ export default function ProductDetailPage() {
         title: `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`,
         description: desc,
         canonicalPath: ROUTES.product(product.product_id),
+        jsonLd: buildProductJsonLd(product),
       };
     }
     if (!isLoading && !isError) {

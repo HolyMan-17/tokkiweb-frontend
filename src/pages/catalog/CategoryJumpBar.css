@@ -1,0 +1,191 @@
+/* ── Category quick-jump pill bar ───────────────────────────────────────────── */
+
+.category-jump-nav {
+  position: relative;
+  width: 100%;
+  max-width: 1200px;
+  margin: 12px auto 0;
+}
+
+.category-jump-track {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 6px 16px 8px;
+  scroll-padding-inline: 16px;
+}
+
+.category-jump-track::-webkit-scrollbar {
+  display: none;
+}
+
+.category-jump-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  padding: 6px 13px 6px 9px;
+  border-radius: var(--radius-full);
+  border: 2px solid var(--p2);
+  background: var(--color-surface);
+  box-shadow: 0 2px 0 var(--p2), var(--shadow-sm);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--pink-800);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    transform 0.2s var(--ease-spring),
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease,
+    box-shadow 0.2s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .category-jump-pill:hover {
+    background: var(--p1);
+    border-color: var(--p4);
+    color: var(--color-text);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 0 var(--p3), var(--shadow-md);
+  }
+}
+
+.category-jump-pill:active {
+  background: var(--p1);
+  border-color: var(--p4);
+  color: var(--color-text);
+  transform: translateY(0);
+  box-shadow: 0 1px 0 var(--p3), var(--shadow-sm);
+}
+
+.category-jump-pill:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.category-jump-pill:focus-visible {
+  outline: 2.5px solid var(--p5);
+  outline-offset: 2px;
+}
+
+.category-jump-pill-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 1rem;
+  line-height: 1;
+}
+
+/* Override oversized category icon rules defined in CatalogPage.css */
+.category-jump-pill .category-emoji-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  display: block;
+  flex-shrink: 0;
+  transform: none;
+  max-width: none;
+  max-height: none;
+}
+
+.category-jump-pill .category-cash {
+  width: 28px;
+  height: 18px;
+}
+
+.category-jump-arrow {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .category-jump-nav {
+    margin: 14px auto 0;
+  }
+
+  .category-jump-track {
+    gap: 10px;
+    padding: 8px 32px 10px;
+    scroll-padding-inline: 32px;
+  }
+
+  .category-jump-pill {
+    font-size: 0.86rem;
+    padding: 7px 15px 7px 10px;
+  }
+
+  .category-jump-arrow {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 2;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    border: 2px solid var(--p3);
+    background: var(--color-surface);
+    color: var(--pink-800);
+    box-shadow: 0 2px 0 var(--p2), var(--shadow-md);
+    cursor: pointer;
+    transition:
+      transform 0.2s var(--ease-spring),
+      background-color 0.15s ease,
+      border-color 0.15s ease,
+      color 0.15s ease;
+  }
+
+  .category-jump-arrow--left {
+    left: 6px;
+  }
+
+  .category-jump-arrow--right {
+    right: 6px;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .category-jump-arrow:hover {
+      background: var(--p1);
+      border-color: var(--p5);
+      color: var(--color-text);
+      transform: translateY(-50%) scale(1.08);
+    }
+  }
+
+  .category-jump-arrow:active {
+    background: var(--p1);
+    border-color: var(--p5);
+    color: var(--color-text);
+    transform: translateY(-50%) scale(0.96);
+  }
+
+  .category-jump-arrow:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  .category-jump-arrow:focus-visible {
+    outline: 2.5px solid var(--p5);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .category-jump-track {
+    scroll-behavior: auto;
+  }
+
+  .category-jump-pill,
+  .category-jump-arrow {
+    transition: none !important;
+  }
+}
