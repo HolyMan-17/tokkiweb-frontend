@@ -375,6 +375,40 @@ a:hover { color: var(--color-primary-hover); }
   padding-right: 42px;
 }
 
+.sort-select {
+  font-family: var(--font-body);
+  font-size: var(--text-md);
+  font-weight: 600;
+  padding: 8px 34px 8px 14px;   /* room for chevron */
+  min-height: 40px;             /* touch target */
+  margin-left: auto;            /* push to the right in filter toolbars */
+  border-radius: var(--radius-md);
+  border: 2px solid var(--color-border);
+  background-color: var(--color-surface);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23b07a98' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              box-shadow var(--duration-fast) var(--ease-out);
+}
+
+.sort-select:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-ghost);
+  outline: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .sort-select:hover {
+    border-color: var(--p3);
+  }
+}
+
 /* ─── Badge system ──────────────────────────────────────── */
 .badge {
   display: inline-flex;

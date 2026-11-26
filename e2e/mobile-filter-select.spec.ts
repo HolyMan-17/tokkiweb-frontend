@@ -88,6 +88,26 @@ async function assertSelectFitsViewport(page: Page) {
     expect(box.y + box.height).toBeLessThanOrEqual(viewport.height);
   }
 
+  const styles = await select.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return {
+      appearance: s.appearance,
+      backgroundImage: s.backgroundImage,
+      borderTopWidth: s.borderTopWidth,
+      borderRadius: s.borderRadius,
+      fontSize: s.fontSize,
+      fontFamily: s.fontFamily,
+      minHeight: s.minHeight,
+    };
+  });
+  expect(styles.appearance).toBe('none');
+  expect(styles.backgroundImage).toContain('data:image/svg+xml');
+  expect(styles.borderTopWidth).toBe('2px');
+  expect(styles.borderRadius).toBe('12px');
+  expect(parseFloat(styles.fontSize)).toBeGreaterThanOrEqual(16);
+  expect(styles.fontFamily).toMatch(/Sour Gummy/i);
+  expect(parseFloat(styles.minHeight)).toBeGreaterThanOrEqual(40);
+
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - window.innerWidth,
   );

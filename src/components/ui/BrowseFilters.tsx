@@ -1,5 +1,6 @@
 // Shared browse filters row (stock pills + sort select) used by the category
-// pages and the whole-inventory browser. Styles come from
+// pages and the whole-inventory browser. `.sort-select` comes from
+// src/index.css; the remaining filter styles come from
 // src/pages/category/CategoryPage.css, imported by both consuming pages.
 // Sort options live in src/utils/productSort.ts (shared with the pages).
 import { SORT_OPTIONS, type SortOption } from '../../utils/productSort';

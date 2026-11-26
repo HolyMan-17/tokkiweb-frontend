@@ -323,30 +323,7 @@
   border-color: var(--color-primary);
 }
 
-.sort-select {
-  font-family: var(--font-body);
-  font-size: var(--text-md);
-  font-weight: 600;
-  padding: 8px 32px 8px 14px;   /* room for chevron */
-  min-height: 40px;              /* touch target */
-  margin-left: auto;             /* push to the right */
-  border-radius: var(--radius-md);
-  border: 2px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  cursor: pointer;
-  appearance: none;
-  -webkit-tap-highlight-color: transparent;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23999' stroke-width='2.5'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 12px center;
-  transition: border-color var(--duration-fast) var(--ease-out);
-}
-
-.sort-select:focus {
-  border-color: var(--p3);
-  outline: none;
-}
+/* .sort-select lives in src/index.css so lazy-loaded routes (like admin products) always load its styles. */
 
 /* ── Result count ────────────────────────────────────────────────────────── */
 
@@ -430,10 +407,6 @@
     border-color: var(--p3);
     color: var(--color-text);
     background: var(--p1);
-  }
-
-  .sort-select:hover {
-    border-color: var(--p3);
   }
 }
 
