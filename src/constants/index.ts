@@ -1,5 +1,12 @@
 // ─── Categories (name → emoji) ────────────────────────────
-export const CATEGORIES: { name: string; emoji: string }[] = [
+export interface CategoryItem {
+  name: string;
+  emoji: string;
+  pinAboveAll?: boolean;
+}
+
+export const CATEGORIES: CategoryItem[] = [
+  { name: 'Regalos listo para entrega', emoji: '🎄', pinAboveAll: true },
   { name: 'Menos de un dolar',         emoji: '💵' },
   { name: 'Zona KPOP',                 emoji: '🎤' },
   { name: 'Albumes',                   emoji: '💿' },

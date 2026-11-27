@@ -108,6 +108,12 @@
   height: 2rem;
 }
 
+.category-page-title .category-christmas-gifts {
+  width: 6.2rem;
+  height: 5.15rem;
+  transform: translateY(-0.55rem);
+}
+
 .category-page-title .category-kpop {
   width: 4rem;
   height: 4rem;
@@ -386,6 +392,12 @@
 @media (min-width: 768px) {
   .category-page-title {
     font-size: 2rem;
+  }
+
+  .category-page-title .category-christmas-gifts {
+    width: 7.4rem;
+    height: 6.1rem;
+    transform: translateY(-0.65rem);
   }
 
   .category-grid {

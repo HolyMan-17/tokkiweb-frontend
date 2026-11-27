@@ -23,8 +23,11 @@ import albumIcon from '../../assets/album_icon.avif';
 import keychainArt from '../../assets/keychain_art.avif';
 import cashGif from '../../assets/cash.webp';
 import paperCraneImg from '../../assets/paper_crane.avif';
+import christmasGiftsGif from '../../assets/christmas_gifts.webp';
 
 export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  'Regalos listo para entrega': <img src={christmasGiftsGif} alt="" className="category-emoji-img category-christmas-gifts" width={250} height={207} loading="lazy" />,
+  'Regalos listos para entrega': <img src={christmasGiftsGif} alt="" className="category-emoji-img category-christmas-gifts" width={250} height={207} loading="lazy" />,
   'Menos de un dolar': <img src={cashGif} alt="" className="category-emoji-img category-cash" width={217} height={119} loading="lazy" />,
   Maquillaje: <img src={lipstickGif} alt="" className="category-emoji-img" width={84} height={80} loading="lazy" />,
   Skincare: <img src={cosmeticImg} alt="" className="category-emoji-img category-cosmetic" width={128} height={112} loading="lazy" />,
@@ -53,6 +56,15 @@ export const CATEGORY_ICONS: Record<string, React.ReactNode> = {
 };
 
 const CATEGORY_ALIASES: Record<string, string> = {
+  'regalos listo para entrega': 'Regalos listo para entrega',
+  'regalos-listo-para-entrega': 'Regalos listo para entrega',
+  'regalos listos para entrega': 'Regalos listo para entrega',
+  'regalos-listos-para-entrega': 'Regalos listo para entrega',
+  'listo para entrega': 'Regalos listo para entrega',
+  'listos para entrega': 'Regalos listo para entrega',
+  'regalos navidad': 'Regalos listo para entrega',
+  'regalos navideños': 'Regalos listo para entrega',
+  navidad: 'Regalos listo para entrega',
   'menos de un dolar': 'Menos de un dolar',
   'menos-de-un-dolar': 'Menos de un dolar',
   albumes: 'Albumes',

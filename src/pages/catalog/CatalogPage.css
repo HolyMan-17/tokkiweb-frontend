@@ -758,6 +758,19 @@
   max-height: none;
 }
 
+/* Regalos listo para entrega icon — gifts occupy the lower ~55% of the
+   frame (top room is used by the pop-out animation), so size it larger
+   and lift slightly so the gift boxes align cleanly with the heading. */
+.category-emoji:has(.category-christmas-gifts) {
+  width: 4.2rem;
+}
+
+.category-christmas-gifts {
+  width: 5.2rem;
+  height: 4.3rem;
+  transform: translateY(-0.45rem);
+}
+
 /* Menos de un dolar cash icon — wide banner kept at aspect ratio so its
    rendered height matches the neighboring square icons */
 .category-cash {
@@ -1333,6 +1346,16 @@
   }
 
   .category-title { font-size: 1.3rem; }
+
+  .category-emoji:has(.category-christmas-gifts) {
+    width: 6rem;
+  }
+
+  .category-christmas-gifts {
+    width: 6.8rem;
+    height: 5.65rem;
+    transform: translateY(-0.65rem);
+  }
 
   /* Card width is provided by JS via --carousel-card-width so exactly
      N whole cards fill the visible width at any resolution. The track's

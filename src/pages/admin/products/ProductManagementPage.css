@@ -217,6 +217,13 @@
   height: 3.2rem;
 }
 
+.chip .category-christmas-gifts {
+  width: 4.4rem;
+  height: 3.65rem;
+  margin: -0.45rem 0 -0.2rem;
+  transform: translateY(-0.2rem);
+}
+
 .chip .category-purse {
   width: 2.4rem;
   height: 2.4rem;

@@ -297,6 +297,15 @@
   object-fit: contain;
 }
 
+.global-search__category-icon:has(.category-christmas-gifts) {
+  width: 2rem;
+  height: 1.65rem;
+}
+
+.global-search__category-icon .category-christmas-gifts {
+  transform: translateY(-2px);
+}
+
 /* =========================================================
    MOBILE (< 768px): Circular trigger + Full-screen modal
    ========================================================= */

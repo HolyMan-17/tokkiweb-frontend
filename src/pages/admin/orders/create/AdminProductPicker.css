@@ -157,6 +157,13 @@
   height: 22px;
 }
 
+.pos-chip .category-christmas-gifts {
+  width: 34px;
+  height: 28px;
+  margin: -4px 0 -2px;
+  transform: translateY(-2px);
+}
+
 .pos-chip .category-purse {
   width: 18px;
   height: 18px;
@@ -206,6 +213,13 @@
   .pos-chip .category-emoji-img {
     width: 16px;
     height: 16px;
+  }
+
+  .pos-chip .category-christmas-gifts {
+    width: 28px;
+    height: 23px;
+    margin: -3px 0 -2px;
+    transform: translateY(-1px);
   }
 }
 

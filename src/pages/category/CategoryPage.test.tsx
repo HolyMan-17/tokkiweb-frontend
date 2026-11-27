@@ -125,4 +125,28 @@ describe('CategoryPage', () => {
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });
+
+  it('renderiza la página de categoría Regalos listo para entrega con su icono christmas_gifts y solo sus productos', async () => {
+    const readyGiftProduct: Product = {
+      product_id: 901,
+      product_name: 'Set Navideño Listo Tokki',
+      product_price: '15.00',
+      product_description: 'Caja navideña armada lista para entregar.',
+      qty_available: 8,
+      in_stock: true,
+      category: 'Regalos listo para entrega',
+    };
+
+    mockFetchAllProducts.mockResolvedValue([glossMariposa, readyGiftProduct]);
+    renderCategory('/categorias/regalos-listo-para-entrega');
+
+    expect(await screen.findByText('Regalos listo para entrega')).toBeInTheDocument();
+    expect(screen.getByText('Set Navideño Listo Tokki')).toBeInTheDocument();
+    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Buscar en Regalos listo para entrega...')).toBeInTheDocument();
+
+    const titleImg = document.querySelector('.category-page-title img');
+    expect(titleImg).not.toBeNull();
+    expect(titleImg?.getAttribute('src')).toContain('christmas_gifts');
+  });
 });

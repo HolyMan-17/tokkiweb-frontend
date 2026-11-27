@@ -295,6 +295,7 @@ Defined in `src/constants/index.ts`. The catalog page auto-generates a carousel 
 
 | Category            | Emoji | Product Examples                          |
 |---------------------|-------|-------------------------------------------|
+| Regalos listo para entrega | 🎄 | Ready-to-deliver curated gift sets & holiday packs (pinned above Todos) |
 | Menos de un dolar      | 💵    | Stickers, dulces y accesorios de menos de $1 |
 | Zona KPOP           | 🎤    | Photocards, lightsticks, idol stickers    |
 | Albumes             | 💿    | K-Pop albums, photocards, digipacks, CDs  |

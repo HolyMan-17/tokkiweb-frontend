@@ -60,6 +60,7 @@ export function slugifyCategory(text) {
 }
 
 export const KNOWN_CATEGORY_SLUGS = new Set([
+  'regalos-listo-para-entrega',
   'menos-de-un-dolar',
   'zona-kpop',
   'albumes',

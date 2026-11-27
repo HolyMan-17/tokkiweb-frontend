@@ -158,6 +158,13 @@
   height: 18px;
 }
 
+.category-jump-pill .category-christmas-gifts {
+  width: 36px;
+  height: 30px;
+  margin: -5px 0 -3px;
+  transform: translateY(-2px);
+}
+
 .category-jump-arrow {
   display: none;
 }

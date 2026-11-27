@@ -519,3 +519,118 @@ describe('CatalogPage — hero-first skeleton loading', () => {
     expect(screen.getByRole('note')).toBeInTheDocument();
   });
 });
+
+describe('CatalogPage — categorías destacadas sobre Todos', () => {
+  it('renderiza Regalos listo para entrega antes de Todos cuando tiene productos y prioriza su primera imagen', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 1,
+        product_name: 'Gloss Mariposa',
+        category: 'Maquillaje',
+        product_price: '5.00',
+        product_description: 'Brillo labial.',
+        qty_available: 10,
+        in_stock: true,
+        product_image_url: 'https://example.com/gloss.webp',
+      },
+      {
+        product_id: 2,
+        product_name: 'Combo Navideño Pastel',
+        category: 'Regalos listo para entrega',
+        product_price: '14.00',
+        product_description: 'Set de regalo listo para entregar.',
+        qty_available: 5,
+        in_stock: true,
+        product_image_url: 'https://example.com/combo-1.webp',
+      },
+      {
+        product_id: 3,
+        product_name: 'Caja Sorpresa Tokki',
+        category: 'Regalos listo para entrega',
+        product_price: '18.00',
+        product_description: 'Regalo navideño armado.',
+        qty_available: 4,
+        in_stock: true,
+        product_image_url: 'https://example.com/combo-2.webp',
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    const cards = await screen.findAllByText('Caja Sorpresa Tokki');
+    expect(cards.length).toBeGreaterThanOrEqual(1);
+
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const headings = sections.map(
+      (s) => s.querySelector('.category-title')?.textContent?.trim(),
+    );
+
+    expect(headings).toEqual([
+      'Regalos listo para entrega',
+      'Todos',
+      'Maquillaje',
+    ]);
+
+    const featuredSection = sections[0] as HTMLElement;
+    expect(featuredSection.id).toBe('category-section-regalos-listo-para-entrega');
+
+    const iconImg = featuredSection.querySelector('img.category-christmas-gifts');
+    expect(iconImg).not.toBeNull();
+    expect(iconImg?.getAttribute('src')).toContain('christmas_gifts');
+
+    const verMas = within(featuredSection).getByRole('link', { name: 'Ver más' });
+    expect(verMas).toHaveAttribute('href', '/categorias/regalos-listo-para-entrega');
+
+    const featuredImgs = featuredSection.querySelectorAll('img.card-img');
+    expect(featuredImgs[0]).toHaveAttribute('loading', 'eager');
+    expect(featuredImgs[0]).toHaveAttribute('fetchpriority', 'high');
+
+    const todosSection = sections[1] as HTMLElement;
+    const todosImgs = todosSection.querySelectorAll('img.card-img');
+    for (const img of Array.from(todosImgs)) {
+      expect(img).not.toHaveAttribute('fetchpriority', 'high');
+    }
+
+    const jumpNav = screen.getByRole('navigation', { name: 'Ir a una categoría' });
+    const pillButtons = Array.from(jumpNav.querySelectorAll('button.category-jump-pill'));
+    expect(pillButtons.map((b) => b.textContent?.trim())).toEqual([
+      'Regalos listo para entrega',
+      'Maquillaje',
+    ]);
+  });
+
+  it('oculta Regalos listo para entrega y mantiene Todos primero cuando no hay productos en esa categoría', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce([
+      {
+        product_id: 10,
+        product_name: 'Labial Coreano',
+        category: 'Maquillaje',
+        product_price: '6.00',
+        product_description: 'Labial mate.',
+        qty_available: 6,
+        in_stock: true,
+        product_image_url: 'https://example.com/labial.webp',
+      },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findAllByText('Labial Coreano');
+
+    const sections = Array.from(document.querySelectorAll('.category-section'));
+    const headings = sections.map(
+      (s) => s.querySelector('.category-title')?.textContent?.trim(),
+    );
+    expect(headings).toEqual(['Todos', 'Maquillaje']);
+  });
+});

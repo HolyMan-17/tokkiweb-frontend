@@ -614,6 +614,7 @@ test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
   const routes: Array<{ label: string; path: string; seedCart?: boolean }> = [
     { label: 'user-catalog', path: '/' },
     { label: 'user-all-products', path: '/productos' },
+    { label: 'user-category-regalos-listo', path: '/categorias/regalos-listo-para-entrega' },
     { label: 'user-category-menos-dolar', path: '/categorias/menos-de-un-dolar' },
     { label: 'user-category-regalos', path: '/categorias/bolsas-o-cajas-de-regalo' },
     { label: 'user-product-detail', path: '/products/1' },
@@ -665,6 +666,14 @@ test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
       await auditPageLayout(page, route.label, viewportName, takeScreenshot, testInfo, pageErrors, failedAssets);
 
       if (route.label === 'user-catalog') {
+        const sectionTitles = await page.evaluate(() =>
+          Array.from(document.querySelectorAll('.category-section .category-title')).map(
+            (el) => el.textContent?.trim() ?? '',
+          ),
+        );
+        expect(sectionTitles[0]).toBe('Regalos listo para entrega');
+        expect(sectionTitles[1]).toBe('Todos');
+
         const discountAudit = await page.evaluate(() => {
           const badges = Array.from(document.querySelectorAll('.product-card .card-discount-badge'));
           const badPositions: string[] = [];

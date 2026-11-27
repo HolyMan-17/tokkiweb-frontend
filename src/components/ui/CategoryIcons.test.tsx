@@ -19,6 +19,10 @@ describe('CategoryIcons & CATEGORIES invariants', () => {
   });
 
   it.each([
+    ['Regalos listo para entrega', 'christmas_gifts'],
+    ['Regalos listos para entrega', 'christmas_gifts'],
+    ['regalos-listo-para-entrega', 'christmas_gifts'],
+    ['listo para entrega', 'christmas_gifts'],
     ['Zona KPOP', 'kpop'],
     ['k-pop', 'kpop'],
     ['Albumes', 'album_icon'],

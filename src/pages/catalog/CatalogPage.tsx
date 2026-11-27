@@ -469,6 +469,15 @@ export default function CatalogPage() {
     () => CATEGORIES.filter((cat) => (grouped[cat.name]?.length ?? 0) > 0),
     [grouped],
   );
+  const pinnedCategories = useMemo(
+    () => populatedCategories.filter((cat) => cat.pinAboveAll),
+    [populatedCategories],
+  );
+  const regularCategories = useMemo(
+    () => populatedCategories.filter((cat) => !cat.pinAboveAll),
+    [populatedCategories],
+  );
+  const hasPinnedCategories = pinnedCategories.length > 0;
 
   // Measure via ResizeObserver contentRect inside rAF (never reading wrapper.clientWidth
   // synchronously after sibling DOM mutations) so layout never forces reflow.
@@ -548,26 +557,40 @@ export default function CatalogPage() {
             {/* ── Quick-jump pills for populated categories ── */}
             <CategoryJumpBar categories={populatedCategories} />
 
-            {/* ── Carousels: Todos (all products) + one per category ── */}
+            {/* ── Carousels: pinned categories + Todos (all products) + one per category ── */}
             <div className="carousels-wrapper" ref={carouselsWrapperRef}>
-              <CategoryCarousel
-                title="Todos"
-                emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
-                products={sortedProducts}
-                seeMoreTo={ROUTES.allProducts}
-                eagerSection
-                priorityCards
-                initialImages={initialCarouselImages}
-              />
-
-              {populatedCategories.map((cat, index) => (
+              {pinnedCategories.map((cat, index) => (
                 <CategoryCarousel
                   key={cat.name}
                   title={cat.name}
                   emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
                   products={grouped[cat.name]}
                   seeMoreTo={ROUTES.category(slugify(cat.name))}
-                  eagerSection={!isMobile && index === 0}
+                  eagerSection={index === 0 || (!isMobile && index === 1)}
+                  priorityCards={index === 0}
+                  initialImages={initialCarouselImages}
+                  sectionId={getCategorySectionId(cat.name)}
+                />
+              ))}
+
+              <CategoryCarousel
+                title="Todos"
+                emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
+                products={sortedProducts}
+                seeMoreTo={ROUTES.allProducts}
+                eagerSection={!hasPinnedCategories || !isMobile}
+                priorityCards={!hasPinnedCategories}
+                initialImages={initialCarouselImages}
+              />
+
+              {regularCategories.map((cat, index) => (
+                <CategoryCarousel
+                  key={cat.name}
+                  title={cat.name}
+                  emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
+                  products={grouped[cat.name]}
+                  seeMoreTo={ROUTES.category(slugify(cat.name))}
+                  eagerSection={!isMobile && !hasPinnedCategories && index === 0}
                   initialImages={initialCarouselImages}
                   sectionId={getCategorySectionId(cat.name)}
                 />
