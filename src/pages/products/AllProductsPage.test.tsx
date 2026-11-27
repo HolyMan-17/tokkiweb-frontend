@@ -44,12 +44,19 @@ vi.mock('../../api/products', () => ({
 vi.mock('../../context/CartContext', () => ({
   useCart: () => ({
     items: [],
+    itemCount: 0,
     addItem: vi.fn(),
     removeItem: vi.fn(),
     updateQuantity: vi.fn(),
     clearCart: vi.fn(),
     totalCount: 0,
     totalPrice: 0,
+  }),
+  useCartActions: () => ({
+    addItem: vi.fn(),
+    removeItem: vi.fn(),
+    updateQuantity: vi.fn(),
+    clearCart: vi.fn(),
   }),
 }));
 

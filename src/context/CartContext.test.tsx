@@ -1,7 +1,8 @@
+import { memo, Profiler } from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, beforeEach } from 'vitest';
-import { CartProvider, useCart } from './CartContext';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { CartProvider, useCart, useCartActions } from './CartContext';
 import { describeStockAdjustment, type StockAdjustment } from '../utils/stock';
 import type { Product } from '../types';
 
@@ -139,5 +140,47 @@ describe('describeStockAdjustment', () => {
     expect(describeStockAdjustment(adj)).toBe(
       "'Butterfly Gloss' ya no está disponible",
     );
+  });
+});
+
+describe('CartActionsContext — render isolation', () => {
+  beforeEach(() => {
+    window.localStorage.clear();
+  });
+
+  it('does not re-render memoized consumers of useCartActions when cart items change', async () => {
+    const user = userEvent.setup();
+    const onActionRender = vi.fn();
+
+    const ActionOnlyCard = memo(function ActionOnlyCard() {
+      const { addItem } = useCartActions();
+      return (
+        <button type="button" onClick={() => addItem(p1, 1)}>
+          agregar-aislado
+        </button>
+      );
+    });
+
+    function BadgeReader() {
+      const { itemCount } = useCart();
+      return <span data-testid="badge-count">{itemCount}</span>;
+    }
+
+    render(
+      <CartProvider>
+        <BadgeReader />
+        <Profiler id="action-only" onRender={onActionRender}>
+          <ActionOnlyCard />
+        </Profiler>
+      </CartProvider>,
+    );
+
+    expect(onActionRender).toHaveBeenCalledTimes(1);
+    expect(screen.getByTestId('badge-count')).toHaveTextContent('0');
+
+    await user.click(screen.getByRole('button', { name: 'agregar-aislado' }));
+
+    expect(screen.getByTestId('badge-count')).toHaveTextContent('1');
+    expect(onActionRender).toHaveBeenCalledTimes(1);
   });
 });

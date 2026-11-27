@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { useState, useMemo, useRef, useEffect, useCallback, useDeferredValue } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import type { Product } from '../../types';
 import { fetchAllProducts } from '../../api/products';
@@ -156,15 +156,16 @@ export function GlobalSearchBar({ products: initialProducts }: GlobalSearchBarPr
   }, []);
 
   const trimmedQuery = query.trim();
+  const deferredQuery = useDeferredValue(trimmedQuery);
 
   const latestProducts = useMemo(() => {
     return allProducts.slice(-4).reverse();
   }, [allProducts]);
 
   const matchingProducts = useMemo(() => {
-    if (!trimmedQuery) return [];
-    return allProducts.filter((p) => matchesSearch(p, trimmedQuery));
-  }, [allProducts, trimmedQuery]);
+    if (!deferredQuery) return [];
+    return allProducts.filter((p) => matchesSearch(p, deferredQuery));
+  }, [allProducts, deferredQuery]);
 
   const activeCategories = useMemo(() => {
     if (allProducts.length === 0) return CATEGORIES;

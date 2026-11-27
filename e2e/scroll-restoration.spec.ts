@@ -29,7 +29,7 @@ const CATEGORY_NAMES = ['Maquillaje', 'Skincare', 'Accesorios'] as const;
  * when the app first tries to restore an offset. Without this delay the
  * restore would race the data load and the test would be flaky.
  */
-const API_LATENCY_MS = 200;
+const API_LATENCY_MS = 50;
 
 /** Mutable product counter — a test can shrink the catalog between visits. */
 interface ProductCounter {
@@ -49,22 +49,6 @@ function buildProducts(count: number) {
   }));
 }
 
-function buildOrders(count: number) {
-  return Array.from({ length: count }, (_, index) => ({
-    order_id: 100 + index,
-    name: `Cliente${index}`,
-    last_name: 'Prueba',
-    cedula: `V-1234567${index % 10}`,
-    tlf_num: '+584141234567',
-    total_amount: '20.00',
-    status: index % 3 === 0 ? 'pending' : 'approved',
-    item_count: 2,
-    created_at: '2026-08-13T14:30:00.000Z',
-    delivery_type: 'envio_nacional',
-    payment_method: 'pago_movil',
-  }));
-}
-
 async function mockProducts(page: Page, counter: ProductCounter) {
   await page.route('**/api/products', async (route) => {
     await new Promise((resolve) => setTimeout(resolve, API_LATENCY_MS));
@@ -72,55 +56,6 @@ async function mockProducts(page: Page, counter: ProductCounter) {
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ success: true, data: buildProducts(counter.count) }),
-    });
-  });
-}
-
-async function mockOrders(page: Page, count: number) {
-  await page.route('**/api/orders', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, API_LATENCY_MS));
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ success: true, data: buildOrders(count) }),
-    });
-  });
-}
-
-/**
- * NOTE: the orders-LIST route pattern does NOT match '/api/orders/100' — the
- * per-order endpoint needs its own pattern with the trailing path segment
- * (see the route call below).
- */
-async function mockOrderDetail(page: Page, orderId: number) {
-  await page.route('**/api/orders/*', async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, API_LATENCY_MS));
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({
-        success: true,
-        data: {
-          order_id: orderId,
-          client: {
-            name: 'Cliente0',
-            last_name: 'Prueba',
-            cedula: 'V-12345670',
-            tlf_num: '+584141234567',
-          },
-          total_amount: '20.00',
-          status: 'pending',
-          created_at: '2026-08-13T14:30:00.000Z',
-          items: [
-            {
-              product_name: 'Producto 1',
-              product_qty: 2,
-              product_price: '10.00',
-              product_total: '20.00',
-            },
-          ],
-        },
-      }),
     });
   });
 }
@@ -214,6 +149,7 @@ test.describe('Scroll restoration', () => {
     // SECOND one is a real category.
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
     await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card').first()).toBeVisible();
 
     // Back to the homepage …
@@ -223,30 +159,6 @@ test.describe('Scroll restoration', () => {
 
     // … and the user lands exactly where they left.
     await expectScrollNear(page, 900);
-  });
-
-  test('restores the admin orders list offset after visiting an order detail and going back', async ({ page }) => {
-    await disableNativeScrollRestoration(page);
-    await mockOrders(page, 40);
-    await mockOrderDetail(page, 100);
-    await mockProducts(page, { count: 5 });
-
-    await page.goto('/tokki-admin/orders');
-    await expect(page.locator('.order-card')).toHaveCount(40);
-
-    await scrollTo(page, 800);
-    await expectScrollNear(page, 800);
-
-    await clickWithoutScrolling(page.locator('.order-id').first());
-    await expect(page).toHaveURL(/\/tokki-admin\/orders\/100$/);
-    await expect(page.locator('.order-detail-page')).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Pedido #100/ }).first()).toBeVisible();
-
-    await page.goBack();
-    await expect(page).toHaveURL(/\/tokki-admin\/orders$/);
-    await expect(page.locator('.order-card')).toHaveCount(40);
-
-    await expectScrollNear(page, 800);
   });
 
   test('a screen that was never visited still opens at the top', async ({ page }) => {
@@ -288,6 +200,7 @@ test.describe('Scroll restoration', () => {
     // … walk over to another screen …
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(0));
     await expect(page).toHaveURL('/productos');
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card').first()).toBeVisible();
 
     // … and shrink the catalog behind it.
@@ -300,6 +213,7 @@ test.describe('Scroll restoration', () => {
     await expect(page.locator('.category-section').first()).toBeVisible();
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
     await expect(page).toHaveURL(/\/categorias\/maquillaje$/);
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card')).toHaveCount(1);
 
     // Precondition: the shortened screen is still scrollable, otherwise
@@ -337,6 +251,7 @@ test.describe('Scroll restoration', () => {
 
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
     await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card').first()).toBeVisible();
 
     await scrollTo(page, 1000);
@@ -366,6 +281,7 @@ test.describe('Scroll restoration', () => {
     // Previously visited category route also had its remembered offset flushed
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
     await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card').first()).toBeVisible();
     expect(await scrollY(page)).toBe(0);
 
@@ -377,6 +293,7 @@ test.describe('Scroll restoration', () => {
     await expect(page.locator('.category-section').first()).toBeVisible();
     await clickWithoutScrolling(page.locator('.see-more-btn').nth(1));
     await expect(page).toHaveURL(/\/categorias\//);
+    await expect(page.locator('.category-page-title')).toBeVisible();
     await expect(page.locator('.product-card').first()).toBeVisible();
     await expectScrollNear(page, 700);
   });

@@ -5,7 +5,7 @@ import { CATEGORIES } from '../src/constants';
 
 const SAMPLE_PNG = readFileSync(join(process.cwd(), 'public/favicon-192x192.png'));
 
-const SCREENSHOT_VIEWPORTS = new Set(['mobile-375', 'laptop-1280', 'desktop-1680']);
+const SCREENSHOT_VIEWPORTS = new Set(['mobile-360', 'tablet-768', 'desktop-1680']);
 
 const MOCK_PRODUCTS = CATEGORIES.map((cat, idx) => {
   const id = idx + 1;
@@ -214,33 +214,62 @@ async function auditPageLayout(
   pageErrors: string[],
   failedAssets: string[],
 ) {
-  // Settle initial lazy routes & async loads
-  await page.waitForLoadState('networkidle');
-  // Wait for CSS stagger / entrance animations so opacity / transform settle
+  // Settle initial lazy routes & async loads deterministically
+  await page.waitForLoadState('load');
+  await page
+    .waitForFunction(
+      () => {
+        const root = document.getElementById('root');
+        if (!root || root.children.length === 0) return false;
+        return !document.querySelector(
+          '.auth-gate--loading, .spinner-full-page, .spinner-container, .catalog-skeleton-wrapper',
+        );
+      },
+      undefined,
+      { timeout: 5000 },
+    )
+    .catch(() => {});
+  if (routeLabel === 'admin-products-edit-modal') {
+    await page.locator('.modal-content').waitFor({ state: 'visible', timeout: 5000 });
+  }
   await page.evaluate(async () => {
-    // Scroll through the document once so lazy images load and reveal, then reset
-    const imgs = Array.from(document.querySelectorAll('img'));
-    for (const img of imgs) {
-      if (img.loading === 'lazy') {
-        img.loading = 'eager';
+    for (let pass = 0; pass < 2; pass++) {
+      const imgs = Array.from(document.querySelectorAll('img'));
+      for (const img of imgs) {
+        if (img.loading === 'lazy') {
+          img.loading = 'eager';
+        }
       }
+      await Promise.all([
+        document.fonts?.ready ?? Promise.resolve(),
+        ...imgs.map(
+          (img) =>
+            new Promise<void>((resolve) => {
+              if (img.complete) {
+                resolve();
+                return;
+              }
+              const timer = window.setTimeout(resolve, 4000);
+              img.addEventListener('load', () => { window.clearTimeout(timer); resolve(); }, { once: true });
+              img.addEventListener('error', () => { window.clearTimeout(timer); resolve(); }, { once: true });
+            }),
+        ),
+      ]);
     }
-    await Promise.all(
-      imgs.map(
-        (img) =>
-          new Promise<void>((resolve) => {
-            if (img.complete) {
-              resolve();
-              return;
-            }
-            const timer = window.setTimeout(resolve, 4000);
-            img.addEventListener('load', () => { window.clearTimeout(timer); resolve(); }, { once: true });
-            img.addEventListener('error', () => { window.clearTimeout(timer); resolve(); }, { once: true });
-          }),
-      ),
+    const finiteAnimations = document.getAnimations().filter((anim) => {
+      const timing = anim.effect?.getComputedTiming();
+      return timing && Number.isFinite(timing.iterations) && anim.playState === 'running';
+    });
+    if (finiteAnimations.length > 0) {
+      await Promise.race([
+        Promise.allSettled(finiteAnimations.map((a) => a.finished)),
+        new Promise<void>((resolve) => window.setTimeout(resolve, 300)),
+      ]);
+    }
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
     );
   });
-  await page.waitForTimeout(750);
 
   const findings = await page.evaluate((): LayoutFindings => {
     const viewportW = document.documentElement.clientWidth;
@@ -603,7 +632,8 @@ test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
   test('audits all routes and assets cleanly', async ({ page }, testInfo) => {
     test.setTimeout(120_000);
     const viewportName = testInfo.project.name.replace(/^audit-/, '');
-    const takeScreenshot = SCREENSHOT_VIEWPORTS.has(viewportName);
+    const takeScreenshot =
+      process.env.E2E_SCREENSHOTS === '1' && SCREENSHOT_VIEWPORTS.has(viewportName);
     await setupApiAndImageMocks(page);
 
     const pageErrors: string[] = [];

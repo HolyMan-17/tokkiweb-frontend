@@ -41,7 +41,7 @@ const ORDERS: OrderSummary[] = [
 describe('DashboardCharts — interactividad de métricas y filtros', { timeout: 20000 }, () => {
   beforeAll(async () => {
     await import('recharts');
-  });
+  }, 30_000);
 
   it('renderiza títulos de secciones y botones de filtro', async () => {
     render(

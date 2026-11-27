@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useDeferredValue } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import './CategoryPage.css';
 import { fetchAllProducts } from '../../api/products';
@@ -70,6 +70,7 @@ export default function CategoryPage() {
   usePageMeta(pageMeta);
 
   const [query, setQuery] = useState('');
+  const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<SortOption>('recent');
   const [stockOnly, setStockOnly] = useState(false);
 
@@ -77,8 +78,8 @@ export default function CategoryPage() {
     let result = [...allProducts];
 
     // Search filter (name + description)
-    if (query.trim()) {
-      result = result.filter(p => matchesSearch(p, query));
+    if (deferredQuery.trim()) {
+      result = result.filter(p => matchesSearch(p, deferredQuery));
     }
 
     // Stock filter
@@ -90,7 +91,7 @@ export default function CategoryPage() {
     result = sortProducts(result, sort);
 
     return result;
-  }, [allProducts, query, sort, stockOnly]);
+  }, [allProducts, deferredQuery, sort, stockOnly]);
 
   const hasActiveFilters = query.trim() !== '' || stockOnly || sort !== 'recent';
   const isFiltered = filtered.length !== allProducts.length;
@@ -188,9 +189,9 @@ export default function CategoryPage() {
         {/* Grid or empty state */}
         {filtered.length > 0 ? (
           <div className="category-grid">
-            {filtered.map(p => (
+            {filtered.map((p, idx) => (
               <div key={p.product_id} className="category-grid-item">
-                <ProductCard product={p} />
+                <ProductCard product={p} priority={idx < 4} />
               </div>
             ))}
           </div>

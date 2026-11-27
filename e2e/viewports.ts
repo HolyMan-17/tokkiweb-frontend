@@ -18,3 +18,8 @@ export const VIEWPORTS: readonly ViewportPreset[] = [
 export const MOBILE_VIEWPORTS = VIEWPORTS.filter((v) => v.kind === 'mobile');
 export const WIDE_VIEWPORTS = VIEWPORTS.filter((v) => v.width >= 768);
 export const DESKTOP_VIEWPORTS = VIEWPORTS.filter((v) => v.kind === 'desktop');
+
+/** Canonical 3-breakpoint audit set (mobile, tablet, wide desktop). */
+export const CORE_AUDIT_VIEWPORTS: readonly ViewportPreset[] = VIEWPORTS.filter((v) =>
+  v.name === 'mobile-360' || v.name === 'tablet-768' || v.name === 'desktop-1680',
+);

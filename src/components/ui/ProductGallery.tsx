@@ -48,9 +48,16 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
 
   if (!gallery) {
     return (
-      <div className="product-image-container animate-scaleIn">
+      <div className="product-image-container">
         {images.length === 1 ? (
-          <img src={images[0]} alt={name} className="product-image" />
+          <img
+            src={images[0]}
+            alt={name}
+            className="product-image"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
         ) : (
           <div className="product-image-placeholder">{name.charAt(0).toUpperCase()}</div>
         )}
@@ -87,7 +94,7 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
 
   return (
     <div
-      className={`product-image-container product-gallery animate-scaleIn${controlsVisible ? ' controls-visible' : ''}`}
+      className={`product-image-container product-gallery${controlsVisible ? ' controls-visible' : ''}`}
       onClick={showControlsTemporarily}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -114,6 +121,8 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
               alt={`${name} — imagen ${index + 1}`}
               className="product-gallery-img"
               loading={index === 0 ? 'eager' : 'lazy'}
+              fetchPriority={index === 0 ? 'high' : undefined}
+              decoding="async"
               draggable={false}
             />
           </div>

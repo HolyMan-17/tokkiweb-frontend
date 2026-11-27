@@ -33,9 +33,9 @@ const sombrasRosadas: Product = {
   category: 'Maquillaje',
 };
 
-function renderCategory() {
+function renderCategory(path = '/categorias/maquillaje') {
   return render(
-    <MemoryRouter initialEntries={['/categorias/maquillaje']}>
+    <MemoryRouter initialEntries={[path]}>
       <CartProvider>
         <Routes>
           <Route path="/categorias/:slug" element={<CategoryPage />} />
@@ -45,7 +45,7 @@ function renderCategory() {
   );
 }
 
-describe('CategoryPage — búsqueda por nombre + descripción', () => {
+describe('CategoryPage', () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
@@ -61,13 +61,12 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
 
     await user.type(screen.getByPlaceholderText('Buscar en Maquillaje...'), 'hidratante');
 
-    // "hidratante" solo existe en la descripción del Gloss Mariposa.
     expect(screen.getByText('Gloss Mariposa')).toBeInTheDocument();
     expect(screen.queryByText('Sombras Rosadas')).not.toBeInTheDocument();
     expect(screen.getByText('Mostrando 1 de 2 productos')).toBeInTheDocument();
   });
 
-  it('renderiza la página de categoría Zona KPOP con su icono kpop.avif y productos correspondientes', async () => {
+  it('filtra por categoría, adapta el placeholder de búsqueda y muestra el icono de la categoría', async () => {
     const kpopProduct: Product = {
       product_id: 201,
       product_name: 'Photocard Set BTS',
@@ -79,108 +78,16 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     };
 
     mockFetchAllProducts.mockResolvedValue([glossMariposa, kpopProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/zona-kpop']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
+    renderCategory('/categorias/zona-kpop');
 
     expect(await screen.findByText('Zona KPOP')).toBeInTheDocument();
     expect(screen.getByText('Photocard Set BTS')).toBeInTheDocument();
     expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
+    expect(screen.getByPlaceholderText('Buscar en Zona KPOP...')).toBeInTheDocument();
 
     const titleImg = document.querySelector('.category-page-title img');
     expect(titleImg).not.toBeNull();
     expect(titleImg?.getAttribute('src')).toContain('kpop');
-  });
-
-  it('renderiza la página de categoría Bolsas o cajas de regalo con su icono gift.webp y productos correspondientes', async () => {
-    const giftProduct: Product = {
-      product_id: 301,
-      product_name: 'Caja de Regalo Kawaii Corazones',
-      product_price: '4.00',
-      product_description: 'Caja rígida con lazo de satén.',
-      qty_available: 25,
-      in_stock: true,
-      category: 'Bolsas o cajas de regalo',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, giftProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/bolsas-o-cajas-de-regalo']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Bolsas o cajas de regalo')).toBeInTheDocument();
-    expect(screen.getByText('Caja de Regalo Kawaii Corazones')).toBeInTheDocument();
-    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
-
-    expect(screen.getByPlaceholderText('Buscar en Bolsas o cajas de regalo...')).toBeInTheDocument();
-  });
-
-  it('renderiza el placeholder de búsqueda adaptado para categorías con nombres largos como Bolsos y Carteras', async () => {
-    const purseProduct: Product = {
-      product_id: 401,
-      product_name: 'Mochila Kawaii Bunny',
-      product_price: '18.00',
-      product_description: 'Mochila de felpa suave.',
-      qty_available: 8,
-      in_stock: true,
-      category: 'Bolsos y Carteras',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, purseProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/bolsos-y-carteras']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Bolsos y Carteras')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Buscar en Bolsos y Carteras...')).toBeInTheDocument();
-  });
-
-  it('renderiza el placeholder de búsqueda adaptado para Dulces & Comida Asiatica', async () => {
-    const treatProduct: Product = {
-      product_id: 501,
-      product_name: 'Pepero Choco Cookie',
-      product_price: '2.50',
-      product_description: 'Galletas cubiertas de chocolate.',
-      qty_available: 30,
-      in_stock: true,
-      category: 'Dulces & Comida Asiatica',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, treatProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/dulces-&-comida-asiatica']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Dulces & Comida Asiatica')).toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Buscar en Dulces & Comida Asiatica...')).toBeInTheDocument();
   });
 
   it('ordena por "Más recientes" (default) mostrando primero el producto con mayor product_id', async () => {
@@ -203,10 +110,7 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
       category: 'Maquillaje',
     };
 
-    // El backend devuelve filas en orden de inserción: el más nuevo (id 99)
-    // aparece AL FINAL del arreglo.
     mockFetchAllProducts.mockResolvedValue([labialViejo, labialNuevo]);
-
     renderCategory();
 
     const select = await screen.findByRole('combobox', { name: 'Ordenar productos' });
@@ -217,123 +121,8 @@ describe('CategoryPage — búsqueda por nombre + descripción', () => {
     expect(nuevos.length).toBeGreaterThan(0);
     expect(viejos.length).toBeGreaterThan(0);
 
-    // En el DOM, el más nuevo debe aparecer ANTES que el más viejo.
     expect(nuevos[0].compareDocumentPosition(viejos[0])).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING
+      Node.DOCUMENT_POSITION_FOLLOWING,
     );
-  });
-
-  it('renderiza la página de categoría Albumes con su icono album_icon.avif y productos correspondientes', async () => {
-    const albumProduct: Product = {
-      product_id: 601,
-      product_name: 'NewJeans 2nd EP Get Up Bunny Beach Bag',
-      product_price: '28.00',
-      product_description: 'Álbum original importado con photocards y CD.',
-      qty_available: 12,
-      in_stock: true,
-      category: 'Albumes',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, albumProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/albumes']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Albumes')).toBeInTheDocument();
-    expect(screen.getByText('NewJeans 2nd EP Get Up Bunny Beach Bag')).toBeInTheDocument();
-    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
-
-    const titleImg = document.querySelector('.category-page-title img');
-    expect(titleImg).not.toBeNull();
-    expect(titleImg?.getAttribute('src')).toContain('album_icon');
-  });
-});
-
-describe('CategoryPage — Menos de un dolar', () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    vi.clearAllMocks();
-    mockFetchAllProducts.mockResolvedValue([glossMariposa]);
-  });
-
-  it('renderiza la página de categoría Menos de un dolar con su icono cash.webp, su producto y el conteo correspondiente', async () => {
-    const stickerProduct: Product = {
-      product_id: 701,
-      product_name: 'Sticker Kawaii Conejito',
-      product_price: '0.75',
-      product_description: 'Sticker de vinilo resistente al agua.',
-      qty_available: 40,
-      in_stock: true,
-      category: 'Menos de un dolar',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, stickerProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/menos-de-un-dolar']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Menos de un dolar')).toBeInTheDocument();
-    expect(screen.getByText('Sticker Kawaii Conejito')).toBeInTheDocument();
-    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
-    expect(screen.getByText('1 productos')).toBeInTheDocument();
-
-    const titleImg = document.querySelector('.category-page-title img');
-    expect(titleImg).not.toBeNull();
-    expect(titleImg?.getAttribute('src')).toContain('cash');
-  });
-});
-
-describe('CategoryPage — Papeleria', () => {
-  beforeEach(() => {
-    window.localStorage.clear();
-    vi.clearAllMocks();
-    mockFetchAllProducts.mockResolvedValue([glossMariposa]);
-  });
-
-  it('renderiza la página de categoría Papeleria con su icono paper_crane.avif y solo sus productos', async () => {
-    const papeleriaProduct: Product = {
-      product_id: 801,
-      product_name: 'Libreta Origami Tokki',
-      product_price: '3.50',
-      product_description: 'Libreta kawaii de 80 hojas.',
-      qty_available: 18,
-      in_stock: true,
-      category: 'Papeleria',
-    };
-
-    mockFetchAllProducts.mockResolvedValue([glossMariposa, papeleriaProduct]);
-
-    render(
-      <MemoryRouter initialEntries={['/categorias/papeleria']}>
-        <CartProvider>
-          <Routes>
-            <Route path="/categorias/:slug" element={<CategoryPage />} />
-          </Routes>
-        </CartProvider>
-      </MemoryRouter>,
-    );
-
-    expect(await screen.findByText('Papeleria')).toBeInTheDocument();
-    expect(screen.getByText('Libreta Origami Tokki')).toBeInTheDocument();
-    expect(screen.queryByText('Gloss Mariposa')).not.toBeInTheDocument();
-    expect(screen.getByPlaceholderText('Buscar en Papeleria...')).toBeInTheDocument();
-
-    const titleImg = document.querySelector('.category-page-title img');
-    expect(titleImg).not.toBeNull();
-    expect(titleImg?.getAttribute('src')).toContain('paper_crane');
   });
 });

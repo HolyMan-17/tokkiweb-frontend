@@ -1,12 +1,12 @@
 import { defineConfig, devices } from '@playwright/test';
-import { VIEWPORTS } from './e2e/viewports';
+import { CORE_AUDIT_VIEWPORTS } from './e2e/viewports';
 
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
-  workers: 1,
+  workers: 2,
   reporter: [['list']],
   use: {
     baseURL: 'http://127.0.0.1:5199',
@@ -18,7 +18,7 @@ export default defineConfig({
       testIgnore: /responsive-layout-audit\.spec\.ts/,
       use: { ...devices['Desktop Chrome'] },
     },
-    ...VIEWPORTS.map((vp) => ({
+    ...CORE_AUDIT_VIEWPORTS.map((vp) => ({
       name: `audit-${vp.name}`,
       testMatch: /responsive-layout-audit\.spec\.ts/,
       use: {

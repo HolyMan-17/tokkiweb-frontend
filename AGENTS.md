@@ -201,7 +201,7 @@ All agents working on this codebase **must** adhere to the following skills and 
 - **No AI Slop / Generic Boilerplate:** No generic grey shadows, no bootstrap badges, no Tailwind/CSS-in-JS.
 
 ### 2. `react-doctor` Skill & ESLint Rules
-- **React Diagnostics:** Run `pnpm doctor` (or `npx react-doctor@latest`) before finishing frontend work to prevent performance, accessibility, and architectural regressions (Target score: **100 / 100 Great**).
+- **React Diagnostics:** Run `pnpm run doctor` (or `pnpm exec react-doctor`; note `pnpm doctor` invokes pnpm's built-in CLI doctor) before finishing frontend work to prevent performance, accessibility, and architectural regressions (Target score: **100 / 100 Great**).
 - **ESLint & Hooks:** Run `pnpm lint` (`eslint-plugin-react-hooks` flat config). Never suppress hook dependencies without explicit justification.
 - **Component Hygiene:**
   - Hoist pure functions, validators, and static lookup maps to module scope.
@@ -212,28 +212,39 @@ All agents working on this codebase **must** adhere to the following skills and 
 
 ---
 
-## Development Workflow (TDD)
+## Development Workflow & Focused Testing Policy
 
-All development **must** follow Test-Driven Development (Red → Green → Refactor):
+All development follows **Test-Driven Development (Red → Green → Refactor)** paired with **lean test-suite hygiene**:
 
-1. **Red** — Before writing any production code, write a failing test that captures the expected behavior (component render/logic test, utility unit test, store mutation test).
+1. **Red** — Before writing any production code, write a failing test that captures the expected behavior (component render/logic test, utility unit test, or layout/position E2E check).
 2. **Green** — Write the minimal production code needed to make the test pass.
-3. **Refactor** — Clean up both code and tests while keeping them green.
+3. **Refactor & Prune** — Clean up code and tests while keeping all checks green; prune any temporary/superseded one-off test once covered by the core suite.
 
-Rules:
+### What to Test (Always)
 
-- Never modify or add features without an accompanying test first; bug fixes start with a failing regression test that reproduces the bug.
-- Run the full test suite (`pnpm test:run`), e2e visual tests (`pnpm test:e2e`), and build/lint (`pnpm build && pnpm lint`) before declaring any task complete — all tests must pass (currently **61 Vitest test files / 588 tests green** + **120 Playwright E2E tests green**).
-- Tests live next to what they cover (`Foo.tsx` → `Foo.test.tsx`, co-located) using **Vitest** + **@testing-library/react**.
-- Pure logic (validators, formatters, sanitizers, link generators) must be unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
-- Do not weaken, skip, or delete existing tests to make a change pass — fix the code instead.
+- **New features — always:** Cover new behavior and pure logic with Vitest tests (`Foo.tsx` → `Foo.test.tsx`, co-located).
+- **New visual elements & their position — always:** Verify layout, positioning, alignment, and responsiveness via Playwright using presets from `e2e/viewports.ts`.
+- **Regressions / breakage from new changes — always:** Run the core Vitest (`pnpm test:run`) and Playwright (`pnpm test:e2e`) suites plus `pnpm lint` and `pnpm build` before declaring any task complete — all must pass (**57 Vitest test files / 558 tests green** + **20 Playwright E2E tests green across 5 core specs**).
+- **React Doctor — always mandatory:** `pnpm run doctor` (or `pnpm exec react-doctor`) is a core quality metric (Target: **100 / 100 Great**).
+
+### Test Suite Hygiene & Pruning Rule (Mandatory)
+
+- **Keep only core tests permanently.** Do not accumulate permanent one-off specs for individual categories, static copy tweaks, or historical fixes once verified.
+- **Proactively prune** temporary or superseded one-off feature/category/styling tests once the behavior is verified and covered by the core suite (`e2e/responsive-layout-audit.spec.ts` and generic invariant tests like `CategoryIcons.test.tsx`).
+- **Never weaken, skip, or delete a failing test to hide a bug** — fix the code instead. Only prune redundant or superseded one-off tests while keeping all core regression guards intact.
+- Pure logic (validators, formatters, sanitizers, link generators) is unit-tested directly; UI components get behavior tests (what the user sees/does), not snapshot-only tests.
 
 ### Playwright E2E & Visual Testing Environment
 
 Playwright is configured for browser rendering, layout spacing, accessibility, and visual verification:
 
 - **Config File**: `playwright.config.ts`
-- **Spec Directory**: `e2e/*.spec.ts` (isolated from Vitest via `exclude: ['**/e2e/**', ...]` in `vite.config.ts`).
+- **Core Spec Directory (`e2e/*.spec.ts`)** (isolated from Vitest via `exclude: ['**/e2e/**', ...]` in `vite.config.ts`):
+  - `e2e/responsive-layout-audit.spec.ts` — Full storefront & admin asset, overflow, distortion, header, icon, and interactive-overlap audit across `CORE_AUDIT_VIEWPORTS`.
+  - `e2e/product-gallery.spec.ts` — Product detail gallery carousel, thumbnails, legacy fallback, and desktop non-sticky alignment guard.
+  - `e2e/category-jump-bar.spec.ts` — Active category quick-jump pills, full-width overflow arrows/fades, centering, and smooth scroll landing.
+  - `e2e/global-search.spec.ts` — Desktop inline pill & mobile overlay search, live filtering, Enter navigation, and empty-state category pills.
+  - `e2e/scroll-restoration.spec.ts` — In-memory per-route scroll restoration, unvisited top-scroll, clamping, and reload flush.
 - **Dedicated Port**: `5199` with `--strictPort` (prevents port collisions with local development servers on `5173`/`5174`).
 - **WebServer Hook**:
   ```ts
@@ -266,15 +277,15 @@ Playwright is configured for browser rendering, layout spacing, accessibility, a
   });
   ```
 - **Commands**:
-  - Run all E2E tests: `pnpm test:e2e` (or `npx playwright test`)
+  - Run all E2E tests: `pnpm test:e2e` (screenshots are skipped during routine runs for speed; set `E2E_SCREENSHOTS=1` to save audit PNGs)
   - Install browser binaries: `npx playwright install chromium`
 - **Output Artifacts & No Hardcoded Paths Rule**:
   - **NEVER** hardcode OS-specific paths (`/home/...`, `C:\...`) or raw `'test-results/...'` strings in Playwright specs (`e2e/*.spec.ts`).
   - Always use `testInfo.outputPath('<filename>.png')` so Playwright isolates screenshots and traces per test and per resolution project inside `test-results/` and `playwright-report/` (both ignored in `.gitignore`).
-- **Multi-Viewport & Modern Resolution Testing Rule (Mandatory)**:
-  - Canonical viewport presets live in `e2e/viewports.ts`: `mobile-360` (`360×740`), `mobile-375` (`375×812`), `tablet-768` (`768×1024`), `laptop-1280` (`1280×800`), `desktop-1440` (`1440×900`), `desktop-1680` (`1680×900`), and `desktop-1920` (`1920×1080`).
-  - `playwright.config.ts` registers per-resolution `audit-<viewport>` projects executing `e2e/responsive-layout-audit.spec.ts` across all 7 modern resolutions (`pnpm test:e2e` runs everything; `pnpm test:e2e --project=audit-desktop-1680` targets a single resolution).
-  - Any new or modified responsive UI/layout E2E spec **must** import viewport presets from `e2e/viewports.ts` and validate across mobile, tablet/laptop, and wide desktop resolutions (including `1680×900` and `1920×1080`) — never test only a single screen size.
+- **Multi-Viewport & Modern Resolution Testing Rule**:
+  - Canonical viewport presets live in `e2e/viewports.ts`: `VIEWPORTS` (`mobile-360`, `mobile-375`, `tablet-768`, `laptop-1280`, `desktop-1440`, `desktop-1680`, `desktop-1920`) and `CORE_AUDIT_VIEWPORTS` (`mobile-360`, `tablet-768`, `desktop-1680`).
+  - `playwright.config.ts` registers `audit-<viewport>` projects executing `e2e/responsive-layout-audit.spec.ts` across `CORE_AUDIT_VIEWPORTS` (`pnpm test:e2e` runs everything; `pnpm test:e2e --project=audit-desktop-1680` targets a single resolution).
+  - Any new or modified responsive UI/layout E2E spec **must** import viewport presets from `e2e/viewports.ts` and validate across mobile, tablet, and wide desktop resolutions (including `1680×900`) — never test only a single screen size. Prune temporary specs once absorbed into `responsive-layout-audit.spec.ts` or core invariants.
 
 ---
 
@@ -327,8 +338,8 @@ To add a new category: add it to `CATEGORIES` in constants, add an entry + asset
 - Co-locate CSS with its component
 - Use `formatPrice()` and `formatDate()` from constants — never raw number formatting
 - Make layouts full-width and responsive; carousels edge-to-edge
-- Test responsive layouts across the multi-resolution matrix in `e2e/viewports.ts` (`360×740` through `1920×1080`, including `1680×900`) and write Playwright screenshots via `testInfo.outputPath(...)`
-- Run `pnpm doctor`, `pnpm lint`, and `pnpm test:run` on every feature/fix
+- Test new visual elements & layout positions across mobile, tablet, and wide desktop presets from `e2e/viewports.ts` (including `1680×900`), write Playwright screenshots via `testInfo.outputPath(...)`, and prune redundant one-off specs once covered by `responsive-layout-audit.spec.ts`
+- Run `pnpm run doctor`, `pnpm lint`, `pnpm build`, `pnpm test:run`, and `pnpm test:e2e` on every feature/fix
 - Preserve existing comments and docstrings unless directly modifying that code
 
 ### Don't

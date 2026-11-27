@@ -17,6 +17,7 @@ import { request as httpsRequest } from 'node:https';
 import { readFile } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { brotliCompressSync, gzipSync, constants as zlibConstants } from 'node:zlib';
 import process from 'node:process';
 
 // ─── Default Paths & Config ──────────────────────
@@ -537,7 +538,9 @@ export function rewriteIndexHtml(
       const escapedTitle = escapeHtml(`${product.product_name} — ${priceFormatted} | ${DEFAULT_SITE_NAME}`);
       const escapedDesc = escapeHtml(buildProductDescription(product));
       const escapedImage = escapeHtml(resolveProductImages(product, base)[0]);
+      const preloadTag = `<link rel="preload" as="image" href="${escapedImage}" fetchpriority="high" />`;
       const jsonLdScript = `<script type="application/ld+json" data-tokki-jsonld="route">${serializeJsonLd(buildProductJsonLd(product, base))}</script>`;
+      const bootstrapScript = `<script data-tokki-bootstrap="product">window.__TOKKI_INITIAL_PRODUCT__=${serializeJsonLd(product)};</script>`;
 
       updated = updated
         .replace(/<title>[^<]*<\/title>/i, () => `<title>${escapedTitle}</title>`)
@@ -569,7 +572,7 @@ export function rewriteIndexHtml(
           /<meta\b[^>]*\bname="twitter:image"[^>]*>/i,
           () => `<meta name="twitter:image" content="${escapedImage}" />`,
         )
-        .replace(/<\/head>/i, () => `    ${jsonLdScript}\n  </head>`);
+        .replace(/<\/head>/i, () => `    ${preloadTag}\n    ${jsonLdScript}\n    ${bootstrapScript}\n  </head>`);
     }
 
     return updated;
@@ -736,9 +739,53 @@ export function proxyRequest(clientReq, clientRes, backendUrl = DEFAULT_BACKEND_
 }
 
 // ─────────────────────────────────────────────────
-//  Static file serving from dist/
+//  Compression & Static file serving from dist/
 // ─────────────────────────────────────────────────
-export async function serveStaticFile(pathname, res, distDir = DEFAULT_DIST_DIR) {
+const COMPRESSIBLE_EXTS = new Set([
+  '.html',
+  '.css',
+  '.js',
+  '.mjs',
+  '.json',
+  '.svg',
+  '.txt',
+  '.xml',
+  '.webmanifest',
+]);
+const MIN_COMPRESS_BYTES = 1024;
+const MAX_STATIC_CACHE_ENTRIES = 200;
+const staticFileCache = new Map();
+
+export function clearStaticFileCache() {
+  staticFileCache.clear();
+}
+
+export function negotiateEncoding(acceptEncoding = '') {
+  if (typeof acceptEncoding !== 'string' || !acceptEncoding) return null;
+  const lower = acceptEncoding.toLowerCase();
+  if (/\bbr\b/.test(lower)) return 'br';
+  if (/\bgzip\b/.test(lower)) return 'gzip';
+  return null;
+}
+
+function compressBuffer(buf, encoding) {
+  if (encoding === 'br') {
+    return brotliCompressSync(buf, {
+      params: { [zlibConstants.BROTLI_PARAM_QUALITY]: 4 },
+    });
+  }
+  if (encoding === 'gzip') {
+    return gzipSync(buf, { level: 6 });
+  }
+  return buf;
+}
+
+export async function serveStaticFile(
+  pathname,
+  res,
+  distDir = DEFAULT_DIST_DIR,
+  acceptEncoding = '',
+) {
   let decoded;
   try {
     decoded = decodeURIComponent(pathname);
@@ -753,21 +800,51 @@ export async function serveStaticFile(pathname, res, distDir = DEFAULT_DIST_DIR)
   if (!filePath.startsWith(distDir)) return false;
 
   try {
-    const content = await readFile(filePath);
-    const ext = extname(filePath).toLowerCase();
-    const mime = MIME_TYPES[ext] || 'application/octet-stream';
+    let entry = staticFileCache.get(filePath);
+    if (!entry) {
+      const raw = await readFile(filePath);
+      const ext = extname(filePath).toLowerCase();
+      entry = {
+        raw,
+        mime: MIME_TYPES[ext] || 'application/octet-stream',
+        compressible: COMPRESSIBLE_EXTS.has(ext),
+      };
+      if (staticFileCache.size >= MAX_STATIC_CACHE_ENTRIES) {
+        const oldestKey = staticFileCache.keys().next().value;
+        if (oldestKey !== undefined) staticFileCache.delete(oldestKey);
+      }
+      staticFileCache.set(filePath, entry);
+    }
 
     const cacheControl = pathname.startsWith('/assets/')
       ? 'public, max-age=31536000, immutable'
       : 'public, max-age=3600';
 
+    const encoding =
+      entry.compressible && entry.raw.length >= MIN_COMPRESS_BYTES
+        ? negotiateEncoding(acceptEncoding)
+        : null;
+
+    let payload = entry.raw;
+    if (encoding) {
+      if (!entry[encoding]) {
+        entry[encoding] = compressBuffer(entry.raw, encoding);
+      }
+      payload = entry[encoding];
+    }
+
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
-    res.writeHead(200, {
-      'Content-Type': mime,
-      'Content-Length': content.length,
+    const headers = {
+      'Content-Type': entry.mime,
+      'Content-Length': payload.length,
       'Cache-Control': cacheControl,
-    });
-    res.end(content);
+    };
+    if (encoding) {
+      headers['Content-Encoding'] = encoding;
+      headers['Vary'] = 'Accept-Encoding';
+    }
+    res.writeHead(200, headers);
+    res.end(payload);
     return true;
   } catch {
     return false;
@@ -833,6 +910,7 @@ export async function serveSpaFallback(res, distDir = DEFAULT_DIST_DIR, options 
   const pathname = options.pathname || '/';
   const siteUrl = options.siteUrl || DEFAULT_SITE_URL;
   const backendBase = options.backendUrl ? options.backendUrl.replace(/\/+$/, '') : '';
+  const acceptEncoding = options.acceptEncoding || '';
 
   try {
     if (!cachedIndexHtml) {
@@ -860,15 +938,27 @@ export async function serveSpaFallback(res, distDir = DEFAULT_DIST_DIR, options 
       product,
     });
 
+    const raw = Buffer.from(html, 'utf8');
+    const encoding = raw.length >= MIN_COMPRESS_BYTES ? negotiateEncoding(acceptEncoding) : null;
+    const payload = encoding ? compressBuffer(raw, encoding) : raw;
+
     for (const [k, v] of Object.entries(SECURITY_HEADERS)) res.setHeader(k, v);
     if (!routeInfo.indexable) {
       res.setHeader('X-Robots-Tag', 'noindex, nofollow');
     }
-    res.writeHead(routeInfo.status, {
+    const headers = {
       'Content-Type': 'text/html; charset=utf-8',
-      'Cache-Control': 'no-cache',
-    });
-    res.end(html);
+      'Content-Length': payload.length,
+      'Cache-Control': routeInfo.indexable
+        ? 'public, max-age=0, s-maxage=60, stale-while-revalidate=300'
+        : 'no-cache',
+    };
+    if (encoding) {
+      headers['Content-Encoding'] = encoding;
+      headers['Vary'] = 'Accept-Encoding';
+    }
+    res.writeHead(routeInfo.status, headers);
+    res.end(payload);
   } catch (err) {
     console.error('[og-server] Failed to read index.html:', err.message);
     res.writeHead(500, { 'Content-Type': 'text/plain' });
@@ -888,6 +978,7 @@ export async function handleRequest(req, res, config = {}) {
   const url = new URL(req.url, `http://localhost:${port}`);
   const pathname = url.pathname;
   const ua = req.headers['user-agent'] || '';
+  const acceptEncoding = req.headers['accept-encoding'] || '';
 
   try {
     // 0) Container health checks (Coolify / Docker)
@@ -945,10 +1036,10 @@ export async function handleRequest(req, res, config = {}) {
     }
 
     // 7) Try serving a static file from dist/
-    if (await serveStaticFile(pathname, res, distDir)) return;
+    if (await serveStaticFile(pathname, res, distDir, acceptEncoding)) return;
 
     // 8) SPA fallback for client-side routes (with per-route canonical / noindex / 404 / Product JSON-LD)
-    await serveSpaFallback(res, distDir, { pathname, siteUrl, backendUrl });
+    await serveSpaFallback(res, distDir, { pathname, siteUrl, backendUrl, acceptEncoding });
   } catch (err) {
     console.error('[og-server] Unhandled error:', err);
     if (!res.headersSent) {

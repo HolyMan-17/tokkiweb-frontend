@@ -11,6 +11,7 @@ beforeEach(() => {
 
 afterEach(() => {
   invalidateCatalogCache();
+  delete window.__TOKKI_INITIAL_PRODUCT__;
   vi.unstubAllGlobals();
   fetchMock.mockReset();
 });
@@ -120,5 +121,75 @@ describe('fetchProductDetail', () => {
     expect(await fetchProductDetail(0)).toBeNull();
     expect(await fetchProductDetail(-3)).toBeNull();
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test('consumes window.__TOKKI_INITIAL_PRODUCT__ once when product_id matches without fetching', async () => {
+    window.__TOKKI_INITIAL_PRODUCT__ = {
+      product_id: 14,
+      product_name: 'Labial Coreano',
+      product_price: 6,
+      product_description: 'Hidratante',
+      category: 'Maquillaje',
+      qty_available: 4,
+      in_stock: true,
+      product_image_url: '/images/products/labial.webp',
+    };
+
+    const first = await fetchProductDetail(14);
+    expect(first?.product_name).toBe('Labial Coreano');
+    expect(first?.product_price).toBe('6');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(window.__TOKKI_INITIAL_PRODUCT__).toBeUndefined();
+
+    // Subsequent fetch hits the API because the bootstrap payload was consumed once
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          product_id: 14,
+          product_name: 'Labial Coreano',
+          product_price: '6.00',
+          product_description: 'Hidratante',
+          category: 'Maquillaje',
+          qty_available: 2,
+          in_stock: true,
+        },
+      }),
+    );
+
+    const second = await fetchProductDetail(14);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second?.qty_available).toBe(2);
+  });
+
+  test('ignores window.__TOKKI_INITIAL_PRODUCT__ when product_id does not match', async () => {
+    window.__TOKKI_INITIAL_PRODUCT__ = {
+      product_id: 99,
+      product_name: 'Otro',
+      product_price: '2.00',
+      product_description: 'Desc',
+      category: 'Otros',
+      qty_available: 1,
+      in_stock: true,
+    };
+
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        success: true,
+        data: {
+          product_id: 15,
+          product_name: 'Solicitado',
+          product_price: '4.00',
+          product_description: 'Desc',
+          category: 'Otros',
+          qty_available: 3,
+          in_stock: true,
+        },
+      }),
+    );
+
+    const result = await fetchProductDetail(15);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(result?.product_id).toBe(15);
   });
 });

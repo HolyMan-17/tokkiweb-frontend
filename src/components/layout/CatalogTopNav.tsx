@@ -14,8 +14,8 @@ interface CatalogTopNavProps {
 }
 
 export function CatalogTopNav({ products }: CatalogTopNavProps = {}) {
-  const { items } = useCart();
-  const totalQty = items.reduce((s, i) => s + i.quantity, 0);
+  const { items, itemCount } = useCart();
+  const totalQty = itemCount ?? items.reduce((s, i) => s + i.quantity, 0);
   const { role } = useAdminAuth();
   const hasAdminRole = role === ROLES.OWNER || role === ROLES.TECH;
   const showAdminLink = !CLERK_PUBLISHABLE_KEY || hasAdminRole;

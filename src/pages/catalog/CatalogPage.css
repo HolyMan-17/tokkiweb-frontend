@@ -33,6 +33,7 @@
   z-index: -1;
   overflow: hidden;
   pointer-events: none;
+  contain: layout paint;
 }
 
 /* Slowly-shifting aurora wash (three soft blooms drifting across) */
@@ -41,9 +42,7 @@
   width: 70vmax;
   height: 70vmax;
   border-radius: 50%;
-  filter: blur(60px);
-  opacity: 0.55;
-  mix-blend-mode: soft-light;
+  opacity: 0.5;
   animation: aurora-drift 18s ease-in-out infinite;
 }
 
@@ -56,6 +55,7 @@
 .hero-aurora--two {
   bottom: -35%;
   right: -20%;
+  opacity: 0.45;
   background: radial-gradient(circle, var(--color-surface) 0%, rgba(255, 255, 255, 0) 65%);
   animation-duration: 22s;
   animation-delay: -6s;
@@ -67,7 +67,7 @@
   width: 55vmax;
   height: 55vmax;
   background: radial-gradient(circle, var(--p4) 0%, rgba(238, 161, 205, 0) 60%);
-  opacity: 0.4;
+  opacity: 0.35;
   animation-duration: 26s;
   animation-delay: -11s;
 }
@@ -84,7 +84,6 @@
   border-radius: 46% 54% 58% 42% / 52% 44% 56% 48%;
   background: var(--color-surface);
   opacity: 0.16;
-  filter: blur(2px);
   animation: blob-bob 12s ease-in-out infinite;
 }
 
@@ -184,8 +183,8 @@
 }
 
 @keyframes logo-drop {
-  0%   { opacity: 0; transform: translateY(-18px) scale(0.9) rotate(-3deg); }
-  60%  { transform: translateY(3px) scale(1.03) rotate(0.5deg); }
+  0%   { opacity: 1; transform: translateY(-10px) scale(0.96) rotate(-2deg); }
+  60%  { transform: translateY(2px) scale(1.02) rotate(0.5deg); }
   100% { opacity: 1; transform: translateY(0) scale(1) rotate(0); }
 }
 

@@ -6,7 +6,7 @@ import { useAsync } from '../../hooks/useAsync';
 import { DEFAULT_DOC_DESCRIPTION, usePageMeta } from '../../hooks/usePageMeta';
 import { buildProductJsonLd } from '../../utils/structuredData';
 import { formatPrice } from '../../constants';
-import { useCart } from '../../context/CartContext';
+import { useCartActions } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import ErrorState from '../../components/ui/ErrorState';
@@ -23,7 +23,7 @@ interface ToastState {
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addItem } = useCart();
+  const { addItem } = useCartActions();
   const { data: product, isLoading, isError, retry } = useAsync(
     () => fetchProductDetail(Number(id)),
     [id],
@@ -139,7 +139,7 @@ export default function ProductDetailPage() {
   };
 
   return (
-    <div className="page product-detail-page animate-fadeIn">
+    <div className="page product-detail-page">
       <nav className="detail-nav">
         <Link to={ROUTES.home} className="back-link text-primary font-semibold">
           ← Volver

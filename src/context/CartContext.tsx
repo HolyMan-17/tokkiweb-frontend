@@ -3,14 +3,17 @@ import { createContext, useContext, useState, useCallback, useEffect, useMemo, t
 import type { Product, CartItem } from '../types';
 import { loadCart, saveCart } from '../store/localStore';
 
-interface CartContextType {
-  items: CartItem[];
-  itemCount: number;
-  total: number;
+interface CartActionsContextType {
   addItem: (product: Product, qty?: number) => void;
   updateQuantity: (productId: number, qty: number) => void;
   removeItem: (productId: number) => void;
   clearCart: () => void;
+}
+
+interface CartContextType extends CartActionsContextType {
+  items: CartItem[];
+  itemCount: number;
+  total: number;
   reconcileStock: (products: Product[]) => StockAdjustment[];
 }
 
@@ -18,6 +21,7 @@ import type { StockAdjustment, StockAdjustmentType } from '../utils/stock';
 export type { StockAdjustment, StockAdjustmentType };
 
 const CartContext = createContext<CartContextType | null>(null);
+const CartActionsContext = createContext<CartActionsContextType | null>(null);
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>(loadCart);
@@ -112,6 +116,16 @@ export function CartProvider({ children }: { children: ReactNode }) {
     0,
   );
 
+  const actionsValue = useMemo<CartActionsContextType>(
+    () => ({
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+    }),
+    [addItem, updateQuantity, removeItem, clearCart],
+  );
+
   const contextValue = useMemo<CartContextType>(
     () => ({
       items,
@@ -127,14 +141,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <CartContext.Provider value={contextValue}>
-      {children}
-    </CartContext.Provider>
+    <CartActionsContext.Provider value={actionsValue}>
+      <CartContext.Provider value={contextValue}>
+        {children}
+      </CartContext.Provider>
+    </CartActionsContext.Provider>
   );
 }
 
 export function useCart(): CartContextType {
   const ctx = useContext(CartContext);
   if (!ctx) throw new Error('useCart must be used within a CartProvider');
+  return ctx;
+}
+
+export function useCartActions(): CartActionsContextType {
+  const ctx = useContext(CartActionsContext);
+  if (!ctx) throw new Error('useCartActions must be used within a CartProvider');
   return ctx;
 }

@@ -1,18 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './ProductCard.css';
 import type { Product } from '../../types';
 import { formatPrice } from '../../constants';
-import { useCart } from '../../context/CartContext';
+import { useCartActions } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
 
 interface ProductCardProps {
   product: Product;
   deferImage?: boolean;
+  priority?: boolean;
 }
 
-export function ProductCard({ product, deferImage = false }: ProductCardProps) {
-  const { addItem } = useCart();
+export const ProductCard = memo(function ProductCard({
+  product,
+  deferImage = false,
+  priority = false,
+}: ProductCardProps) {
+  const { addItem } = useCartActions();
   const [popped, setPopped] = useState(false);
   const popTimerRef = useRef<number | null>(null);
 
@@ -51,7 +56,8 @@ export function ProductCard({ product, deferImage = false }: ProductCardProps) {
                 <img
                   src={product.product_image_url}
                   alt={product.product_name}
-                  loading="lazy"
+                  loading={priority ? 'eager' : 'lazy'}
+                  fetchPriority={priority ? 'high' : undefined}
                   decoding="async"
                   className="card-img"
                 />
@@ -84,6 +90,6 @@ export function ProductCard({ product, deferImage = false }: ProductCardProps) {
       </button>
     </article>
   );
-}
+});
 
 export default ProductCard;

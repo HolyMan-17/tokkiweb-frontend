@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useDeferredValue } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import '../category/CategoryPage.css'; // shared browse styles (search/sort/stock/grid)
 import { fetchAllProducts } from '../../api/products';
@@ -63,6 +63,7 @@ export default function AllProductsPage() {
     },
     [setSearchParams],
   );
+  const deferredQuery = useDeferredValue(query);
   const [sort, setSort] = useState<SortOption>('recent');
   const [stockOnly, setStockOnly] = useState(false);
 
@@ -70,8 +71,8 @@ export default function AllProductsPage() {
     let result = [...allProducts];
 
     // Search filter (name + description)
-    if (query.trim()) {
-      result = result.filter(p => matchesSearch(p, query));
+    if (deferredQuery.trim()) {
+      result = result.filter(p => matchesSearch(p, deferredQuery));
     }
 
     // Stock filter
@@ -83,7 +84,7 @@ export default function AllProductsPage() {
     result = sortProducts(result, sort);
 
     return result;
-  }, [allProducts, query, sort, stockOnly]);
+  }, [allProducts, deferredQuery, sort, stockOnly]);
 
   const hasActiveFilters = query.trim() !== '' || stockOnly || sort !== 'recent';
   const isFiltered = filtered.length !== allProducts.length;
@@ -166,9 +167,9 @@ export default function AllProductsPage() {
         {/* Grid or empty state */}
         {filtered.length > 0 ? (
           <div className="category-grid">
-            {filtered.map(p => (
+            {filtered.map((p, idx) => (
               <div key={p.product_id} className="category-grid-item">
-                <ProductCard product={p} />
+                <ProductCard product={p} priority={idx < 4} />
               </div>
             ))}
           </div>

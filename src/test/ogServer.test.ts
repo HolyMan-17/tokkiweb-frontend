@@ -16,12 +16,14 @@ import {
   rewriteIndexHtml,
   clearSitemapCache,
   clearProductMetaCache,
+  clearStaticFileCache,
   serveStaticFile,
   handleRequest,
 } from '../../server/og-server.mjs';
 import { CATEGORIES, slugify } from '../constants';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import { EventEmitter } from 'node:events';
+import { brotliDecompressSync, gunzipSync } from 'node:zlib';
 
 describe('server/og-server.mjs — Crawler & Route Matchers', () => {
   it('detecta correctamente User-Agents de crawlers sociales (WhatsApp, Facebook, Twitter, etc.) sin interceptar motores de búsqueda', () => {
@@ -218,18 +220,20 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     vi.clearAllMocks();
     clearSitemapCache();
     clearProductMetaCache();
+    clearStaticFileCache();
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
     clearSitemapCache();
     clearProductMetaCache();
+    clearStaticFileCache();
   });
 
   function createMockRes() {
     const headers: Record<string, string> = {};
     let statusCode = 200;
-    let body = '';
+    const chunks: Buffer[] = [];
 
     const res = {
       statusCode: 200,
@@ -244,11 +248,16 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
         if (hdrs) Object.assign(headers, hdrs);
       },
       end(chunk?: string | Buffer) {
-        if (chunk) body += chunk.toString();
+        if (chunk) {
+          chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+        }
         res.headersSent = true;
       },
+      _getBuffer() {
+        return Buffer.concat(chunks);
+      },
       _getBody() {
-        return body;
+        return Buffer.concat(chunks).toString('utf8');
       },
       _getHeaders() {
         return headers;
@@ -257,6 +266,7 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
         return statusCode;
       },
     } as unknown as ServerResponse & {
+      _getBuffer: () => Buffer;
       _getBody: () => string;
       _getHeaders: () => Record<string, string>;
       _getStatusCode: () => number;
@@ -397,6 +407,22 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
   });
 
   it('sirve la SPA (index.html) para navegadores estándar de usuarios que visitan /products/:id', async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        success: true,
+        data: {
+          product_id: 30,
+          product_name: 'POPSOCKET JUNGKOOK',
+          product_price: '4.80',
+          product_description: 'Popsocket',
+          in_stock: true,
+          qty_available: 5,
+        },
+      }),
+    }) as unknown as typeof fetch;
+
     const req = createMockReq({
       url: '/products/30',
       headers: {
@@ -550,6 +576,11 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     expect(body).toContain('<div id="root"></div>');
     expect(body).toContain('<title>POPSOCKET JUNGKOOK — $4.80 | Tokki Shop</title>');
     expect(body).toContain('https://api.tokkishopve.com/images/products/jungkook.webp');
+    expect(body).toContain(
+      '<link rel="preload" as="image" href="https://api.tokkishopve.com/images/products/jungkook.webp" fetchpriority="high" />',
+    );
+    expect(body).toContain('<script data-tokki-bootstrap="product">window.__TOKKI_INITIAL_PRODUCT__=');
+    expect(body).toContain('"product_id":30');
 
     const ldMatch = body.match(
       /<script\s+type="application\/ld\+json"\s+data-tokki-jsonld="route">([\s\S]*?)<\/script>/i,
@@ -585,6 +616,9 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     await handleRequest(reqCat, resCat);
     expect(resCat._getStatusCode()).toBe(200);
     expect(resCat._getHeaders()['X-Robots-Tag']).toBeUndefined();
+    expect(resCat._getHeaders()['Cache-Control']).toBe(
+      'public, max-age=0, s-maxage=60, stale-while-revalidate=300',
+    );
     expect(resCat._getBody()).toContain(
       '<link rel="canonical" href="https://www.tokkishopve.com/categorias/maquillaje" />',
     );
@@ -594,6 +628,7 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     await handleRequest(reqAdmin, resAdmin);
     expect(resAdmin._getStatusCode()).toBe(200);
     expect(resAdmin._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(resAdmin._getHeaders()['Cache-Control']).toBe('no-cache');
     expect(resAdmin._getBody()).toContain('<meta name="robots" content="noindex, nofollow" />');
     expect(resAdmin._getBody()).not.toContain('<link rel="canonical"');
 
@@ -602,6 +637,7 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     await handleRequest(reqMissing, resMissing);
     expect(resMissing._getStatusCode()).toBe(404);
     expect(resMissing._getHeaders()['X-Robots-Tag']).toBe('noindex, nofollow');
+    expect(resMissing._getHeaders()['Cache-Control']).toBe('no-cache');
     expect(resMissing._getBody()).toContain('<meta name="robots" content="noindex, nofollow" />');
     expect(resMissing._getBody()).toContain('<div id="root"></div>');
   });
@@ -669,6 +705,55 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     const res = createMockRes();
     const served = await serveStaticFile('/no-existe-archivo.txt', res);
     expect(served).toBe(false);
+  });
+
+  it('comprime archivos estáticos y HTML SPA con brotli o gzip cuando el cliente lo solicita', async () => {
+    const resBr = createMockRes();
+    const servedBr = await serveStaticFile('/index.html', resBr, undefined, 'gzip, deflate, br');
+    expect(servedBr).toBe(true);
+    expect(resBr._getHeaders()['Content-Encoding']).toBe('br');
+    expect(resBr._getHeaders()['Vary']).toBe('Accept-Encoding');
+    expect(brotliDecompressSync(resBr._getBuffer()).toString('utf8')).toContain('<div id="root"></div>');
+
+    const resGzip = createMockRes();
+    const servedGzip = await serveStaticFile('/index.html', resGzip, undefined, 'gzip');
+    expect(servedGzip).toBe(true);
+    expect(resGzip._getHeaders()['Content-Encoding']).toBe('gzip');
+    expect(gunzipSync(resGzip._getBuffer()).toString('utf8')).toContain('<div id="root"></div>');
+
+    const reqSpa = createMockReq({
+      url: '/',
+      headers: { 'accept-encoding': 'br, gzip' },
+    });
+    const resSpa = createMockRes();
+    await handleRequest(reqSpa, resSpa);
+    expect(resSpa._getStatusCode()).toBe(200);
+    expect(resSpa._getHeaders()['Content-Encoding']).toBe('br');
+    expect(resSpa._getHeaders()['Vary']).toBe('Accept-Encoding');
+    expect(brotliDecompressSync(resSpa._getBuffer()).toString('utf8')).toContain(
+      '<link rel="canonical" href="https://www.tokkishopve.com/" />',
+    );
+  });
+
+  it('escapa </script> dentro del bootstrap window.__TOKKI_INITIAL_PRODUCT__', () => {
+    const html = rewriteIndexHtml(
+      '<!doctype html><html><head><title>x</title><link rel="canonical" href="/" /><meta property="og:url" content="/" /><meta name="description" content="" /><meta property="og:title" content="" /><meta property="og:description" content="" /><meta property="og:image" content="" /><meta name="twitter:title" content="" /><meta name="twitter:description" content="" /><meta name="twitter:image" content="" /></head><body><div id="root"></div></body></html>',
+      {
+        siteUrl: 'https://www.tokkishopve.com',
+        canonicalPath: '/products/5',
+        indexable: true,
+        product: {
+          product_id: 5,
+          product_name: 'Test </script><script>alert(1)</script>',
+          product_price: '2.00',
+          product_description: 'Desc',
+          in_stock: true,
+          qty_available: 1,
+        },
+      },
+    );
+    expect(html).not.toContain('Test </script>');
+    expect(html).toContain('Test \\u003c/script\\u003e');
   });
 
   it('aplica todas las cabeceras de seguridad requeridas en las respuestas', () => {

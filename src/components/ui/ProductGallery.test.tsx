@@ -50,13 +50,15 @@ describe('ProductGallery', () => {
     expect(document.querySelector('.product-gallery-thumbs')).toBeNull();
   });
 
-  it('muestra una imagen estática cuando hay una sola', () => {
+  it('muestra una imagen estática con carga prioritaria cuando hay una sola', () => {
     render(<ProductGallery name="Gloss Fresa" images={[IMAGES[0]]} />);
 
     const img = document.querySelector('.product-image') as HTMLImageElement | null;
     expect(img).not.toBeNull();
     expect(img?.getAttribute('src')).toBe(IMAGES[0]);
     expect(img?.getAttribute('alt')).toBe('Gloss Fresa');
+    expect(img?.getAttribute('loading')).toBe('eager');
+    expect(img?.getAttribute('fetchpriority')).toBe('high');
     expect(document.querySelector('.product-gallery-track')).toBeNull();
     expect(document.querySelector('.product-gallery-thumbs')).toBeNull();
   });
@@ -74,7 +76,9 @@ describe('ProductGallery', () => {
     expect(imgs[0].getAttribute('alt')).toBe('Set Kawaii — imagen 1');
     expect(imgs[1].getAttribute('alt')).toBe('Set Kawaii — imagen 2');
     expect(imgs[0].getAttribute('loading')).toBe('eager');
+    expect(imgs[0].getAttribute('fetchpriority')).toBe('high');
     expect(imgs[1].getAttribute('loading')).toBe('lazy');
+    expect(imgs[1].getAttribute('fetchpriority')).toBeNull();
 
     const thumbs = document.querySelectorAll('.product-gallery-thumb');
     expect(thumbs).toHaveLength(3);

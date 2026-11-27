@@ -19,13 +19,17 @@ function preloadFonts(): Plugin {
       const assetsDir = join(outDir, 'assets')
       const fontTargets = [
         'dynapuff-latin-700-normal',
-        'dynapuff-latin-400-normal',
-        'sour-gummy-latin-700-normal',
         'sour-gummy-latin-400-normal',
       ]
       const preloads: string[] = []
       if (existsSync(assetsDir)) {
         const files = readdirSync(assetsDir)
+        const logoFile = files.find(f => f.startsWith('tokki_logo-') && f.endsWith('.avif'))
+        if (logoFile) {
+          preloads.push(
+            `<link rel="preload" href="/assets/${logoFile}" as="image" type="image/avif" fetchpriority="high" />`,
+          )
+        }
         for (const target of fontTargets) {
           const file = files.find(f => f.startsWith(target) && f.endsWith('.woff2'))
           if (file) {
@@ -65,9 +69,9 @@ export default defineConfig({
     exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/.{idea,git,cache,output,temp}/**'],
     // Forks workers time out on some Windows setups; threads are faster to spawn.
     pool: 'threads',
-    // Worker spawns on this machine are slow/flaky (Defender scans) — keep
-    // them few and sequential so startup stays under Vitest's 60 s timeout.
-    fileParallelism: false,
-    maxWorkers: 1,
+    // Worker spawns on this machine can be slow under Defender — keep a modest
+    // thread pool so Vitest finishes fast without timing out.
+    fileParallelism: true,
+    maxWorkers: 3,
   },
 })

@@ -9,6 +9,13 @@ const mockAddItem = vi.fn();
 vi.mock('../../context/CartContext', () => ({
   useCart: () => ({
     items: [],
+    itemCount: 0,
+    addItem: mockAddItem,
+    removeItem: vi.fn(),
+    updateQuantity: vi.fn(),
+    clearCart: vi.fn(),
+  }),
+  useCartActions: () => ({
     addItem: mockAddItem,
     removeItem: vi.fn(),
     updateQuantity: vi.fn(),
@@ -103,5 +110,27 @@ describe('ProductCard', () => {
 
     expect(container.querySelector('img.card-img')).toBeNull();
     expect(container.querySelector('.card-img-deferred')).not.toBeNull();
+  });
+
+  it('loads images lazily by default and eagerly with high fetchPriority when priority is true', () => {
+    const { container, rerender } = render(
+      <MemoryRouter>
+        <ProductCard product={IN_STOCK_PRODUCT} />
+      </MemoryRouter>,
+    );
+
+    const lazyImg = container.querySelector('img.card-img');
+    expect(lazyImg).toHaveAttribute('loading', 'lazy');
+    expect(lazyImg).not.toHaveAttribute('fetchpriority');
+
+    rerender(
+      <MemoryRouter>
+        <ProductCard product={IN_STOCK_PRODUCT} priority />
+      </MemoryRouter>,
+    );
+
+    const eagerImg = container.querySelector('img.card-img');
+    expect(eagerImg).toHaveAttribute('loading', 'eager');
+    expect(eagerImg).toHaveAttribute('fetchpriority', 'high');
   });
 });

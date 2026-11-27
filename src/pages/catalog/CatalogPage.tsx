@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.webp';
@@ -44,34 +44,39 @@ const VERTICAL_ROOT_MARGIN = '350px 0px';
 
 // Compute a card width so an exact whole number of cards fits the
 // visible track width on every screen, and fill the row precisely.
-// All layout reads happen BEFORE any style write (no forced reflow).
-function computeCardWidth(track: HTMLDivElement): number {
-  const styles = getComputedStyle(track);
-  const available =
-    track.clientWidth -
-    (parseFloat(styles.paddingLeft) || 0) -
-    (parseFloat(styles.paddingRight) || 0);
-  const gap = parseFloat(styles.columnGap) || parseFloat(styles.gap) || 12;
-  const isDesktop = typeof window !== 'undefined' && typeof window.matchMedia === 'function'
-    ? window.matchMedia('(min-width: 768px)').matches
-    : false;
+// Measured once at the .carousels-wrapper level to avoid N per-carousel
+// layout read/write cycles.
+function computeCarouselMetrics(containerWidth: number): { cardWidth: number; visibleCount: number } | null {
+  if (!Number.isFinite(containerWidth) || containerWidth <= 0) return null;
+  const isDesktop =
+    typeof window !== 'undefined' && typeof window.matchMedia === 'function'
+      ? window.matchMedia('(min-width: 768px)').matches
+      : containerWidth >= 768;
+  const padding = isDesktop ? 64 : 32;
+  const gap = isDesktop ? 20 : 12;
+  const available = containerWidth - padding;
+  if (available <= 0) return null;
   const minWidth = isDesktop ? 210 : 148;
-  const n = Math.max(2, Math.floor((available + gap) / (minWidth + gap)));
-  return (available - (n - 1) * gap) / n;
+  const visibleCount = Math.max(2, Math.floor((available + gap) / (minWidth + gap)));
+  return {
+    cardWidth: (available - (visibleCount - 1) * gap) / visibleCount,
+    visibleCount,
+  };
 }
 
-function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false, sectionId }: {
+function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false, priorityCards = false, sectionId }: {
   title: string;
   emoji: React.ReactNode;
   products: Product[];
   seeMoreTo?: string;
   eagerSection?: boolean;
+  priorityCards?: boolean;
   sectionId?: string;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
-  const [canScrollRight, setCanScrollRight] = useState(true);
+  const [canScrollRight, setCanScrollRight] = useState(() => products.length > 2);
   const [isNearViewport, setIsNearViewport] = useState(
     () => Boolean(eagerSection) || typeof IntersectionObserver === 'undefined',
   );
@@ -100,40 +105,18 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = fa
   const updateArrows = useCallback(() => {
     const track = trackRef.current;
     if (!track) return;
-    // Read all geometry in one batch — no style write precedes these reads,
-    // so the browser never has to compute layout twice (no forced reflow).
     const maxScroll = track.scrollWidth - track.clientWidth;
     const left = track.scrollLeft;
     setCanScrollLeft(left > 0);
-    setCanScrollRight(left < maxScroll - 1);
-    if (left > 8) setExpandedTrack(true);
+    setCanScrollRight(maxScroll > 1 && left < maxScroll - 1);
+    if (left > 8) {
+      startTransition(() => setExpandedTrack(true));
+    }
   }, []);
 
-  // One measure+apply pass per frame: read ALL geometry first (card width +
-  // arrow state), then write the CSS var once at the end. Writing before all
-  // reads are done is what invalidates layout and forces a synchronous
-  // reflow on the next read — so reads and writes are never interleaved.
-  const applyWidth = useCallback(() => {
+  useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
-    // ── reads (no writes in between) ──
-    const width = computeCardWidth(track);
-    const maxScroll = track.scrollWidth - track.clientWidth;
-    const left = track.scrollLeft;
-    // ── single write (invalidates layout, but no read follows) ──
-    track.style.setProperty('--carousel-card-width', `${width}px`);
-    setCanScrollLeft(left > 0);
-    setCanScrollRight(left < maxScroll - 1);
-  }, []);
-
-  // Measure on mount (synchronously, before paint — prevents the 148px
-  // fallback flash / CLS) and react to size changes via ResizeObserver.
-  // No polling: no rAF loops, no setTimeout re-measures.
-  useLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-
-    applyWidth();
 
     let scrollRaf = 0;
     const onScroll = () => {
@@ -145,18 +128,14 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = fa
     };
     track.addEventListener('scroll', onScroll, { passive: true });
 
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => applyWidth()) : null;
-    ro?.observe(track);
-
     return () => {
       if (scrollRaf) cancelAnimationFrame(scrollRaf);
       track.removeEventListener('scroll', onScroll);
-      ro?.disconnect();
     };
-  }, [applyWidth, updateArrows]);
+  }, [updateArrows]);
 
   const handleExpandTrack = useCallback(() => {
-    setExpandedTrack(true);
+    startTransition(() => setExpandedTrack(true));
   }, []);
 
   const scroll = (dir: 'left' | 'right') => {
@@ -222,6 +201,7 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = fa
           <div key={p.product_id} className="carousel-item">
             <ProductCard
               product={p}
+              priority={priorityCards && cardIndex < 4}
               deferImage={!isNearViewport || (!expandedTrack && cardIndex >= INITIAL_CAROUSEL_IMAGES)}
             />
           </div>
@@ -451,6 +431,7 @@ export default function CatalogPage() {
     canonicalPath: ROUTES.home,
   });
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
+  const carouselsWrapperRef = useRef<HTMLDivElement>(null);
   const products = useMemo(() => data ?? [], [data]);
   const sortedProducts = useMemo(
     () => products.toSorted((a, b) => b.product_id - a.product_id),
@@ -461,6 +442,23 @@ export default function CatalogPage() {
     () => CATEGORIES.filter((cat) => (grouped[cat.name]?.length ?? 0) > 0),
     [grouped],
   );
+
+  useLayoutEffect(() => {
+    const wrapper = carouselsWrapperRef.current;
+    if (!wrapper) return;
+
+    const applyLayoutWidth = () => {
+      const metrics = computeCarouselMetrics(wrapper.clientWidth);
+      if (metrics) {
+        wrapper.style.setProperty('--carousel-card-width', `${metrics.cardWidth}px`);
+      }
+    };
+
+    applyLayoutWidth();
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(applyLayoutWidth) : null;
+    ro?.observe(wrapper);
+    return () => ro?.disconnect();
+  }, [isLoading, isError]);
 
   return (
     <>
@@ -507,13 +505,14 @@ export default function CatalogPage() {
             <CategoryJumpBar categories={populatedCategories} />
 
             {/* ── Carousels: Todos (all products) + one per category ── */}
-            <div className="carousels-wrapper">
+            <div className="carousels-wrapper" ref={carouselsWrapperRef}>
               <CategoryCarousel
                 title="Todos"
                 emoji={<img src={sparklesImg} alt="" className="category-sparkle" width={188} height={200} loading="lazy" />}
                 products={sortedProducts}
                 seeMoreTo={ROUTES.allProducts}
                 eagerSection
+                priorityCards
               />
 
               {populatedCategories.map((cat, index) => (
