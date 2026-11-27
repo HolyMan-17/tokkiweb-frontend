@@ -169,7 +169,7 @@ export default function AllProductsPage() {
           <div className="category-grid">
             {filtered.map((p, idx) => (
               <div key={p.product_id} className="category-grid-item">
-                <ProductCard product={p} priority={idx < 4} />
+                <ProductCard product={p} priority={idx === 0} eager={idx === 1} />
               </div>
             ))}
           </div>

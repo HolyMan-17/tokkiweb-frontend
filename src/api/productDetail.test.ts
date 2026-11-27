@@ -67,6 +67,7 @@ describe('fetchProductDetail', () => {
       product_id: 7,
       product_name: 'Llavero Conejito',
       product_price: '5.5',
+      discount_percent: 0,
       product_description: 'Acrílico rosa',
       category: 'Llaveros',
       qty_available: 3,

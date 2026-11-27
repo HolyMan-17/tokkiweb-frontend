@@ -55,7 +55,11 @@ describe('ProductGallery', () => {
 
     const img = document.querySelector('.product-image') as HTMLImageElement | null;
     expect(img).not.toBeNull();
-    expect(img?.getAttribute('src')).toBe(IMAGES[0]);
+    expect(img?.getAttribute('src')).toBe(`${IMAGES[0]}?w=800`);
+    expect(img?.getAttribute('srcset')).toBe(
+      `${IMAGES[0]}?w=400 400w, ${IMAGES[0]}?w=800 800w, ${IMAGES[0]} 1600w`,
+    );
+    expect(img?.getAttribute('sizes')).toBe('(min-width: 768px) 480px, 100vw');
     expect(img?.getAttribute('alt')).toBe('Gloss Fresa');
     expect(img?.getAttribute('loading')).toBe('eager');
     expect(img?.getAttribute('fetchpriority')).toBe('high');

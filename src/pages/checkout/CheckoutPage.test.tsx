@@ -88,6 +88,24 @@ describe('CheckoutPage — aviso de costos de envío', () => {
   });
 });
 
+describe('CheckoutPage — resumen con descuentos', () => {
+  it('muestra el precio original tachado y el total rebajado para productos en descuento', () => {
+    const discounted: Product = {
+      ...mockTestProduct,
+      product_price: '10.00',
+      discount_percent: 20,
+    };
+    window.localStorage.setItem(
+      'tokki_cart_v1',
+      JSON.stringify([{ product: discounted, quantity: 2 }]),
+    );
+    const { container } = renderPage();
+
+    expect(container.querySelector('del.summary-item-original')).toHaveTextContent('$20.00');
+    expect(screen.getAllByText('$16.00').length).toBeGreaterThanOrEqual(2); // line item + total
+  });
+});
+
 describe('CheckoutPage — campo Cédula', () => {
   it('muestra el campo cédula con un selector V, E, J, G (por defecto V)', () => {
     renderPage();

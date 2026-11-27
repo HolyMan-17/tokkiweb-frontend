@@ -212,11 +212,9 @@
 }
 
 .global-search__item-price {
-  font-family: var(--font-display, 'DynaPuff', cursive);
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--p5, #e68bbe);
   flex-shrink: 0;
+  justify-content: flex-end;
+  max-width: 168px;
 }
 
 .global-search__footer {

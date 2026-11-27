@@ -1,4 +1,5 @@
 import type { Product } from '../types';
+import { normalizeDiscountPercent } from '../utils/pricing';
 
 export const CATALOG_CACHE_TTL_MS = 60_000;
 
@@ -6,6 +7,7 @@ export interface ProductRow {
   product_id: number;
   product_name: string;
   product_price: string | number;
+  discount_percent?: number | null;
   product_description: string;
   category: string;
   qty_available: number;
@@ -19,6 +21,7 @@ export function normalizeProductRow(row: ProductRow): Product {
     product_id: row.product_id,
     product_name: row.product_name,
     product_price: String(row.product_price),
+    discount_percent: normalizeDiscountPercent(row.discount_percent),
     product_description: row.product_description,
     category: row.category,
     qty_available: row.qty_available,

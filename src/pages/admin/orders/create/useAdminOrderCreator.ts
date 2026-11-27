@@ -4,6 +4,7 @@ import { createOrder, approveOrder } from '../../../../api/orders';
 import { useAdminAuth } from '../../../../components/auth/useAdminAuth';
 import { ADMIN_ROUTES } from '../../../../lib/routes';
 import type { Product } from '../../../../types';
+import { getEffectivePriceCents } from '../../../../utils/pricing';
 import {
   DEFAULT_COUNTER_CLIENT,
   type CustomerForm,
@@ -152,9 +153,11 @@ export function useAdminOrderCreator() {
   }, [selectedItems]);
 
   const totalAmount = useMemo(() => {
-    return selectedItems.reduce(
-      (sum, item) => sum + Number(item.product.product_price) * item.quantity,
-      0,
+    return (
+      selectedItems.reduce(
+        (sum, item) => sum + getEffectivePriceCents(item.product) * item.quantity,
+        0,
+      ) / 100
     );
   }, [selectedItems]);
 

@@ -3,15 +3,16 @@ import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App.tsx';
 
-// Local fonts (design system: DynaPuff display + Sour Gummy body)
-import '@fontsource/dynapuff/400.css';
-import '@fontsource/dynapuff/500.css';
-import '@fontsource/dynapuff/600.css';
-import '@fontsource/dynapuff/700.css';
-import '@fontsource/sour-gummy/400.css';
-import '@fontsource/sour-gummy/500.css';
-import '@fontsource/sour-gummy/600.css';
-import '@fontsource/sour-gummy/700.css';
+// Local fonts (design system: DynaPuff display + Sour Gummy body — latin subset only
+// so cyrillic-ext/latin-ext @font-face rules never bloat the render-blocking CSS)
+import '@fontsource/dynapuff/latin-400.css';
+import '@fontsource/dynapuff/latin-500.css';
+import '@fontsource/dynapuff/latin-600.css';
+import '@fontsource/dynapuff/latin-700.css';
+import '@fontsource/sour-gummy/latin-400.css';
+import '@fontsource/sour-gummy/latin-500.css';
+import '@fontsource/sour-gummy/latin-600.css';
+import '@fontsource/sour-gummy/latin-700.css';
 
 import './index.css';
 import { printDevSignature } from './utils/devSignature';

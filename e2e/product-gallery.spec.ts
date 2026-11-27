@@ -73,11 +73,11 @@ test.describe('Galería de producto — carrusel con portada y miniaturas', () =
 
     await expectGalleryReady(page);
 
-    // Las 3 diapositivas referencian las URLs del contrato en orden (1ª = portada).
+    // Las 3 diapositivas referencian las URLs del contrato en orden (1ª = portada) con variante 800w.
     const slideSrcs = await page.locator('.product-gallery-img').evaluateAll((imgs) =>
       imgs.map((img) => img.getAttribute('src')),
     );
-    expect(slideSrcs).toEqual([URL_A, URL_B, URL_C]);
+    expect(slideSrcs).toEqual([`${URL_A}?w=800`, `${URL_B}?w=800`, `${URL_C}?w=800`]);
 
     // La primera miniatura es la activa (aria-current) y solo hay una activa.
     await expect(page.locator('.product-gallery-thumb[aria-current="true"]')).toHaveCount(1);
@@ -126,7 +126,11 @@ test.describe('Galería de producto — carrusel con portada y miniaturas', () =
     await expect(page.locator('.product-gallery')).toHaveCount(0);
 
     const single = page.locator('.product-image-container img').first();
-    await expect(single).toHaveAttribute('src', URL_B);
+    await expect(single).toHaveAttribute('src', `${URL_B}?w=800`);
+    await expect(single).toHaveAttribute(
+      'srcset',
+      `${URL_B}?w=400 400w, ${URL_B}?w=800 800w, ${URL_B} 1600w`,
+    );
   });
 
   test('producto heredado (solo product_image_url) sigue mostrando su imagen', async ({ page }) => {
@@ -135,7 +139,7 @@ test.describe('Galería de producto — carrusel con portada y miniaturas', () =
 
     await expect(page.locator('.product-gallery')).toHaveCount(0);
     const single = page.locator('.product-image-container img').first();
-    await expect(single).toHaveAttribute('src', URL_C);
+    await expect(single).toHaveAttribute('src', `${URL_C}?w=800`);
   });
 
   test('en desktop la galería queda alineada a su columna y nunca se pega al borde inferior', async ({ page }) => {

@@ -103,6 +103,15 @@
   --shadow-card-hover: 0 8px 28px rgba(230, 139, 190, 0.32);
   --shadow-nav:        0 2px 12px rgba(230, 139, 190, 0.12);
 
+  /* ── Promo / Discount sticker tokens (vivid candy-berry pop inside pink family) ── */
+  --promo-start:        #f0388d;
+  --promo-end:          #c81b6c;
+  --promo-text:         #c81b6c;
+  --promo-rim-shadow:   #861249;
+  --promo-shadow:       0 3px 0 #861249, 0 6px 16px rgba(200, 27, 108, 0.42);
+  --promo-shadow-hover: 0 4px 0 #861249, 0 10px 22px rgba(200, 27, 108, 0.52);
+  --promo-shadow-sm:    0 2px 0 #861249, 0 4px 10px rgba(200, 27, 108, 0.34);
+
   /* Transitions */
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);

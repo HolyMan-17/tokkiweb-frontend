@@ -548,3 +548,116 @@ describe('ProductFormModal — categoría por defecto', () => {
     expect(select.value).toBe('Otros');
   });
 });
+
+describe('ProductFormModal — descuento del producto', () => {
+  beforeEach(() => {
+    mockCreateProduct.mockReset();
+    mockUpdateProduct.mockReset();
+    mockAddProductImage.mockReset();
+    mockRemoveProductImageByUrl.mockReset();
+    mockReorderProductImages.mockReset();
+  });
+
+  it('oculta el campo de porcentaje hasta marcar "Aplicar descuento" y envía 0 si está desmarcado', async () => {
+    mockCreateProduct.mockResolvedValue(CREATE_OK);
+    const { onSuccess } = renderModal();
+
+    const checkbox = screen.getByLabelText('Aplicar descuento') as HTMLInputElement;
+    expect(checkbox).not.toBeChecked();
+    expect(screen.queryByLabelText(/Porcentaje de descuento/i)).not.toBeInTheDocument();
+
+    await fillValidForm();
+    await submit();
+
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        product_price: 3.5,
+        discount_percent: 0,
+      }),
+      expect.any(Object),
+    );
+    expect(onSuccess).toHaveBeenCalledWith('Producto agregado');
+  });
+
+  it('al marcar "Aplicar descuento" muestra el campo de porcentaje, vista previa en vivo y envía el valor', async () => {
+    mockCreateProduct.mockResolvedValue({
+      ok: true,
+      data: { ...SAVED_PRODUCT, product_price: '10.00', discount_percent: 20 },
+    });
+    const { onSuccess } = renderModal();
+
+    await fillValidForm();
+    fireEvent.change(screen.getByLabelText('Precio ($)'), { target: { value: '10.00' } });
+    fireEvent.click(screen.getByLabelText('Aplicar descuento'));
+
+    const pctInput = screen.getByLabelText(/Porcentaje de descuento/i);
+    fireEvent.change(pctInput, { target: { value: '20' } });
+
+    expect(screen.getByText('Precio con descuento:')).toBeInTheDocument();
+    expect(screen.getByText('$8.00')).toBeInTheDocument();
+    expect(screen.getByText('$10.00')).toBeInTheDocument();
+    expect(screen.getByText('-20%')).toBeInTheDocument();
+
+    await submit();
+
+    expect(mockCreateProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        product_price: 10,
+        discount_percent: 20,
+      }),
+      expect.any(Object),
+    );
+    expect(onSuccess).toHaveBeenCalledWith('Producto agregado');
+  });
+
+  it('valida que el porcentaje sea entero entre 1 y 99 cuando "Aplicar descuento" está activo', async () => {
+    const { onSuccess } = renderModal();
+
+    await fillValidForm();
+    fireEvent.click(screen.getByLabelText('Aplicar descuento'));
+    await submit();
+
+    expect(screen.getByText('Ingresa un porcentaje entero entre 1 y 99.')).toBeInTheDocument();
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+
+    fireEvent.change(screen.getByLabelText(/Porcentaje de descuento/i), { target: { value: '0' } });
+    await submit();
+
+    expect(screen.getByText('Ingresa un porcentaje entero entre 1 y 99.')).toBeInTheDocument();
+    expect(mockCreateProduct).not.toHaveBeenCalled();
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+
+  it('al editar un producto con descuento lo precarga marcado y permite desactivarlo a 0', async () => {
+    const discounted: Product = {
+      ...SAVED_PRODUCT,
+      product_id: 9,
+      product_price: '20.00',
+      discount_percent: 25,
+    };
+    mockUpdateProduct.mockResolvedValue({
+      ok: true,
+      data: { ...discounted, discount_percent: 0 },
+    });
+    const { onSuccess } = renderModal({ editingProduct: discounted });
+
+    const checkbox = screen.getByLabelText('Aplicar descuento') as HTMLInputElement;
+    expect(checkbox).toBeChecked();
+    expect(screen.getByLabelText(/Porcentaje de descuento/i)).toHaveValue('25');
+    expect(screen.getByText('$15.00')).toBeInTheDocument();
+
+    fireEvent.click(checkbox);
+    expect(screen.queryByLabelText(/Porcentaje de descuento/i)).not.toBeInTheDocument();
+
+    await submit();
+
+    expect(mockUpdateProduct).toHaveBeenCalledWith(
+      9,
+      expect.objectContaining({
+        discount_percent: 0,
+      }),
+      expect.any(Object),
+    );
+    expect(onSuccess).toHaveBeenCalledWith('Producto actualizado');
+  });
+});

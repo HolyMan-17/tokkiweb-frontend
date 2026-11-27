@@ -95,4 +95,20 @@ describe('sortProducts (orden compartido de catálogo)', () => {
     expect(sorted).not.toBe(products);
     expect(sorted.map(p => p.product_id)).toEqual([30, 12, 1]);
   });
+
+  test('ordena price-asc y price-desc por precio efectivo con descuento', () => {
+    const products = [
+      product({ product_id: 1, product_name: 'SinDescuento', product_price: '7.00', discount_percent: 0 }),
+      product({ product_id: 2, product_name: 'ConDescuento', product_price: '10.00', discount_percent: 50 }), // $5.00
+    ];
+
+    expect(sortProducts(products, 'price-asc').map(p => p.product_name)).toEqual([
+      'ConDescuento',
+      'SinDescuento',
+    ]);
+    expect(sortProducts(products, 'price-desc').map(p => p.product_name)).toEqual([
+      'SinDescuento',
+      'ConDescuento',
+    ]);
+  });
 });

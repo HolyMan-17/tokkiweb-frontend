@@ -649,7 +649,7 @@
 }
 
 .catalog-skeleton-card {
-  flex: 0 0 148px;
+  flex: 0 0 calc((100% - 12px) / 2);
   background: var(--color-surface);
   border-radius: var(--radius-card);
   border: 2.5px solid var(--color-border);
@@ -983,9 +983,15 @@
   flex-shrink: 0;
   scroll-snap-align: start;
   scroll-snap-stop: always;
-  /* Card width is computed by the JS agent from the track's actual width.
-     Fallback keeps the layout sane before hydration. */
-  width: var(--carousel-card-width, 148px);
+  /* Pure CSS breakpoint fallback matches computeCarouselMetrics() from frame 0
+     to eliminate initial CLS; ResizeObserver refines --carousel-card-width asynchronously. */
+  width: var(--carousel-card-width, calc((100% - 12px) / 2));
+}
+
+@media (min-width: 500px) and (max-width: 767px) {
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 24px) / 3));
+  }
 }
 
 /* ── Carousel "Ver más" Prompt Card ────────────────────────── */
@@ -1338,12 +1344,40 @@
     scroll-padding-inline: 32px;
   }
 
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 40px) / 3));
+  }
+
   .see-more-btn {
     font-size: 0.85rem;
     padding: 7px 17px;
   }
 
   .social-circles { padding: 28px 16px 16px; }
+}
+
+@media (min-width: 964px) {
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 60px) / 4));
+  }
+}
+
+@media (min-width: 1194px) {
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 80px) / 5));
+  }
+}
+
+@media (min-width: 1424px) {
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 100px) / 6));
+  }
+}
+
+@media (min-width: 1654px) {
+  .carousel-item {
+    width: var(--carousel-card-width, calc((100% - 120px) / 7));
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,4 @@
-import { startTransition, useCallback, useEffect, useMemo, useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import './CatalogPage.css';
 import sparklesImg from '../../assets/sparkles.webp';
@@ -39,8 +39,17 @@ function groupByCategory(products: Product[]): Record<string, Product[]> {
 // the DOM small (Lighthouse flags tracks with dozens of children) and
 // shrinks the synchronous layout pass that measures every track on mount.
 const MAX_CARDS_PER_CAROUSEL = 16;
-const INITIAL_CAROUSEL_IMAGES = 6;
+const DESKTOP_INITIAL_CAROUSEL_IMAGES = 6;
+const MOBILE_INITIAL_CAROUSEL_IMAGES = 3;
 const VERTICAL_ROOT_MARGIN = '350px 0px';
+
+function isMobileViewport(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    typeof window.matchMedia === 'function' &&
+    window.matchMedia('(max-width: 767px)').matches
+  );
+}
 
 // Compute a card width so an exact whole number of cards fits the
 // visible track width on every screen, and fill the row precisely.
@@ -64,13 +73,23 @@ function computeCarouselMetrics(containerWidth: number): { cardWidth: number; vi
   };
 }
 
-function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = false, priorityCards = false, sectionId }: {
+function CategoryCarousel({
+  title,
+  emoji,
+  products,
+  seeMoreTo,
+  eagerSection = false,
+  priorityCards = false,
+  initialImages = DESKTOP_INITIAL_CAROUSEL_IMAGES,
+  sectionId,
+}: {
   title: string;
   emoji: React.ReactNode;
   products: Product[];
   seeMoreTo?: string;
   eagerSection?: boolean;
   priorityCards?: boolean;
+  initialImages?: number;
   sectionId?: string;
 }) {
   const sectionRef = useRef<HTMLElement>(null);
@@ -201,8 +220,9 @@ function CategoryCarousel({ title, emoji, products, seeMoreTo, eagerSection = fa
           <div key={p.product_id} className="carousel-item">
             <ProductCard
               product={p}
-              priority={priorityCards && cardIndex < 4}
-              deferImage={!isNearViewport || (!expandedTrack && cardIndex >= INITIAL_CAROUSEL_IMAGES)}
+              priority={priorityCards && cardIndex === 0}
+              eager={priorityCards && cardIndex === 1}
+              deferImage={!isNearViewport || (!expandedTrack && cardIndex >= initialImages)}
             />
           </div>
         ))}
@@ -255,7 +275,7 @@ function ShippingNotice() {
     <div className="catalog-shipping-wrap">
       <div className="catalog-shipping" role="note">
         <span className="catalog-shipping-badge" aria-hidden="true">
-          <img src={bunnyDancingImg} alt="" className="catalog-shipping-bunny" width={200} height={200} />
+          <img src={bunnyDancingImg} alt="" className="catalog-shipping-bunny" width={200} height={200} loading="lazy" decoding="async" fetchPriority="low" />
           <span className="catalog-shipping-truck">
             <svg
               width="14"
@@ -292,6 +312,9 @@ function ShippingNotice() {
             className="catalog-shipping-cash"
             width={222}
             height={200}
+            loading="lazy"
+            decoding="async"
+            fetchPriority="low"
             aria-hidden="true"
           />
           <span className="catalog-shipping-stamp-text">Cobro a destino</span>
@@ -432,6 +455,10 @@ export default function CatalogPage() {
   });
   const { data, isLoading, isError, retry } = useAsync(fetchAllProducts, []);
   const carouselsWrapperRef = useRef<HTMLDivElement>(null);
+  const [isMobile] = useState(isMobileViewport);
+  const initialCarouselImages = isMobile
+    ? MOBILE_INITIAL_CAROUSEL_IMAGES
+    : DESKTOP_INITIAL_CAROUSEL_IMAGES;
   const products = useMemo(() => data ?? [], [data]);
   const sortedProducts = useMemo(
     () => products.toSorted((a, b) => b.product_id - a.product_id),
@@ -443,21 +470,38 @@ export default function CatalogPage() {
     [grouped],
   );
 
-  useLayoutEffect(() => {
+  // Measure via ResizeObserver contentRect inside rAF (never reading wrapper.clientWidth
+  // synchronously after sibling DOM mutations) so layout never forces reflow.
+  useEffect(() => {
     const wrapper = carouselsWrapperRef.current;
     if (!wrapper) return;
 
-    const applyLayoutWidth = () => {
-      const metrics = computeCarouselMetrics(wrapper.clientWidth);
+    const applyLayoutWidth = (width: number) => {
+      const metrics = computeCarouselMetrics(width);
       if (metrics) {
         wrapper.style.setProperty('--carousel-card-width', `${metrics.cardWidth}px`);
       }
     };
 
-    applyLayoutWidth();
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(applyLayoutWidth) : null;
-    ro?.observe(wrapper);
-    return () => ro?.disconnect();
+    if (typeof ResizeObserver !== 'undefined') {
+      let rafId = 0;
+      const ro = new ResizeObserver((entries) => {
+        const width = entries[0]?.contentRect.width;
+        if (!width) return;
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = requestAnimationFrame(() => {
+          rafId = 0;
+          applyLayoutWidth(width);
+        });
+      });
+      ro.observe(wrapper);
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId);
+        ro.disconnect();
+      };
+    }
+
+    applyLayoutWidth(window.innerWidth);
   }, [isLoading, isError]);
 
   return (
@@ -482,10 +526,10 @@ export default function CatalogPage() {
             <span className="hero-bubble" style={{ left: '92%', '--delay': '4.5s','--dur': '11.5s' } as React.CSSProperties} />
           </div>
           <div className="hero-deco hero-deco--left">
-            <img src={cherryBlossom} alt="" className="hero-cherry" width={224} height={224} loading="lazy" />
+            <img src={cherryBlossom} alt="" className="hero-cherry" width={224} height={224} loading="lazy" decoding="async" fetchPriority="low" />
           </div>
           <div className="hero-deco hero-deco--right">
-            <img src={branchCherry} alt="" className="hero-branch" width={200} height={242} loading="lazy" />
+            <img src={branchCherry} alt="" className="hero-branch" width={200} height={242} loading="lazy" decoding="async" fetchPriority="low" />
           </div>
           <img src={tokkiLogo} alt="Tokki Shop" className="hero-logo" width={420} height={420} fetchPriority="high" />
           <h1 className="hero-title">Tu tienda asiatica favorita</h1>
@@ -513,6 +557,7 @@ export default function CatalogPage() {
                 seeMoreTo={ROUTES.allProducts}
                 eagerSection
                 priorityCards
+                initialImages={initialCarouselImages}
               />
 
               {populatedCategories.map((cat, index) => (
@@ -522,7 +567,8 @@ export default function CatalogPage() {
                   emoji={CATEGORY_ICONS[cat.name] ?? cat.emoji}
                   products={grouped[cat.name]}
                   seeMoreTo={ROUTES.category(slugify(cat.name))}
-                  eagerSection={index === 0}
+                  eagerSection={!isMobile && index === 0}
+                  initialImages={initialCarouselImages}
                   sectionId={getCategorySectionId(cat.name)}
                 />
               ))}

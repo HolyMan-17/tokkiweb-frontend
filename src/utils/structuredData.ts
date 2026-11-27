@@ -1,6 +1,7 @@
 import { CATEGORIES, slugify } from '../constants';
 import { ROUTES } from '../lib/routes';
 import type { Product } from '../types';
+import { getEffectivePriceString } from './pricing';
 
 const PUBLIC_SITE_URL = (
   import.meta.env.VITE_PUBLIC_SITE_URL || 'https://www.tokkishopve.com'
@@ -39,11 +40,6 @@ function resolveProductImages(product: Product, siteUrl: string): string[] {
   }
 
   return images.length > 0 ? images : [`${base}/tokki_logo.png`];
-}
-
-function formatSchemaPrice(price: string | number): string {
-  const num = typeof price === 'number' ? price : parseFloat(price);
-  return Number.isFinite(num) ? num.toFixed(2) : '0.00';
 }
 
 export function buildBreadcrumbJsonLd(
@@ -105,7 +101,7 @@ export function buildProductJsonLd(
       '@type': 'Offer',
       url: productUrl,
       priceCurrency: 'USD',
-      price: formatSchemaPrice(product.product_price),
+      price: getEffectivePriceString(product),
       availability: isAvailable
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',

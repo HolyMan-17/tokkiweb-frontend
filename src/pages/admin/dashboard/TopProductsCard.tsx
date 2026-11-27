@@ -7,6 +7,7 @@ import { formatPrice } from '../../../constants';
 import { rankTopProducts } from '../../../utils/topProducts';
 import { getCategoryIcon } from '../../../components/ui/CategoryIcons';
 import LoadingSpinner from '../../../components/ui/LoadingSpinner';
+import PriceDisplay from '../../../components/ui/PriceDisplay';
 import ChartPillGroup, { type ChartPillOption } from './ChartPillGroup';
 import type { TopProductsPeriod, TopProductsSort } from '../../../types';
 
@@ -138,7 +139,7 @@ export function TopProductsCard({ auth }: TopProductsCardProps) {
 
               <div className="tp-right">
                 <div className="tp-pricing">
-                  <span className="tp-price font-display">{formatPrice(item.product_price)}</span>
+                  <PriceDisplay product={item} showBadge size="compact" className="tp-price" />
                   <span className={`tp-stock-badge ${getStockClassName(item.qty_available, item.in_stock)}`}>
                     {getStockLabel(item.qty_available, item.in_stock)}
                   </span>

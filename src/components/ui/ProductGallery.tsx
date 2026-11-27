@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { getProductGalleryImageAttrs, getProductThumbUrl } from '../../utils/productImage';
 import { computeActiveIndex } from './galleryUtils';
 import './ProductGallery.css';
 
@@ -51,7 +52,7 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
       <div className="product-image-container">
         {images.length === 1 ? (
           <img
-            src={images[0]}
+            {...getProductGalleryImageAttrs(images[0])}
             alt={name}
             className="product-image"
             loading="eager"
@@ -117,7 +118,7 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
         {images.map((url, index) => (
           <div className="product-gallery-slide" key={url}>
             <img
-              src={url}
+              {...getProductGalleryImageAttrs(url)}
               alt={`${name} — imagen ${index + 1}`}
               className="product-gallery-img"
               loading={index === 0 ? 'eager' : 'lazy'}
@@ -168,7 +169,7 @@ export default function ProductGallery({ name, images }: ProductGalleryProps) {
               aria-current={index === activeIndex ? 'true' : undefined}
             >
               <img
-                src={url}
+                src={getProductThumbUrl(url)}
                 alt=""
                 className="product-gallery-thumb-img"
                 loading="lazy"

@@ -265,4 +265,27 @@ describe('GlobalSearchBar', () => {
       expect(screen.getByText('Photocard Holder Tokki')).toBeInTheDocument();
     });
   });
+
+  it('10. renders discounted price, original price, and percentage badge in search suggestions', () => {
+    const discountedProducts: Product[] = [
+      {
+        ...MOCK_PRODUCTS[0],
+        product_price: '10.00',
+        discount_percent: 30,
+      },
+    ];
+    render(
+      <MemoryRouter>
+        <GlobalSearchBar products={discountedProducts} />
+      </MemoryRouter>,
+    );
+
+    const input = screen.getByRole('combobox', { name: /buscar producto/i });
+    fireEvent.focus(input);
+    fireEvent.change(input, { target: { value: 'gloss' } });
+
+    expect(screen.getByText('$7.00')).toBeInTheDocument();
+    expect(document.querySelector('del.tokki-price__original')).toHaveTextContent('$10.00');
+    expect(screen.getByText('-30%')).toBeInTheDocument();
+  });
 });

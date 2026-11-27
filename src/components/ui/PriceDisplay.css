@@ -1,0 +1,140 @@
+/* ── Kawaii Price & Discount Sticker ─────────────────────────────────────────
+   Reused across cards, detail page, search, cart, admin grid, and POS.
+   Uses only design tokens from src/index.css.
+   ─────────────────────────────────────────────────────────────────────────── */
+
+.tokki-price {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 6px;
+  font-family: var(--font-display);
+  line-height: 1.2;
+}
+
+.tokki-price__current {
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.tokki-price__current--discounted {
+  color: var(--promo-text);
+  letter-spacing: -0.01em;
+}
+
+.tokki-price__original {
+  font-weight: 500;
+  font-size: 0.9em;
+  color: var(--color-text-muted);
+  text-decoration: line-through;
+  text-decoration-thickness: 1.8px;
+  text-decoration-color: var(--p4);
+}
+
+.tokki-price__badge {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: var(--radius-full);
+  background: linear-gradient(135deg, var(--promo-start) 0%, var(--promo-end) 100%);
+  color: var(--color-surface);
+  border: 2px solid var(--color-surface);
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 0 var(--promo-rim-shadow);
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.42),
+    var(--promo-shadow-sm);
+  transform: rotate(-3deg);
+  align-self: center;
+  white-space: nowrap;
+}
+
+.tokki-price--card {
+  font-size: 0.92rem;
+  gap: 2px 6px;
+}
+
+.tokki-price--card .tokki-price__current--discounted {
+  font-size: 1.24em;
+}
+
+.tokki-price--detail {
+  font-size: var(--text-xl);
+  gap: 8px 12px;
+}
+
+.tokki-price--detail .tokki-price__current--discounted {
+  font-size: 1.32em;
+}
+
+.tokki-price--detail .tokki-price__badge {
+  font-size: var(--text-md);
+  padding: 6px 16px;
+  border-width: 2.5px;
+  box-shadow:
+    inset 0 1.5px 0 rgba(255, 255, 255, 0.42),
+    var(--promo-shadow);
+  transform: rotate(-4deg);
+}
+
+.tokki-price--detail .tokki-price__badge::after {
+  content: '';
+  position: absolute;
+  top: -40%;
+  bottom: -40%;
+  left: -60%;
+  width: 45%;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 100%
+  );
+  transform: skewX(-22deg) translateX(0);
+  animation: discount-pill-sheen 4.2s ease-in-out infinite;
+}
+
+@keyframes discount-pill-sheen {
+  0%, 72% { transform: skewX(-22deg) translateX(0); }
+  100%    { transform: skewX(-22deg) translateX(460%); }
+}
+
+.tokki-price--compact {
+  font-size: var(--text-sm);
+  gap: 3px 5px;
+}
+
+.tokki-price--compact .tokki-price__current--discounted {
+  font-size: 1.14em;
+}
+
+.tokki-price--compact .tokki-price__badge {
+  font-size: 0.74rem;
+  padding: 2px 8px;
+}
+
+.tokki-price--admin {
+  font-size: var(--text-md);
+  gap: 4px 6px;
+}
+
+.tokki-price--admin .tokki-price__current--discounted {
+  font-size: 1.16em;
+}
+
+.tokki-price--admin .tokki-price__badge {
+  font-size: 0.8rem;
+  padding: 3px 10px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tokki-price--detail .tokki-price__badge::after {
+    animation: none !important;
+  }
+}

@@ -1,5 +1,6 @@
 import type { Product } from '../../../types';
-import { formatPrice } from '../../../constants';
+import { getProductThumbUrl } from '../../../utils/productImage';
+import PriceDisplay from '../../../components/ui/PriceDisplay';
 
 interface ProductAdminGridProps {
   products: Product[];
@@ -55,7 +56,11 @@ export function ProductAdminGrid({
           >
             <div className="product-thumb">
               {product.product_image_url ? (
-                <img src={product.product_image_url} alt={product.product_name} loading="lazy" />
+                <img
+                  src={getProductThumbUrl(product.product_image_url)}
+                  alt={product.product_name}
+                  loading="lazy"
+                />
               ) : (
                 <span className="product-thumb-letter">
                   {product.product_name.charAt(0).toUpperCase()}
@@ -72,7 +77,7 @@ export function ProductAdminGrid({
               </p>
               <span className="product-category">{product.category}</span>
               <div className="product-details">
-                <span className="product-price">{formatPrice(product.product_price)}</span>
+                <PriceDisplay product={product} showBadge size="admin" className="product-price" />
                 <div
                   className={`stock-stepper ${stockClass}${isSaving ? ' stock-stepper--saving' : ''}`}
                   role="group"

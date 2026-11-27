@@ -137,4 +137,21 @@ describe('CartPage — aviso de costos de envío', () => {
     await screen.findByText('Tu carrito está vacío');
     expect(screen.queryByRole('note')).not.toBeInTheDocument();
   });
+
+  it('muestra precio rebajado, precio original tachado y subtotal con descuento en productos rebajados', async () => {
+    const discounted = { ...p1, product_price: '10.00', discount_percent: 20 };
+    mockFetchAllProducts.mockResolvedValue([discounted]);
+    window.localStorage.setItem(
+      'tokki_cart_v1',
+      JSON.stringify([{ product: discounted, quantity: 2 }]),
+    );
+
+    const { container } = renderPage();
+
+    await screen.findByText('Mi Carrito');
+    expect(screen.getByText('$8.00')).toBeInTheDocument();
+    expect(container.querySelector('del.tokki-price__original')).toHaveTextContent('$10.00');
+    expect(screen.getByText('-20%')).toBeInTheDocument();
+    expect(screen.getAllByText('$16.00')).toHaveLength(2); // line total + summary subtotal
+  });
 });

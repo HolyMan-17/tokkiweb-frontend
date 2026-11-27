@@ -31,6 +31,7 @@ type AdminAuth = { getToken?: () => Promise<string | null> };
 export interface CreateProductInput {
   product_name: string;
   product_price: number;
+  discount_percent?: number;
   product_description: string;
   category: string;
   qty_available: number;
@@ -39,6 +40,7 @@ export interface CreateProductInput {
 export interface UpdateProductInput {
   product_name?: string;
   product_price?: number;
+  discount_percent?: number;
   product_description?: string;
   category?: string;
   qty_available?: number;
@@ -48,7 +50,50 @@ export interface FetchProductsOptions {
   useCache?: boolean;
 }
 
+declare global {
+  interface Window {
+    __TOKKI_PRODUCTS_PROMISE__?: Promise<unknown>;
+  }
+}
+
 let inFlightCatalogPromise: Promise<Product[]> | null = null;
+
+async function consumeBootstrappedProducts(): Promise<ApiResult<Product[]> | null> {
+  if (typeof window === 'undefined' || !window.__TOKKI_PRODUCTS_PROMISE__) {
+    return null;
+  }
+  const promise = window.__TOKKI_PRODUCTS_PROMISE__;
+  delete window.__TOKKI_PRODUCTS_PROMISE__;
+
+  if ((import.meta.env.VITE_API_URL ?? '/api') !== '/api') {
+    return null;
+  }
+
+  try {
+    const payload = (await promise) as {
+      success?: boolean | string;
+      data?: ProductRow[];
+      message?: string;
+    } | null;
+    if (
+      payload &&
+      typeof payload === 'object' &&
+      (payload.success === true || payload.success === 'true') &&
+      Array.isArray(payload.data)
+    ) {
+      return {
+        ok: true,
+        data: payload.data.map(normalizeProductRow),
+        message: payload.message,
+        status: 200,
+      };
+    }
+  } catch {
+    // Ignore bootstrap errors and fall back to standard API call.
+  }
+
+  return null;
+}
 
 async function withCacheInvalidation<T>(
   request: Promise<ApiResult<T>>,
@@ -60,6 +105,9 @@ async function withCacheInvalidation<T>(
 
 /** Public catalog read. Empty catalog resolves to an empty array. */
 export async function listProducts(): Promise<ApiResult<Product[]>> {
+  const bootstrapped = await consumeBootstrappedProducts();
+  if (bootstrapped) return bootstrapped;
+
   const result = await api<ProductRow[]>('/products');
   if (!result.ok) return result;
   return {

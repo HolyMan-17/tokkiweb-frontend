@@ -2,6 +2,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import type { Product, CartItem } from '../types';
 import { loadCart, saveCart } from '../store/localStore';
+import { getEffectivePriceCents, normalizeDiscountPercent } from '../utils/pricing';
 
 interface CartActionsContextType {
   addItem: (product: Product, qty?: number) => void;
@@ -38,7 +39,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         const newQty = Math.min(existing.quantity + qty, product.qty_available);
         return prev.map(i =>
           i.product.product_id === product.product_id
-            ? { ...i, quantity: newQty }
+            ? { ...i, product, quantity: newQty }
             : i
         );
       }
@@ -97,7 +98,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
             previousQty: quantity,
             newQty: fresh.qty_available,
           });
-          next.push({ ...item, quantity: fresh.qty_available });
+          next.push({ ...item, product: fresh, quantity: fresh.qty_available });
+          changed = true;
+          continue;
+        }
+        const priceOrDiscountChanged =
+          fresh.product_price !== product.product_price ||
+          normalizeDiscountPercent(fresh.discount_percent) !==
+            normalizeDiscountPercent(product.discount_percent) ||
+          fresh.qty_available !== product.qty_available ||
+          fresh.product_name !== product.product_name;
+        if (priceOrDiscountChanged) {
+          next.push({ ...item, product: fresh });
           changed = true;
           continue;
         }
@@ -111,10 +123,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);
-  const total = items.reduce(
-    (sum, i) => sum + Number(i.product.product_price) * i.quantity,
-    0,
-  );
+  const total =
+    items.reduce(
+      (sum, i) => sum + getEffectivePriceCents(i.product) * i.quantity,
+      0,
+    ) / 100;
 
   const actionsValue = useMemo<CartActionsContextType>(
     () => ({

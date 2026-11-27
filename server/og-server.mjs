@@ -141,6 +141,22 @@ export function ogFormatPrice(price) {
   return `$${num.toFixed(2)}`;
 }
 
+export function normalizeDiscountPercent(raw) {
+  if (typeof raw !== 'number' || !Number.isInteger(raw)) return 0;
+  if (raw < 0 || raw > 99) return 0;
+  return raw;
+}
+
+export function getEffectivePriceString(product) {
+  const raw = product?.product_price;
+  const base = typeof raw === 'number' ? raw : parseFloat(raw);
+  if (!Number.isFinite(base) || base <= 0) return '0.00';
+  const baseCents = Math.round(base * 100);
+  const pct = normalizeDiscountPercent(product?.discount_percent);
+  const effectiveCents = Math.round((baseCents * (100 - pct)) / 100);
+  return (effectiveCents / 100).toFixed(2);
+}
+
 export function resolveImageUrl(rawUrl, siteUrl = DEFAULT_SITE_URL) {
   const base = siteUrl.replace(/\/+$/, '');
   if (!rawUrl || rawUrl.trim() === '') return `${base}/tokki_logo.png`;
@@ -173,11 +189,6 @@ export function resolveProductImages(product, siteUrl = DEFAULT_SITE_URL) {
   }
 
   return images.length > 0 ? images : [`${base}/tokki_logo.png`];
-}
-
-function formatSchemaPrice(price) {
-  const num = typeof price === 'number' ? price : parseFloat(price);
-  return Number.isFinite(num) ? num.toFixed(2) : '0.00';
 }
 
 function buildProductDescription(product) {
@@ -228,7 +239,7 @@ export function buildProductJsonLd(product, siteUrl = DEFAULT_SITE_URL) {
       '@type': 'Offer',
       url: productUrl,
       priceCurrency: 'USD',
-      price: formatSchemaPrice(product.product_price),
+      price: getEffectivePriceString(product),
       availability: isAvailable
         ? 'https://schema.org/InStock'
         : 'https://schema.org/OutOfStock',
@@ -276,7 +287,8 @@ function buildRedirectTags(targetUrl, escapedUrl, includeRedirect) {
 export function buildProductOgHtml(product, options = {}) {
   const siteUrl = (options.siteUrl || DEFAULT_SITE_URL).replace(/\/+$/, '');
   const productUrl = `${siteUrl}/products/${product.product_id}`;
-  const priceFormatted = ogFormatPrice(product.product_price);
+  const effectivePriceStr = getEffectivePriceString(product);
+  const priceFormatted = ogFormatPrice(effectivePriceStr);
   const title = `${product.product_name} — ${priceFormatted} | ${DEFAULT_SITE_NAME}`;
 
   const rawDesc = buildProductDescription(product);
@@ -288,7 +300,7 @@ export function buildProductOgHtml(product, options = {}) {
   const escapedProductUrl = escapeHtml(productUrl);
   const escapedProductName = escapeHtml(product.product_name);
   const availability = isProductInStock(product) ? 'in stock' : 'out of stock';
-  const numericPrice = escapeHtml(String(product.product_price));
+  const numericPrice = escapeHtml(effectivePriceStr);
   const jsonLdScript = `<script type="application/ld+json" data-tokki-jsonld="route">${serializeJsonLd(buildProductJsonLd(product, siteUrl))}</script>`;
   const redirectTags = buildRedirectTags(
     productUrl,
@@ -534,11 +546,14 @@ export function rewriteIndexHtml(
       );
 
     if (product) {
-      const priceFormatted = ogFormatPrice(product.product_price);
+      const priceFormatted = ogFormatPrice(getEffectivePriceString(product));
       const escapedTitle = escapeHtml(`${product.product_name} — ${priceFormatted} | ${DEFAULT_SITE_NAME}`);
       const escapedDesc = escapeHtml(buildProductDescription(product));
-      const escapedImage = escapeHtml(resolveProductImages(product, base)[0]);
-      const preloadTag = `<link rel="preload" as="image" href="${escapedImage}" fetchpriority="high" />`;
+      const rawImage = resolveProductImages(product, base)[0];
+      const escapedImage = escapeHtml(rawImage);
+      const preloadTag = /\/images\/products\/[0-9a-f-]{36}\.webp$/i.test(rawImage)
+        ? `<link rel="preload" as="image" href="${escapedImage}?w=800" imagesrcset="${escapedImage}?w=400 400w, ${escapedImage}?w=800 800w, ${escapedImage} 1600w" imagesizes="(min-width: 768px) 480px, 100vw" fetchpriority="high" />`
+        : `<link rel="preload" as="image" href="${escapedImage}" fetchpriority="high" />`;
       const jsonLdScript = `<script type="application/ld+json" data-tokki-jsonld="route">${serializeJsonLd(buildProductJsonLd(product, base))}</script>`;
       const bootstrapScript = `<script data-tokki-bootstrap="product">window.__TOKKI_INITIAL_PRODUCT__=${serializeJsonLd(product)};</script>`;
 
@@ -752,6 +767,17 @@ const COMPRESSIBLE_EXTS = new Set([
   '.xml',
   '.webmanifest',
 ]);
+const LONG_CACHE_EXTS = new Set([
+  '.png',
+  '.ico',
+  '.svg',
+  '.webp',
+  '.avif',
+  '.jpg',
+  '.jpeg',
+  '.woff2',
+  '.webmanifest',
+]);
 const MIN_COMPRESS_BYTES = 1024;
 const MAX_STATIC_CACHE_ENTRIES = 200;
 const staticFileCache = new Map();
@@ -800,10 +826,10 @@ export async function serveStaticFile(
   if (!filePath.startsWith(distDir)) return false;
 
   try {
+    const ext = extname(filePath).toLowerCase();
     let entry = staticFileCache.get(filePath);
     if (!entry) {
       const raw = await readFile(filePath);
-      const ext = extname(filePath).toLowerCase();
       entry = {
         raw,
         mime: MIME_TYPES[ext] || 'application/octet-stream',
@@ -818,7 +844,9 @@ export async function serveStaticFile(
 
     const cacheControl = pathname.startsWith('/assets/')
       ? 'public, max-age=31536000, immutable'
-      : 'public, max-age=3600';
+      : LONG_CACHE_EXTS.has(ext)
+        ? 'public, max-age=2592000'
+        : 'public, max-age=3600';
 
     const encoding =
       entry.compressible && entry.raw.length >= MIN_COMPRESS_BYTES

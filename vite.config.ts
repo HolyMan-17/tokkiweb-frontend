@@ -60,6 +60,12 @@ export default defineConfig({
   },
   build: {
     chunkSizeWarningLimit: 1000,
+    target: ['es2022', 'chrome107', 'edge107', 'firefox104', 'safari16'],
+    assetsInlineLimit: (filePath) => {
+      if (filePath.endsWith('.woff2') || filePath.endsWith('.woff')) {
+        return false
+      }
+    },
   },
   test: {
     environment: 'jsdom',

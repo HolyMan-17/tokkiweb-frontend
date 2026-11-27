@@ -16,6 +16,7 @@ const MOCK_PRODUCTS: Product[] = [
     product_id: 2,
     product_name: 'Serum, Facial "Especial"',
     product_price: '12.00',
+    discount_percent: 25,
     product_description: 'Calmante para la piel',
     qty_available: 2,
     in_stock: true,
@@ -34,27 +35,27 @@ const MOCK_PRODUCTS: Product[] = [
 
 describe('exportProducts utility', () => {
   describe('generateProductsCsv', () => {
-    it('incluye BOM UTF-8 y exactamente las cabeceras Nombre y Precio ($)', () => {
+    it('incluye BOM UTF-8 y las cabeceras Nombre, Precio ($), Descuento (%) y Precio Final ($)', () => {
       const csv = generateProductsCsv([]);
       expect(csv.startsWith('\uFEFF')).toBe(true);
-      expect(csv).toBe('\uFEFFNombre,Precio ($)');
+      expect(csv).toBe('\uFEFFNombre,Precio ($),Descuento (%),Precio Final ($)');
     });
 
-    it('genera únicamente el nombre y el precio para cada producto', () => {
+    it('genera nombre, precio base, descuento (%) y precio final para cada producto', () => {
       const csv = generateProductsCsv(MOCK_PRODUCTS);
       const lines = csv.replace('\uFEFF', '').split('\r\n');
 
       expect(lines.length).toBe(4); // 1 header + 3 data rows
-      expect(lines[0]).toBe('Nombre,Precio ($)');
+      expect(lines[0]).toBe('Nombre,Precio ($),Descuento (%),Precio Final ($)');
 
-      // Producto 1
-      expect(lines[1]).toBe('Bálsamo Labial Fresa,3.50');
+      // Producto 1 (sin descuento)
+      expect(lines[1]).toBe('Bálsamo Labial Fresa,3.50,0,3.50');
 
-      // Producto 2 (con comas y comillas correctamente escapadas)
-      expect(lines[2]).toBe('"Serum, Facial ""Especial""",12.00');
+      // Producto 2 (con comas, comillas y 25% de descuento)
+      expect(lines[2]).toBe('"Serum, Facial ""Especial""",12.00,25,9.00');
 
       // Producto 3 (con neutralización de fórmula)
-      expect(lines[3]).toBe(`'=Formula Mochi,4.25`);
+      expect(lines[3]).toBe(`'=Formula Mochi,4.25,0,4.25`);
     });
 
     it('maneja productos con valores vacíos o nulos de forma segura', () => {
@@ -71,7 +72,7 @@ describe('exportProducts utility', () => {
       ];
       const csv = generateProductsCsv(incompleteProduct);
       const lines = csv.replace('\uFEFF', '').split('\r\n');
-      expect(lines[1]).toBe('Sin nombre,0.00');
+      expect(lines[1]).toBe('Sin nombre,0.00,0,0.00');
     });
   });
 

@@ -115,6 +115,34 @@ describe('CartContext — reconcileStock', () => {
     expect(screen.getByText(`${p1.product_name} x2`)).toBeInTheDocument();
     expect(screen.getByText(`${p2.product_name} x4`)).toBeInTheDocument();
   });
+
+  it('calcula total con descuento y actualiza descuentos/precios al reconciliar catálogo', async () => {
+    seedCart([
+      { product: p1, quantity: 2 }, // $3.50 * 2 = $7.00
+    ]);
+
+    function TotalProbe({ products }: { products: Product[] }) {
+      const { total, reconcileStock } = useCart();
+      return (
+        <div>
+          <span data-testid="cart-total">{total.toFixed(2)}</span>
+          <button onClick={() => reconcileStock(products)}>reconciliar</button>
+        </div>
+      );
+    }
+
+    const user = userEvent.setup();
+    render(
+      <CartProvider>
+        <TotalProbe products={[freshProduct(p1, { product_price: '10.00', discount_percent: 20 })]} />
+      </CartProvider>,
+    );
+
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('7.00');
+    await user.click(screen.getByRole('button', { name: /reconciliar/i }));
+    // 2 * ($10.00 @ 20% off = $8.00) = $16.00
+    expect(screen.getByTestId('cart-total')).toHaveTextContent('16.00');
+  });
 });
 
 describe('describeStockAdjustment', () => {

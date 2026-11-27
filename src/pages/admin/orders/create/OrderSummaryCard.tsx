@@ -1,6 +1,8 @@
 import type { FormEvent } from 'react';
 import type { Product } from '../../../../types';
 import { formatPrice } from '../../../../constants';
+import { getEffectivePriceCents } from '../../../../utils/pricing';
+import PriceDisplay from '../../../../components/ui/PriceDisplay';
 import sparklesGif from '../../../../assets/sparkles.webp';
 
 export interface SelectedOrderItem {
@@ -74,7 +76,7 @@ export function OrderSummaryCard({
               <div className="selected-item-details">
                 <p className="item-title">{product.product_name}</p>
                 <span className="item-unit-price">
-                  {formatPrice(product.product_price)} c/u
+                  <PriceDisplay product={product} showBadge={false} size="compact" /> c/u
                 </span>
               </div>
 
@@ -100,7 +102,7 @@ export function OrderSummaryCard({
 
               <div className="selected-item-total">
                 <span className="line-total-price">
-                  {formatPrice(Number(product.product_price) * quantity)}
+                  {formatPrice((getEffectivePriceCents(product) * quantity) / 100)}
                 </span>
                 <button
                   type="button"

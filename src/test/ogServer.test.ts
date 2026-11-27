@@ -211,6 +211,24 @@ describe('server/og-server.mjs — Generación HTML de Open Graph', () => {
     expect(offer.priceCurrency).toBe('USD');
     expect(offer.availability).toBe('https://schema.org/InStock');
   });
+
+  it('usa el precio rebajado en OG meta tags y JSON-LD cuando el producto tiene discount_percent', () => {
+    const discounted = {
+      ...mockProduct,
+      product_price: '10.00',
+      discount_percent: 20,
+    };
+
+    const html = buildProductOgHtml(discounted, { siteUrl: 'https://www.tokkishopve.com' });
+    expect(html).toContain('<title>Gloss Conejito Rosa — $8.00 | Tokki Shop</title>');
+    expect(html).toContain('<meta property="product:price:amount" content="8.00" />');
+
+    const ld = buildProductJsonLd(discounted, 'https://www.tokkishopve.com') as {
+      '@graph': Array<Record<string, unknown>>;
+    };
+    const productNode = ld['@graph'].find((n) => n['@type'] === 'Product');
+    expect((productNode?.offers as Record<string, unknown>)?.price).toBe('8.00');
+  });
 });
 
 describe('server/og-server.mjs — Request Handler & Endpoints', () => {
@@ -705,6 +723,53 @@ describe('server/og-server.mjs — Request Handler & Endpoints', () => {
     const res = createMockRes();
     const served = await serveStaticFile('/no-existe-archivo.txt', res);
     expect(served).toBe(false);
+  });
+
+  it('sirve iconos, favicons y manifest con Cache-Control de larga duración (30 días)', async () => {
+    const fs = await import('node:fs/promises');
+    const os = await import('node:os');
+    const path = await import('node:path');
+    const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'tokki-og-static-'));
+    try {
+      await fs.writeFile(path.join(tmpDir, 'favicon-48x48.png'), Buffer.from([137, 80, 78, 71]));
+      await fs.writeFile(path.join(tmpDir, 'site.webmanifest'), JSON.stringify({ name: 'Tokki' }));
+
+      const resPng = createMockRes();
+      expect(await serveStaticFile('/favicon-48x48.png', resPng, tmpDir)).toBe(true);
+      expect(resPng._getHeaders()['Cache-Control']).toBe('public, max-age=2592000');
+
+      const resManifest = createMockRes();
+      expect(await serveStaticFile('/site.webmanifest', resManifest, tmpDir)).toBe(true);
+      expect(resManifest._getHeaders()['Cache-Control']).toBe('public, max-age=2592000');
+    } finally {
+      await fs.rm(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('emite preload responsivo con imagesrcset y imagesizes cuando la portada del producto es WebP UUID', () => {
+    const uuidUrl = 'https://api.tokkishopve.com/images/products/aaaaaaaa-1111-4111-8111-111111111111.webp';
+    const html = rewriteIndexHtml(
+      '<!doctype html><html><head><title>x</title><link rel="canonical" href="/" /><meta property="og:url" content="/" /><meta name="description" content="" /><meta property="og:title" content="" /><meta property="og:description" content="" /><meta property="og:image" content="" /><meta name="twitter:title" content="" /><meta name="twitter:description" content="" /><meta name="twitter:image" content="" /></head><body><div id="root"></div></body></html>',
+      {
+        siteUrl: 'https://www.tokkishopve.com',
+        canonicalPath: '/products/99',
+        indexable: true,
+        product: {
+          product_id: 99,
+          product_name: 'Serum Matcha',
+          product_price: '7.50',
+          product_description: 'Desc',
+          in_stock: true,
+          qty_available: 3,
+          product_image_url: uuidUrl,
+        },
+      },
+    );
+
+    expect(html).toContain(`<meta property="og:image" content="${uuidUrl}" />`);
+    expect(html).toContain(
+      `<link rel="preload" as="image" href="${uuidUrl}?w=800" imagesrcset="${uuidUrl}?w=400 400w, ${uuidUrl}?w=800 800w, ${uuidUrl} 1600w" imagesizes="(min-width: 768px) 480px, 100vw" fetchpriority="high" />`,
+    );
   });
 
   it('comprime archivos estáticos y HTML SPA con brotli o gzip cuando el cliente lo solicita', async () => {

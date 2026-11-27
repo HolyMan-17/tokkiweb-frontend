@@ -108,4 +108,17 @@ describe('PosProductCard', () => {
     await user.click(removeBtn);
     expect(onRemoveItem).toHaveBeenCalledWith(10);
   });
+
+  it('renderiza precio con descuento, original tachado y burbuja cuando discount_percent > 0', () => {
+    const { container } = render(
+      <PosProductCard
+        {...defaultProps}
+        product={{ ...baseProduct, product_price: '10.00', discount_percent: 30 }}
+      />,
+    );
+
+    expect(screen.getByText('$7.00')).toBeInTheDocument();
+    expect(container.querySelector('del.tokki-price__original')).toHaveTextContent('$10.00');
+    expect(screen.getByText('-30%')).toBeInTheDocument();
+  });
 });

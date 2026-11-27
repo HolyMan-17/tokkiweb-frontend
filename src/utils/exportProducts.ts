@@ -1,11 +1,12 @@
 import type { Product } from '../types';
 import { escapeCsvField } from './exportOrders';
+import { getEffectivePriceString, normalizeDiscountPercent } from './pricing';
 
-const CSV_HEADERS = ['Nombre', 'Precio ($)'] as const;
+const CSV_HEADERS = ['Nombre', 'Precio ($)', 'Descuento (%)', 'Precio Final ($)'] as const;
 
 /**
  * Generates CSV content with a UTF-8 Byte Order Mark (BOM) for Excel compatibility.
- * Exports only the product name and price.
+ * Exports product name, base price, active discount %, and effective final price.
  */
 export function generateProductsCsv(products: Product[]): string {
   const headerRow = CSV_HEADERS.map(escapeCsvField).join(',');
@@ -17,10 +18,17 @@ export function generateProductsCsv(products: Product[]): string {
     const price = (product.product_price !== undefined && product.product_price !== null && String(product.product_price).trim() !== '')
       ? String(product.product_price).trim()
       : '0.00';
+    const discountPct = normalizeDiscountPercent(product.discount_percent);
+    const finalPrice = getEffectivePriceString({
+      product_price: price,
+      discount_percent: discountPct,
+    });
 
     return [
       escapeCsvField(name),
       escapeCsvField(price),
+      escapeCsvField(String(discountPct)),
+      escapeCsvField(finalPrice),
     ].join(',');
   });
 

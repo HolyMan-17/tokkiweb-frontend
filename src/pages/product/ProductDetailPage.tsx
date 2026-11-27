@@ -5,10 +5,11 @@ import { fetchProductDetail } from '../../api/productDetail';
 import { useAsync } from '../../hooks/useAsync';
 import { DEFAULT_DOC_DESCRIPTION, usePageMeta } from '../../hooks/usePageMeta';
 import { buildProductJsonLd } from '../../utils/structuredData';
-import { formatPrice } from '../../constants';
+import { formatEffectivePrice } from '../../utils/pricing';
 import { useCartActions } from '../../context/CartContext';
 import { ROUTES } from '../../lib/routes';
 import QuantitySelector from '../../components/ui/QuantitySelector';
+import PriceDisplay from '../../components/ui/PriceDisplay';
 import ErrorState from '../../components/ui/ErrorState';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import ProductGallery from '../../components/ui/ProductGallery';
@@ -54,7 +55,7 @@ export default function ProductDetailPage() {
         ? `${product.product_description.trim()} • Envíos a toda Venezuela 🐰`
         : DEFAULT_DOC_DESCRIPTION;
       return {
-        title: `${product.product_name} — ${formatPrice(product.product_price)} | Tokki Shop`,
+        title: `${product.product_name} — ${formatEffectivePrice(product)} | Tokki Shop`,
         description: desc,
         canonicalPath: ROUTES.product(product.product_id),
         jsonLd: buildProductJsonLd(product),
@@ -101,7 +102,7 @@ export default function ProductDetailPage() {
   };
 
   const handleShare = async () => {
-    const formattedPrice = formatPrice(product.product_price);
+    const formattedPrice = formatEffectivePrice(product);
     const shareTitle = `${product.product_name} — ${formattedPrice} | Tokki Shop`;
     const shareText = `¡Mira este producto en Tokki Shop! 🐰✨\n${product.product_name} — ${formattedPrice}`;
     const shareUrl =
@@ -176,7 +177,9 @@ export default function ProductDetailPage() {
 
       <div className="product-info stagger">
         <h1 className="product-name">{product.product_name}</h1>
-        <div className="product-price">{formatPrice(product.product_price)}</div>
+        <div className="product-price">
+          <PriceDisplay product={product} showBadge size="detail" />
+        </div>
         
         <div className="product-badges">
           {product.in_stock ? (

@@ -3,8 +3,10 @@ import { useNavigate, Link } from 'react-router-dom';
 import type { Product } from '../../types';
 import { fetchAllProducts } from '../../api/products';
 import { matchesSearch } from '../../utils/productSearch';
-import { CATEGORIES, slugify, formatPrice } from '../../constants';
+import { CATEGORIES, slugify } from '../../constants';
+import { getProductThumbUrl } from '../../utils/productImage';
 import { getCategoryIcon } from './CategoryIcons';
+import PriceDisplay from './PriceDisplay';
 import { ROUTES } from '../../lib/routes';
 import sparklesGif from '../../assets/sparkles.webp';
 import './GlobalSearchBar.css';
@@ -46,7 +48,7 @@ function SearchItemButton({ product, onSelect }: SearchItemButtonProps) {
     >
       {product.product_image_url ? (
         <img
-          src={product.product_image_url}
+          src={getProductThumbUrl(product.product_image_url)}
           alt=""
           className="global-search__thumb"
           loading="lazy"
@@ -60,9 +62,12 @@ function SearchItemButton({ product, onSelect }: SearchItemButtonProps) {
         <span className="global-search__item-name">{product.product_name}</span>
         <span className="global-search__item-category">{product.category}</span>
       </div>
-      <span className="global-search__item-price">
-        {formatPrice(product.product_price)}
-      </span>
+      <PriceDisplay
+        product={product}
+        showBadge
+        size="compact"
+        className="global-search__item-price"
+      />
     </button>
   );
 }

@@ -414,3 +414,48 @@ describe('catalog deduplication, TTL cache & getProduct normalization', () => {
     expect(result.data.product_image_url).toBeUndefined();
   });
 });
+
+describe('early /api/products HTML bootstrap consumption', () => {
+  test('consumes window.__TOKKI_PRODUCTS_PROMISE__ once and falls back to fetch afterwards', async () => {
+    window.__TOKKI_PRODUCTS_PROMISE__ = Promise.resolve({
+      success: true,
+      data: [
+        {
+          product_id: 77,
+          product_name: 'Llavero Pochacco',
+          product_price: '4.00',
+          product_description: 'Llavero acrílico',
+          category: 'Llaveros',
+          qty_available: 6,
+          in_stock: true,
+        },
+      ],
+    });
+
+    const first = await listProducts();
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(first.ok).toBe(true);
+    if (!first.ok) return;
+    expect(first.data).toHaveLength(1);
+    expect(first.data[0].product_name).toBe('Llavero Pochacco');
+    expect(window.__TOKKI_PRODUCTS_PROMISE__).toBeUndefined();
+
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true, data: [] }));
+    const second = await listProducts();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(second.ok).toBe(true);
+  });
+
+  test('falls back to normal /api/products fetch when bootstrap resolves null or rejects', async () => {
+    window.__TOKKI_PRODUCTS_PROMISE__ = Promise.resolve(null);
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true, data: [] }));
+    await listProducts();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    window.__TOKKI_PRODUCTS_PROMISE__ = Promise.reject(new Error('network blip'));
+    fetchMock.mockResolvedValueOnce(jsonResponse({ success: true, data: [] }));
+    const result = await listProducts();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(result.ok).toBe(true);
+  });
+});

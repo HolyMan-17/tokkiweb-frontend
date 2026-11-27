@@ -135,4 +135,16 @@ describe('TopProductsCard', () => {
 
     expect(await screen.findByText('Bálsamo Labial Fresa')).toBeInTheDocument();
   });
+
+  it('muestra precio rebajado, tachado y burbuja cuando un producto destacado tiene descuento activo', async () => {
+    mockFetchTopProducts.mockResolvedValueOnce([
+      { ...TOP_BY_UNITS[0], product_price: '10.00', discount_percent: 20 },
+    ]);
+    const { container } = renderCard();
+
+    await screen.findByText('Bálsamo Labial Fresa');
+    expect(screen.getByText('$8.00')).toBeInTheDocument();
+    expect(container.querySelector('del.tokki-price__original')).toHaveTextContent('$10.00');
+    expect(screen.getByText('-20%')).toBeInTheDocument();
+  });
 });

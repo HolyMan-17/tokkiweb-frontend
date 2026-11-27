@@ -24,6 +24,7 @@ const MOCK_PRODUCTS = CATEGORIES.map((cat, idx) => {
     product_id: id,
     product_name: `${cat.name} Tokki Edición Especial #${id}`,
     product_price: (3.5 + idx * 1.25).toFixed(2),
+    discount_percent: id === 1 ? 20 : idx % 3 === 1 ? 15 : 0,
     product_description: `Descripción kawaii de prueba para ${cat.name} en Tokki Shop.`,
     category: cat.name,
     qty_available: qty,
@@ -113,6 +114,7 @@ const TOP_PRODUCTS = MOCK_PRODUCTS.slice(1, 6).map((p, idx) => ({
   product_id: p.product_id,
   product_name: p.product_name,
   product_price: p.product_price,
+  discount_percent: p.discount_percent,
   qty_available: p.qty_available,
   in_stock: p.in_stock,
   category: p.category,
@@ -661,6 +663,47 @@ test.describe('Full Storefront & Admin Responsive Visual & Asset Audit', () => {
       }
 
       await auditPageLayout(page, route.label, viewportName, takeScreenshot, testInfo, pageErrors, failedAssets);
+
+      if (route.label === 'user-catalog') {
+        const discountAudit = await page.evaluate(() => {
+          const badges = Array.from(document.querySelectorAll('.product-card .card-discount-badge'));
+          const badPositions: string[] = [];
+          for (const badge of badges) {
+            const card = badge.closest('.product-card');
+            const wrap = badge.closest('.card-img-wrap');
+            const addBtn = card?.querySelector('.card-add-btn');
+            if (!wrap || !addBtn) continue;
+            const br = badge.getBoundingClientRect();
+            const wr = wrap.getBoundingClientRect();
+            if (wr.width === 0 || wr.height === 0) continue;
+            const ar = addBtn.getBoundingClientRect();
+            if (br.left >= wr.left + wr.width / 2 || br.top >= wr.top + wr.height / 2) {
+              badPositions.push(`Badge not in top-left: ${badge.textContent}`);
+            }
+            const ox = Math.max(0, Math.min(br.right, ar.right) - Math.max(br.left, ar.left));
+            const oy = Math.max(0, Math.min(br.bottom, ar.bottom) - Math.max(br.top, ar.top));
+            if (ox > 0 && oy > 0) {
+              badPositions.push(`Badge overlaps quick-add "+": ${badge.textContent}`);
+            }
+          }
+          return {
+            badgeCount: badges.length,
+            discountedPriceCount: document.querySelectorAll('.product-card .tokki-price__current--discounted').length,
+            originalPriceCount: document.querySelectorAll('.product-card .tokki-price__original').length,
+            badPositions,
+          };
+        });
+        expect(discountAudit.badgeCount).toBeGreaterThan(0);
+        expect(discountAudit.discountedPriceCount).toBeGreaterThan(0);
+        expect(discountAudit.originalPriceCount).toBeGreaterThan(0);
+        expect(discountAudit.badPositions).toEqual([]);
+      }
+
+      if (route.label === 'user-product-detail') {
+        await expect(page.locator('.product-price .tokki-price__current--discounted')).toBeVisible();
+        await expect(page.locator('.product-price del.tokki-price__original')).toBeVisible();
+        await expect(page.locator('.product-price .tokki-price__badge')).toHaveText('-20%');
+      }
     }
   });
 });

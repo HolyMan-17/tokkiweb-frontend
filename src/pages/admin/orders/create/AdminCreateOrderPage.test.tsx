@@ -342,4 +342,17 @@ describe('AdminCreateOrderPage', () => {
     expect(screen.queryByText(/La cédula debe contener entre 6 y 9 dígitos/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Ingresa un número de teléfono válido/i)).not.toBeInTheDocument();
   });
+
+  it('calcula el total del pedido POS aplicando descuentos activos', async () => {
+    const user = userEvent.setup();
+    mockFetchAllProducts.mockResolvedValueOnce([
+      { ...MOCK_PRODUCTS[0], product_price: '10.00', discount_percent: 25 },
+    ]);
+    renderCreateOrderPage();
+
+    await screen.findByText('Gloss Kawaii Fresa');
+    await user.click(screen.getByRole('button', { name: /agregar gloss kawaii fresa/i }));
+
+    expect(screen.getByRole('button', { name: /registrar pedido \(\$7\.50\)/i })).toBeInTheDocument();
+  });
 });

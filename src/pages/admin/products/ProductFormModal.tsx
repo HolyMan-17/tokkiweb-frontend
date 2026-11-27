@@ -5,15 +5,19 @@ import { ProductImagesUploader } from './ProductImagesUploader';
 import {
   ProductFormFields,
   type ProductFormState,
+  type ProductFormTextField,
   type FormErrors,
 } from './ProductFormFields';
 import { useProductGallery, RETRY_DELAY_MS } from './useProductGallery';
+import { normalizeDiscountPercent } from '../../../utils/pricing';
 
 export { RETRY_DELAY_MS };
 
 const EMPTY_FORM: ProductFormState = {
   product_name: '',
   product_price: '',
+  apply_discount: false,
+  discount_percent: '',
   qty_available: '',
   product_description: '',
   category: 'Otros',
@@ -29,6 +33,10 @@ function sanitizePrice(value: string): string {
 
 function sanitizeQty(value: string): string {
   return value.replace(/[^0-9]/g, '').slice(0, 6);
+}
+
+function sanitizeDiscount(value: string): string {
+  return value.replace(/[^0-9]/g, '').slice(0, 2);
 }
 
 function normalizeTextInput(value: string): string {
@@ -49,6 +57,18 @@ function validateForm(form: ProductFormState): FormErrors {
     errors.product_price = 'Ingresa un precio válido.';
   } else if (priceNum <= 0) {
     errors.product_price = 'El precio debe ser mayor a 0.';
+  }
+
+  if (form.apply_discount) {
+    const pctNum = Number(form.discount_percent);
+    if (
+      !form.discount_percent.trim() ||
+      !Number.isInteger(pctNum) ||
+      pctNum < 1 ||
+      pctNum > 99
+    ) {
+      errors.discount_percent = 'Ingresa un porcentaje entero entre 1 y 99.';
+    }
   }
 
   const qtyNum = Number(form.qty_available);
@@ -84,17 +104,19 @@ export function ProductFormModal({
   showToast,
   onImageTooLarge,
 }: ProductFormModalProps) {
-  const [form, setForm] = useState<ProductFormState>(() =>
-    editingProduct
-      ? {
-          product_name: editingProduct.product_name,
-          product_price: editingProduct.product_price,
-          qty_available: String(editingProduct.qty_available),
-          product_description: editingProduct.product_description,
-          category: editingProduct.category,
-        }
-      : EMPTY_FORM,
-  );
+  const [form, setForm] = useState<ProductFormState>(() => {
+    if (!editingProduct) return EMPTY_FORM;
+    const initialPct = normalizeDiscountPercent(editingProduct.discount_percent);
+    return {
+      product_name: editingProduct.product_name,
+      product_price: editingProduct.product_price,
+      apply_discount: initialPct > 0,
+      discount_percent: initialPct > 0 ? String(initialPct) : '',
+      qty_available: String(editingProduct.qty_available),
+      product_description: editingProduct.product_description,
+      category: editingProduct.category,
+    };
+  });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [saving, setSaving] = useState(false);
@@ -106,7 +128,7 @@ export function ProductFormModal({
   const successMessage = () =>
     editingProduct ? 'Producto actualizado' : 'Producto agregado';
 
-  const handleFieldChange = (field: keyof ProductFormState, raw: string) => {
+  const handleFieldChange = (field: ProductFormTextField, raw: string) => {
     let value = raw;
     if (field === 'product_name' || field === 'product_description') {
       value = sanitizeTextInput(value);
@@ -114,16 +136,36 @@ export function ProductFormModal({
       value = sanitizePrice(value);
     } else if (field === 'qty_available') {
       value = sanitizeQty(value);
+    } else if (field === 'discount_percent') {
+      value = sanitizeDiscount(value);
     }
     setForm(prev => ({ ...prev, [field]: value }));
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  const handleBlur = (field: keyof ProductFormState) => {
+  const handleBlur = (field: ProductFormTextField) => {
     if (field === 'product_name' || field === 'product_description') {
       setForm(prev => ({ ...prev, [field]: normalizeTextInput(prev[field]) }));
     }
     setTouched(prev => ({ ...prev, [field]: true }));
+  };
+
+  const handleToggleDiscount = (checked: boolean) => {
+    setForm(prev => ({ ...prev, apply_discount: checked }));
+    if (!checked) {
+      setErrors(prev => {
+        if (!prev.discount_percent) return prev;
+        const next = { ...prev };
+        delete next.discount_percent;
+        return next;
+      });
+      setTouched(prev => {
+        if (!prev.discount_percent) return prev;
+        const next = { ...prev };
+        delete next.discount_percent;
+        return next;
+      });
+    }
   };
 
   const resolvePendingUploads = async (productId: number): Promise<boolean> => {
@@ -144,7 +186,12 @@ export function ProductFormModal({
     };
     const nextErrors = validateForm(normalized);
     setErrors(nextErrors);
-    setTouched({ product_name: true, product_price: true, qty_available: true });
+    setTouched({
+      product_name: true,
+      product_price: true,
+      qty_available: true,
+      ...(normalized.apply_discount ? { discount_percent: true } : {}),
+    });
     if (Object.keys(nextErrors).length > 0) return;
     if (!auth) {
       showToast('El panel necesita Clerk configurado para escribir en la tienda.');
@@ -172,6 +219,9 @@ export function ProductFormModal({
       const payload = {
         product_name: normalized.product_name,
         product_price: Number(normalized.product_price),
+        discount_percent: normalized.apply_discount
+          ? Number(normalized.discount_percent)
+          : 0,
         product_description: normalized.product_description,
         category: normalized.category,
         qty_available: Number(normalized.qty_available),
@@ -250,6 +300,7 @@ export function ProductFormModal({
             touched={touched}
             onChange={handleFieldChange}
             onBlur={handleBlur}
+            onToggleDiscount={handleToggleDiscount}
           />
 
           {gallery.uploadFailure && (

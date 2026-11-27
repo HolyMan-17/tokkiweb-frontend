@@ -235,4 +235,22 @@ describe('ProductDetailPage — temporizador del toast', () => {
     });
     expect(screen.queryByText(/enlace copiado al portapapeles/i)).not.toBeInTheDocument();
   });
+
+  it('muestra el precio con descuento, el precio original tachado, la burbuja y actualiza document.title con el precio rebajado', async () => {
+    mockFetchAllProducts.mockResolvedValue([
+      {
+        ...product,
+        product_price: '20.00',
+        discount_percent: 25,
+      },
+    ]);
+
+    renderPage();
+    await act(async () => {});
+
+    expect(screen.getByText('$15.00')).toHaveClass('tokki-price__current--discounted');
+    expect(document.querySelector('del.tokki-price__original')).toHaveTextContent('$20.00');
+    expect(screen.getByText('-25%')).toHaveClass('tokki-price__badge');
+    expect(document.title).toBe('Gloss Fresa — $15.00 | Tokki Shop');
+  });
 });

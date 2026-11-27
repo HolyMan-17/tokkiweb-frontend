@@ -2,6 +2,8 @@
 // all-products) sorts the same way and the sort select renders the same
 // options, including "Más antiguos".
 
+import { getEffectivePriceCents } from './pricing';
+
 export type SortOption = 'recent' | 'oldest' | 'price-asc' | 'price-desc' | 'name';
 
 export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
@@ -14,8 +16,15 @@ export const SORT_OPTIONS: { value: SortOption; label: string }[] = [
 
 /** Returns a new array sorted by the requested option without mutating the
  *  input. "recent" / "oldest" order by product_id, prices compare numerically
- *  (they arrive as strings like "49.99"), "name" uses localeCompare. */
-export function sortProducts<T extends { product_id: number; product_price: string; product_name: string }>(
+ *  using effective discounted price in cents, "name" uses localeCompare. */
+export function sortProducts<
+  T extends {
+    product_id: number;
+    product_price: string;
+    discount_percent?: number | null;
+    product_name: string;
+  },
+>(
   products: T[],
   sort: SortOption,
 ): T[] {
@@ -28,10 +37,10 @@ export function sortProducts<T extends { product_id: number; product_price: stri
       sorted.sort((a, b) => a.product_id - b.product_id);
       break;
     case 'price-asc':
-      sorted.sort((a, b) => Number(a.product_price) - Number(b.product_price));
+      sorted.sort((a, b) => getEffectivePriceCents(a) - getEffectivePriceCents(b));
       break;
     case 'price-desc':
-      sorted.sort((a, b) => Number(b.product_price) - Number(a.product_price));
+      sorted.sort((a, b) => getEffectivePriceCents(b) - getEffectivePriceCents(a));
       break;
     case 'name':
       sorted.sort((a, b) => a.product_name.localeCompare(b.product_name));

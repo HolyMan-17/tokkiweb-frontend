@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import './CartPage.css';
 import { useCart, type StockAdjustment } from '../../context/CartContext';
 import { formatPrice } from '../../constants';
+import { getEffectivePriceCents } from '../../utils/pricing';
 import { ROUTES } from '../../lib/routes';
+import PriceDisplay from '../../components/ui/PriceDisplay';
 import QuantitySelector from '../../components/ui/QuantitySelector';
 import StockNotice from '../../components/ui/StockNotice';
 import ShippingCostNote from '../../components/ui/ShippingCostNote';
@@ -90,7 +92,10 @@ export default function CartPage() {
             </div>
             <div className="item-details">
               <h3 className="item-name">{item.product.product_name}</h3>
-              <div className="item-price">{formatPrice(item.product.product_price)} c/u</div>
+              <div className="item-price">
+                <PriceDisplay product={item.product} showBadge size="compact" />
+                <span>c/u</span>
+              </div>
               <div className="item-actions">
                 <QuantitySelector
                   value={item.quantity}
@@ -112,7 +117,7 @@ export default function CartPage() {
                 </svg>
               </button>
               <div className="item-total-price">
-                {formatPrice(Number(item.product.product_price) * item.quantity)}
+                {formatPrice((getEffectivePriceCents(item.product) * item.quantity) / 100)}
               </div>
             </div>
           </div>

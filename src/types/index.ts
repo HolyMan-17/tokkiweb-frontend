@@ -3,6 +3,7 @@ export interface Product {
   product_id: number;
   product_name: string;
   product_price: string;        // numeric strings from PG
+  discount_percent?: number;    // integer 0..99 (0 = no discount)
   product_description: string;
   qty_available: number;
   in_stock: boolean;
@@ -114,6 +115,7 @@ export interface TopProductStat {
   product_name: string;
   category: string;
   product_price: string;
+  discount_percent?: number;
   qty_available: number;
   in_stock: boolean;
   product_image_urls?: string[];

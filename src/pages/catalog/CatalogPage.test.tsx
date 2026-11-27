@@ -291,6 +291,92 @@ describe('CatalogPage — progressive carousel image loading', () => {
     expect(todosSection.querySelectorAll('img.card-img')).toHaveLength(12);
     expect(todosSection.querySelectorAll('.card-img-deferred')).toHaveLength(0);
   });
+
+  it('asigna fetchpriority="high" solo a la primera card, loading="eager" a la segunda y "lazy" al resto en Todos', async () => {
+    const { fetchAllProducts } = await import('../../api/products');
+    const mock6Products = Array.from({ length: 6 }, (_, i) => ({
+      product_id: i + 1,
+      product_name: `Card Priority ${i + 1}`,
+      category: 'Maquillaje',
+      product_price: '4.00',
+      product_description: 'Desc',
+      qty_available: 10,
+      in_stock: true,
+      product_image_url: `https://example.com/cp-${i + 1}.webp`,
+    }));
+    vi.mocked(fetchAllProducts).mockResolvedValueOnce(mock6Products);
+
+    render(
+      <MemoryRouter>
+        <CatalogPage />
+      </MemoryRouter>,
+    );
+
+    await screen.findAllByText('Card Priority 6');
+
+    const todosSection = document.querySelectorAll('.category-section')[0] as HTMLElement;
+    const imgs = todosSection.querySelectorAll('img.card-img');
+    expect(imgs).toHaveLength(6);
+
+    expect(imgs[0]).toHaveAttribute('loading', 'eager');
+    expect(imgs[0]).toHaveAttribute('fetchpriority', 'high');
+    expect(imgs[1]).toHaveAttribute('loading', 'eager');
+    expect(imgs[1]).not.toHaveAttribute('fetchpriority');
+    for (let i = 2; i < 6; i++) {
+      expect(imgs[i]).toHaveAttribute('loading', 'lazy');
+      expect(imgs[i]).not.toHaveAttribute('fetchpriority');
+    }
+  });
+
+  it('monta solo 3 imágenes iniciales en Todos en viewport móvil (<768px) y difiere el resto hasta interactuar', async () => {
+    const originalMatchMedia = window.matchMedia;
+    Object.defineProperty(window, 'matchMedia', {
+      writable: true,
+      configurable: true,
+      value: vi.fn().mockImplementation((query: string) => ({
+        matches: query.includes('max-width: 767px'),
+        media: query,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+      })),
+    });
+
+    try {
+      const { fetchAllProducts } = await import('../../api/products');
+      const mock8Products = Array.from({ length: 8 }, (_, i) => ({
+        product_id: i + 1,
+        product_name: `Mobile Card ${i + 1}`,
+        category: 'Papeleria',
+        product_price: '2.50',
+        product_description: 'Desc',
+        qty_available: 10,
+        in_stock: true,
+        product_image_url: `https://example.com/mob-${i + 1}.webp`,
+      }));
+      vi.mocked(fetchAllProducts).mockResolvedValueOnce(mock8Products);
+
+      render(
+        <MemoryRouter>
+          <CatalogPage />
+        </MemoryRouter>,
+      );
+
+      await screen.findAllByText('Mobile Card 8');
+
+      const todosSection = document.querySelectorAll('.category-section')[0] as HTMLElement;
+      expect(todosSection.querySelectorAll('img.card-img')).toHaveLength(3);
+      expect(todosSection.querySelectorAll('.card-img-deferred')).toHaveLength(5);
+
+      fireEvent.click(within(todosSection).getByRole('button', { name: 'Siguiente' }));
+      expect(todosSection.querySelectorAll('img.card-img')).toHaveLength(8);
+    } finally {
+      Object.defineProperty(window, 'matchMedia', {
+        writable: true,
+        configurable: true,
+        value: originalMatchMedia,
+      });
+    }
+  });
 });
 
 describe('CatalogPage — category quick-jump pills', () => {

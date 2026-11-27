@@ -1,5 +1,6 @@
 import type { Product } from '../../../../types';
-import { formatPrice } from '../../../../constants';
+import { getProductThumbUrl } from '../../../../utils/productImage';
+import PriceDisplay from '../../../../components/ui/PriceDisplay';
 
 export interface PosProductCardProps {
   product: Product;
@@ -39,7 +40,7 @@ export function PosProductCard({
       <div className="pos-product-thumb">
         {product.product_image_url ? (
           <img
-            src={product.product_image_url}
+            src={getProductThumbUrl(product.product_image_url)}
             alt={product.product_name}
             loading="lazy"
             className="pos-thumb-img"
@@ -59,9 +60,7 @@ export function PosProductCard({
           {product.product_name}
         </p>
         <div className="pos-product-meta">
-          <span className="pos-product-price">
-            {formatPrice(product.product_price)}
-          </span>
+          <PriceDisplay product={product} showBadge size="compact" className="pos-product-price" />
           <span
             className={`pos-stock-badge ${
               product.qty_available > 0

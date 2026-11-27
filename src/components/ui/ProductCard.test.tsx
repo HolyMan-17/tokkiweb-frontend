@@ -133,4 +133,63 @@ describe('ProductCard', () => {
     expect(eagerImg).toHaveAttribute('loading', 'eager');
     expect(eagerImg).toHaveAttribute('fetchpriority', 'high');
   });
+
+  it('loads images eagerly without high fetchPriority when eager is true and adds responsive attributes for UUID product images', () => {
+    const uuidProduct: Product = {
+      ...IN_STOCK_PRODUCT,
+      product_image_url: '/images/products/aaaaaaaa-1111-4111-8111-111111111111.webp',
+    };
+    const { container } = render(
+      <MemoryRouter>
+        <ProductCard product={uuidProduct} eager />
+      </MemoryRouter>,
+    );
+
+    const img = container.querySelector('img.card-img');
+    expect(img).toHaveAttribute('loading', 'eager');
+    expect(img).not.toHaveAttribute('fetchpriority');
+    expect(img).toHaveAttribute('width', '400');
+    expect(img).toHaveAttribute('height', '400');
+    expect(img).toHaveAttribute('src', '/images/products/aaaaaaaa-1111-4111-8111-111111111111.webp?w=400');
+    expect(img).toHaveAttribute(
+      'srcset',
+      '/images/products/aaaaaaaa-1111-4111-8111-111111111111.webp?w=400 400w, /images/products/aaaaaaaa-1111-4111-8111-111111111111.webp?w=800 800w',
+    );
+    expect(img).toHaveAttribute('sizes', '(min-width: 768px) 240px, 46vw');
+  });
+
+  it('muestra burbuja de porcentaje arriba a la izquierda, precio rebajado y precio original tachado cuando hay descuento', () => {
+    const discounted: Product = {
+      ...IN_STOCK_PRODUCT,
+      product_price: '10.00',
+      discount_percent: 20,
+    };
+    const { container } = render(
+      <MemoryRouter>
+        <ProductCard product={discounted} />
+      </MemoryRouter>,
+    );
+
+    const imgWrap = container.querySelector('.card-img-wrap');
+    const badge = container.querySelector('.card-discount-badge');
+    expect(badge).not.toBeNull();
+    expect(imgWrap).toContainElement(badge as HTMLElement);
+    expect(badge).toHaveTextContent('-20%');
+    expect(badge).toHaveAttribute('aria-label', '20% de descuento');
+
+    expect(screen.getByText('$8.00')).toBeInTheDocument();
+    expect(container.querySelector('del.tokki-price__original')).toHaveTextContent('$10.00');
+  });
+
+  it('no muestra burbuja ni precio tachado cuando discount_percent es 0 o indefinido', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <ProductCard product={{ ...IN_STOCK_PRODUCT, discount_percent: 0 }} />
+      </MemoryRouter>,
+    );
+
+    expect(container.querySelector('.card-discount-badge')).toBeNull();
+    expect(container.querySelector('del.tokki-price__original')).toBeNull();
+    expect(screen.getByText('$6.50')).toBeInTheDocument();
+  });
 });

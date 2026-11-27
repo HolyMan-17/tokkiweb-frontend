@@ -101,6 +101,19 @@ describe('structuredData — buildProductJsonLd', () => {
       },
     ]);
   });
+
+  it('usa el precio con descuento activo en Offer.price', () => {
+    const ld = buildProductJsonLd({
+      ...BASE_PRODUCT,
+      product_price: '10.00',
+      discount_percent: 20,
+    }, SITE_URL);
+
+    const graph = ld['@graph'] as Array<Record<string, unknown>>;
+    const productNode = graph.find((n) => n['@type'] === 'Product');
+    const offer = productNode?.offers as Record<string, unknown>;
+    expect(offer.price).toBe('8.00');
+  });
 });
 
 describe('structuredData — buildBreadcrumbJsonLd', () => {

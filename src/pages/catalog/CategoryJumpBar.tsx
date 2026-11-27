@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { CATEGORY_ICONS } from '../../components/ui/CategoryIcons';
 import { getCategorySectionId } from './categoryJumpUtils';
 import './CategoryJumpBar.css';
@@ -38,9 +38,11 @@ export function CategoryJumpBar({ categories }: { categories: readonly CategoryJ
     const track = trackRef.current;
     if (!nav || !track) return;
 
-    const navStyle = getComputedStyle(nav);
-    const navPaddingInline =
-      (parseFloat(navStyle.paddingLeft) || 0) + (parseFloat(navStyle.paddingRight) || 0);
+    const isDesktop =
+      typeof window !== 'undefined' &&
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(min-width: 768px)').matches;
+    const navPaddingInline = isDesktop ? 64 : 0;
     const navInnerWidth = nav.clientWidth - navPaddingInline;
     // Compare against the nav's invariant inner width when available so toggling
     // sibling arrow buttons cannot feed back into ResizeObserver measurements.
@@ -61,31 +63,31 @@ export function CategoryJumpBar({ categories }: { categories: readonly CategoryJ
     setCanScrollRight(maxScroll > 2 && left < maxScroll - 2);
   }, []);
 
-  useLayoutEffect(() => {
+  useEffect(() => {
     if (categories.length < 2) return;
     const nav = navRef.current;
     const track = trackRef.current;
     if (!nav || !track) return;
 
-    updateArrows();
-
-    let scrollRaf = 0;
-    const onScroll = () => {
-      if (scrollRaf) return;
-      scrollRaf = requestAnimationFrame(() => {
-        scrollRaf = 0;
+    let rafId = 0;
+    const scheduleMeasure = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = 0;
         updateArrows();
       });
     };
-    track.addEventListener('scroll', onScroll, { passive: true });
 
-    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(() => updateArrows()) : null;
+    scheduleMeasure();
+    track.addEventListener('scroll', scheduleMeasure, { passive: true });
+
+    const ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(scheduleMeasure) : null;
     ro?.observe(nav);
     ro?.observe(track);
 
     return () => {
-      if (scrollRaf) cancelAnimationFrame(scrollRaf);
-      track.removeEventListener('scroll', onScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+      track.removeEventListener('scroll', scheduleMeasure);
       ro?.disconnect();
     };
   }, [categories.length, updateArrows]);
